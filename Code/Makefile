@@ -18,6 +18,7 @@ libs:
 elf_debug: libs_debug
 
 elf: libs
+	@$(MAKE) $(MAKEFLAGS) -C Tests/PSPStubTest ELF
 
 clean:
 	rm -rf ../Build ../Output
