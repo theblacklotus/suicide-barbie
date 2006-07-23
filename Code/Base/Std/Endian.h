@@ -4,7 +4,7 @@
 
 #if defined AMIGA
 #define NEWAGE_BIG_ENDIAN
-#elif defined WIN32
+#elif defined WIN32 || defined __psp__
 #else
 #error Platform not defined
 #endif
