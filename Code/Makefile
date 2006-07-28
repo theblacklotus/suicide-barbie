@@ -23,6 +23,7 @@ elf_debug: libs_debug
 
 elf: libs
 	@$(MAKE) $(MAKEFLAGS) -C Tests/PSPStubTest ELF
+	@$(MAKE) $(MAKEFLAGS) -C Tests/ScreenTest ELF
 
 clean:
 	rm -rf ../Build ../Output
