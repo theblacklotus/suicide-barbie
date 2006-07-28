@@ -10,10 +10,12 @@ debug: elf_debug
 release: elf
 
 libs_debug:
+	@$(MAKE) $(MAKEFLAGS) -C zlib LIB
 	@$(MAKE) $(MAKEFLAGS) -C Base LIB
 	@$(MAKE) $(MAKEFLAGS) -C Modules/mutant LIB
 
 libs:
+	@$(MAKE) $(MAKEFLAGS) -C zlib LIB
 	@$(MAKE) $(MAKEFLAGS) -C Base LIB
 	@$(MAKE) $(MAKEFLAGS) -C Modules/mutant LIB
 
