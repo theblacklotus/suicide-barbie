@@ -1,0 +1,55 @@
++ Base
++ Drivers
+- Hardcore
+	~ Cull
+		- Cull_cullObjectPolygonsAgainstCamera
+		- Cull_calcObjectVertexOutcodesAgainstViewFrustum
+		- Cull_clipObjectPolygonsAgainstViewFrustum
+	+ Camera
+	+ DataBuffer
+	+ Frustum
+	+ Light
+	+ Material
+	+ Object
+	~ Texture (interface)
+	+ Viewport
+	
+	
+	- Scene
+	- Mesh
+	- Play
+	- Panorama
+	- Polygon/PolygonBuffer
+	- Render
+	- Sprite/SpriteBuffer
+	- Vertex/VertexBuffer
+	
++ LW
+- SugRender
+
+
+
+
+load Scene
+load Mesh
+load Animation
+load Texture
+
+updateAnimationPaths									-> mutant, Quaternions
+processBoneHierarchy
+transformObjects
+cullObjects
+	o simplistic
+	o none
+
+transformSkinnedMesh (CPU)
+transform VertexBuffer -> SpriteBuffer
+
+
+setTexture
+setModes
+renderVertexBuffer
+renderSprites
+
+
+
