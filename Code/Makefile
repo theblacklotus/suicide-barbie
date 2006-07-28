@@ -11,9 +11,11 @@ release: elf
 
 libs_debug:
 	@$(MAKE) $(MAKEFLAGS) -C Base LIB
+	@$(MAKE) $(MAKEFLAGS) -C Modules/mutant LIB
 
 libs:
 	@$(MAKE) $(MAKEFLAGS) -C Base LIB
+	@$(MAKE) $(MAKEFLAGS) -C Modules/mutant LIB
 
 elf_debug: libs_debug
 
