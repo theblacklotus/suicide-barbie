@@ -1,0 +1,577 @@
+proc assert(int $condition, string $msg)
+{
+	if(!$condition)
+		warning($msg);
+}
+
+proc string stripFileCount(string $fileName)
+{
+	string $nameArray[] = stringToStringArray($fileName, "{");
+	if(size($nameArray) == 0)
+		return $fileName;
+
+	return $nameArray[0];
+}
+
+proc string stripFileExtension(string $fileName)
+{
+	string $nameArray[] = stringToStringArray($fileName, ".");
+	if(size($nameArray) == 0)
+		return $fileName;
+
+	string $tmpArray[] = {};
+	appendStringArray($tmpArray, $nameArray, size($nameArray) - 1);
+	return stringArrayToString($tmpArray, ".");
+}
+
+proc string stripPath(string $fullNodeName)
+{
+	string $nameArray[] = stringToStringArray($fullNodeName, "|");
+	assert(size($nameArray) > 0, "size($nameArray) > 0");
+
+	return $nameArray[size($nameArray)-1];
+}
+
+proc string stripNamespace(string $fullNodeName)
+{
+	string $nameArray[] = stringToStringArray($fullNodeName, ":");
+	assert(size($nameArray) > 0, "size($nameArray) > 0");
+
+	return $nameArray[size($nameArray)-1];
+}
+
+proc string attrId(string $nodeName, string $attrName)
+{
+	return ($nodeName + "." + $attrName);
+}
+
+//----------------------------------------------
+
+proc gather(string $selectionSet[], string $__nodeAsMap_refHeads, string $__nodeAsMap_srcFileNames)
+{
+	int $i;
+	for($i = 0; $i < size($selectionSet); $i += 1)
+	{
+		string $leafNodePath = $selectionSet[$i];
+        $shapeType = `ls -showType $leafNodePath`;
+        if($shapeType[1] == "annotationShape")
+			continue;
+
+		print("Object: " + $leafNodePath + "\n");
+		
+		int $isReferenced = `reference -q -isNodeReferenced $leafNodePath`;
+		if($isReferenced == 1)
+		{
+			string $srcFileName = `reference -q -filename -longName $leafNodePath`;
+			string $referenceHead = $leafNodePath;
+			while(`reference -q -isNodeReferenced $leafNodePath` && `reference -q -filename -longName $leafNodePath` == $srcFileName)
+			{
+				$referenceHead = $leafNodePath;
+				print("  +---> " + $leafNodePath + "\n");
+				
+				string $pathArray[] = stringToStringArray($leafNodePath, "|");
+				int $pathArraySize = size($pathArray);
+				if($pathArraySize <= 1)
+					warning("reached root, but nodes are still referenced (use identity as worldMatrix?)");
+
+				string $tmpArray[] = {};
+				appendStringArray($tmpArray, $pathArray, $pathArraySize - 1);
+				$leafNodePath = stringArrayToString($tmpArray, "|");
+			}
+
+
+			print("FOUND head: " + $referenceHead + " ref: " + $srcFileName + "\n");
+
+			string $attrName = substituteAllString($referenceHead, "|", "_");
+			$attrName = substituteAllString($attrName, ":", "_");
+			if(`attributeExists $attrName $__nodeAsMap_refHeads` != 1)
+			{
+				assert(`attributeExists $attrName $__nodeAsMap_srcFileNames` != 1, "internal error: mismatch in mapping");
+					
+				addAttr -shortName $attrName -dataType "string" $__nodeAsMap_refHeads;
+				addAttr -shortName $attrName -dataType "string" $__nodeAsMap_srcFileNames;
+			}
+
+			setAttr -type "string" (attrId($__nodeAsMap_refHeads, $attrName)) $referenceHead;
+			setAttr -type "string" (attrId($__nodeAsMap_srcFileNames, $attrName)) $srcFileName;
+			
+			float $wm[] = getAttr(attrId($referenceHead, "worldMatrix"));
+			print("  + worldMatrix.transform: " + $wm[3*4+0] + ", " + $wm[3*4+1] + ", " + $wm[3*4+2] + "\n");			
+		}
+		else
+		{
+			print("not referenced nodes are NOT IMPLEMENTED yet.\n");
+		}
+		
+		
+//		matrix $wm[4][4] = getAttr($selectionSet[$i] + ".worldMatrix");
+//		print("  worldMatrix.transform: " + $wm[3][0] + ", " + $wm[3][1] + ", " + $wm[3][2]);
+//		float $wm[] = getAttr($selectionSet[$i] + ".worldMatrix");
+//		print("  worldMatrix.transform: " + $wm[3*4+0] + ", " + $wm[3*4+1] + ", " + $wm[3*4+2] + "\n");
+	}	
+}
+
+/*
+level0_data = {
+	{
+		name = "instance0",
+		entityClass = StaticEntity
+		,visComponent = {
+			mesh = r_mesh("skall_light.x"),
+			effect = r_effect("TexturedMesh.fx"),
+			textures = {
+				base = r_texture("skall_light_tex_base.dds")
+			}
+		}
+		,physComponent = {}
+		,transform = {
+			origin = vec3(-10, 0, 0),
+			rotation = Rotation(deg(0), deg(0), deg(0)),
+			scale = vec3(1, 1, 1)
+		}
+		,data = {
+			health = 10
+		}
+	}
+}	
+-- /level0_data
+*/
+
+proc beginLibrary(int $fileId, string $libraryName)
+{
+	/**
+	include( "../gameBase.lua" )
+
+	level0_data = {
+	**/
+
+	global string $_libraryName;
+	global int $_instanceCount;
+	$_libraryName = $libraryName;
+	$_instanceCount = 0;
+	fprint $fileId ("include( \"../gameBase.lua\" )\n\n");
+	fprint $fileId ($_libraryName + " = {\n");
+}
+
+proc endLibrary(int $fileId)
+{
+	/**
+	}	
+	-- /level0_data
+	**/
+
+	global string $_libraryName;
+	fprint $fileId ("}\n-- /" + $_libraryName + "\n");
+	fprint $fileId ("return " + $_libraryName + "\n");
+}
+
+proc beginInstance(int $fileId, string $instanceName)
+{
+	/**
+	.	.
+		,{
+			name = "instance0",
+			entityClass = StaticEntity
+	**/
+
+	global string $_instanceName;
+	global string $_instanceClass = "StaticEntity";
+	global int $_instanceCount;
+
+	$_instanceName = $instanceName; // $_instanceClass = $instanceClass;
+	fprint $fileId "\t";
+	if($_instanceCount > 0)
+		fprint $fileId ",";
+	fprint $fileId ("{\n");
+	fprint $fileId ("\t\tname = \"" + $_instanceName + "\",\n");
+	fprint $fileId ("\t\tentityClass = " + $_instanceClass + "\n");
+	$_instanceCount++;
+}
+
+proc endInstance(int $fileId)
+{
+	/**
+	.	.
+		} -- /instance0
+	**/
+
+	global string $_instanceName;
+	fprint $fileId ("\t} -- /" + $_instanceName + "\n");
+}
+
+proc addVisComponent(int $fileId, string $mesh, string $effect, string $textureNames[], string $textures[])
+{
+	/**
+	.	.	.
+			,visComponent = {
+				mesh = r_mesh("skall_light.x"),
+				effect = r_effect("TexturedMesh.fx"),
+				textures = {
+					base = r_texture("skall_light_tex_base.dds")
+				}
+			}
+	**/
+
+	assert(size($textureNames) == size($textures), "internal error: sizeof '$textureNames' array must match sizeof '$textures' array");
+
+	$mesh = $mesh + ".x";
+	$effect = $effect + ".fx";
+	int $i;
+	for($i = 0; $i < size($textures); $i++)
+		$textures[$i] = $textures[$i] + ".dds";
+
+	fprint $fileId ("\t\t,visComponent = {\n");
+	fprint $fileId ("\t\t\tmesh = r_mesh(\"" + $mesh + "\"),\n");
+	fprint $fileId ("\t\t\teffect = r_effect(\"" + $effect + "\"),\n");
+	fprint $fileId ("\t\t\ttextures = {\n");
+	if(size($textures) == 0)
+		fprint $fileId ("\t\t\t\tn = 0\n");
+	else
+		for($i = 0; $i < size($textures); $i++)
+		{
+			fprint $fileId "\t\t\t\t";
+			if($i > 0) fprint $fileId ",";
+			fprint $fileId ($textureNames[$i] + " = r_texture(\"" + $textures[$i] + "\")\n");
+		}
+	fprint $fileId "\t\t\t}\n";
+	fprint $fileId "\t\t}\n";
+
+}
+
+proc addPhysComponent(int $fileId)
+{
+	fprint $fileId "\t\t,physComponent = {\n";
+	fprint $fileId "\t\t}\n";
+}
+
+proc addTransform(int $fileId, vector $origin, vector $rotation, vector $scale)
+{
+	/**
+	.	.	.
+			,transform = {
+				origin = vec3(-10, 0, 0),
+				rotation = Rotation(deg(0), deg(0), deg(0)),
+				scale = vec3(1, 1, 1)
+			}
+	**/
+	fprint $fileId ("\t\t,transform = {\n");
+	fprint $fileId ("\t\t\torigin = vec3(" + $origin.x + ", " + $origin.y + ", " + $origin.z + "),\n");
+	fprint $fileId ("\t\t\trotation = Rotation(deg(" + $rotation.x + "), deg(" + $rotation.y + "), deg(" + $rotation.z + ")),\n");
+	fprint $fileId ("\t\t\tscale = vec3(" + $scale.x + ", " + $scale.y + ", " + $scale.z + "),\n");
+	fprint $fileId ("\t\t}\n");
+}
+
+proc addTransform2(int $fileId, float $xform[])
+{
+	/**
+	.	.	.
+			,transform = {
+				origin = vec3(-10, 0, 0),
+				rotationAndScale = matrix3x3(
+					vec3(1, 0, 0),
+					vec3(0, 1, 0),
+					vec3(0, 0, 1))
+			}
+	**/
+	fprint $fileId ("\t\t,transform = {\n");
+	fprint $fileId ("\t\t\torigin = vec3(" + $xform[3*4+0] + ", " + $xform[3*4+1] + ", " + $xform[3*4+2] + "),\n");
+	fprint $fileId ("\t\t\trotationAndScale = matrix3x3(\n");
+	fprint $fileId ("\t\t\t\tvec3(" + $xform[0*4+0] + ", " + $xform[0*4+1] + ", " + $xform[0*4+2] + "),\n");
+	fprint $fileId ("\t\t\t\tvec3(" + $xform[1*4+0] + ", " + $xform[1*4+1] + ", " + $xform[1*4+2] + "),\n");
+	fprint $fileId ("\t\t\t\tvec3(" + $xform[2*4+0] + ", " + $xform[2*4+1] + ", " + $xform[2*4+2] + "))\n");
+	fprint $fileId ("\t\t}\n");
+}
+
+proc addAttributes(int $fileId, string $attributeNames[], string $attributes[])
+{
+	/**
+	.	.	.
+			,data = {
+				health = 10
+			}
+	**/
+
+	assert(size($attributeNames) == size($attributes), "internal error: sizeof '$attributeNames' array must match sizeof '$attributes' array");
+
+	if(size($attributes) == 0)
+		return;
+
+	fprint $fileId "\t\t,data = {\n";
+	for($i = 0; $i < size($attributes); $i++)
+	{
+		fprint $fileId "\t\t\t";
+		if($i > 0) fprint $fileId ","; else fprint $fileId " ";
+		fprint $fileId ($attributeNames[$i] + " = " + $attributes[$i] + "\n");
+	}
+	fprint $fileId "\t\t}\n";
+}
+
+proc string formatOutputFileName(string $filename, string $removePrefix)
+{
+	string $tmp = stripFileExtension(`workspace -projectPath $filename`);
+	if(startsWith($tmp, $removePrefix))
+		$tmp = endString($tmp, size($tmp) - size($removePrefix));
+	return $tmp;
+}
+
+proc string formatOutputValue(string $value, string $type)
+{
+	if($type == "string" || $type == "")
+		return "\"" + $value + "\"";
+
+	if($type == "bool")
+		if($value == "0")
+			return "false";
+		else
+			return "true";
+
+	return $value;
+
+}
+
+//----------------------------------------------
+
+global proc wf2ExportCloseCB()
+{
+	global string $texturePrefix;
+	global string $meshPrefix;
+	$texturePrefix = `textField -q -text texturePrefixTF`;
+	$meshPrefix = `textField -q -text meshPrefixTF`;
+	putenv "WF2_LEVELEXPORT_PREFIX_TEXTURE" $texturePrefix;
+	putenv "WF2_LEVELEXPORT_PREFIX_MESH" $meshPrefix;
+
+	deleteUI exportLevel_win;
+}
+
+global proc wf2ExportDoCB()
+{
+	global string $texturePrefix;
+	global string $meshPrefix;
+	$texturePrefix = `textField -q -text texturePrefixTF`;
+	$meshPrefix = `textField -q -text meshPrefixTF`;
+	putenv "WF2_LEVELEXPORT_PREFIX_TEXTURE" $texturePrefix;
+	putenv "WF2_LEVELEXPORT_PREFIX_MESH" $meshPrefix;
+
+	wf2ExportCloseCB();
+
+	fileBrowserDialog -m 1 -fc "wf2ExportDo" -ft "lua" -fl "lua,*.lua" -an "Export" -om "ExportAll" -ds 1;
+}
+
+global proc wf2ExportDo(string $fileName, string $fileType)
+{
+	global string $texturePrefix;
+	global string $meshPrefix;
+
+	string $__nodeAsMap_refHeads = `group -empty -name __nodeAsMap_refHeads`;
+	string $__nodeAsMap_srcFileNames = `group -empty -name __nodeAsMap_srcFileNames`;
+	
+	string $selectionSet[] = `ls -allPaths -geometry -dag -leaf -long`;
+	print("Objects found: " + size($selectionSet) + "\n");
+	
+	gather($selectionSet, $__nodeAsMap_refHeads, $__nodeAsMap_srcFileNames);
+
+	int $fileId = `fopen $fileName "w"`;
+
+	string $libraryName = "level0_data";
+	beginLibrary($fileId, $libraryName);
+//	beginInstance($fileId, $name);
+//	addVisComponent($fileId);
+//	//addPhysComponent($fileId);
+//	addTransform($fileId);
+//	addAttributes($fileId);
+//	endInstance($fileId, $name);
+
+
+	
+	print("==============================\n");
+	string $refHeads[] = `listAttr -userDefined -shortNames $__nodeAsMap_refHeads`;
+	int $i;
+	for($i = 0; $i < size($refHeads); $i += 1)
+	{
+		string $refHead = getAttr(attrId($__nodeAsMap_refHeads, $refHeads[$i]));
+		string $srcFileName = getAttr(attrId($__nodeAsMap_srcFileNames, $refHeads[$i]));
+
+		beginInstance($fileId, stripPath($refHead));
+
+		string $shapes[] = `listRelatives -shapes $refHead`;
+		int $j;
+		for($j = 0; $j < size($shapes); $j += 1)
+		{
+			string $shadingGroups[] = `listConnections -source true -type shadingEngine $shapes[$j]`;
+			if(size($shadingGroups) > 0)
+			{
+				string $shadingGroup = $shadingGroups[size($shadingGroups)-1];
+				string $surfaceShaders[] = `defaultNavigation -defaultTraversal -destination ($shadingGroup+".surfaceShader")`;
+				if(size($surfaceShaders) > 0)
+				{
+					string $surfaceShader = $surfaceShaders[size($surfaceShaders)-1];
+					string $textureNames[] = {};
+					string $textures[] = {};
+					int $textureCount = 0;
+
+
+					print(" + " + $surfaceShader + "\n");
+					string $hwMaterialInfos[] =	`listConnections -type materialInfo $shadingGroup`;
+					int $k;
+					for($k = 0; $k < size($hwMaterialInfos); $k += 1)
+					{
+						string $textureFiles[] = `listConnections -type texture2d $hwMaterialInfos[$k]`;
+						if(size($textureFiles) > 0)
+						{
+							string $textureFile = $textureFiles[size($textureFiles)-1];
+							if(nodeType($textureFile) == "file")
+							{
+								string $textureFileName = getAttr(attrId($textureFile, "fileTextureName"));
+								print(" `-> " + stripNamespace($textureFile) + " = " + $textureFileName + "\n");
+
+								$textureNames[$textureCount] = stripNamespace($textureFile);
+								$textures[$textureCount] = formatOutputFileName($textureFileName, $texturePrefix);
+								$textureCount++;
+							}
+							else
+								warning("texture " + $textureFile + " is not a file");
+						}
+						else
+							warning("material info " + $hwMaterialInfos[$k] + " does not point to a texture");
+					}
+
+
+					addVisComponent($fileId,
+						formatOutputFileName(stripFileCount($srcFileName), $meshPrefix),
+						stripNamespace($surfaceShader),
+						$textureNames, $textures );
+				}
+				else
+					warning("no surface shaders found for node: " + $shapes[$j]);
+			}
+			else
+				warning("no shading group found for node: " + $shapes[$j]);
+		}
+
+//		float $wm[] = getAttr(attrId($refHead, "worldMatrix"));
+		vector $origin = `xform -q -worldSpace -translation $refHead`;
+		vector $rotation = `xform -q -worldSpace -rotation $refHead`;
+		vector $scale = `xform -q -worldSpace -scale $refHead`;
+//		addTransform($fileId, $origin, $rotation, $scale);
+		addTransform2($fileId, getAttr(attrId($refHead, "worldMatrix")));
+
+
+		string $attributeNames[] = {};
+		string $attributes[] = {};
+		int $attributeCount = 0;
+
+		string $pathArray[] = stringToStringArray($refHead, "|");
+		int $pathArraySize = size($pathArray);
+		int $j;
+		for($j = 0; $j < $pathArraySize; $j += 1)
+		{
+			string $tmpArray[] = {};
+			appendStringArray($tmpArray, $pathArray, $j+1);
+			string $curPath = stringArrayToString($tmpArray, "|");
+
+			string $fullAttrArray[] = `listRelatives -children -shapes $curPath`;
+			$fullAttrArray[size($fullAttrArray)] = $curPath;
+
+			int $k;
+			for($k = 0; $k < size($fullAttrArray); $k += 1)
+			{
+				string $attrPath = $fullAttrArray[$k];
+				string $curAttrNames[] = `listAttr -userDefined -shortNames $attrPath`;
+				int $l;
+				for($l = 0; $l < size($curAttrNames); $l += 1)
+				{
+					string $attrValue = getAttr(attrId($attrPath, $curAttrNames[$l]));
+					string $attrType = `getAttr -type (attrId($attrPath, $curAttrNames[$l]))`;
+					print("  `-> " + $curAttrNames[$l] + " = \"" + $attrValue + "\"\n");
+
+					$attributeNames[$attributeCount] = $curAttrNames[$l];
+					$attributes[$attributeCount] = formatOutputValue($attrValue, $attrType);
+					$attributeCount++;
+				}
+			}
+		}
+
+		addAttributes($fileId,
+			$attributeNames, $attributes);
+
+		endInstance($fileId);
+	}
+
+	print("------------------------------\n");
+
+	string $testAttrNames[] = `listAttr -userDefined -shortNames $__nodeAsMap_refHeads`;
+	for($i = 0; $i < size($testAttrNames); $i += 1)
+	{
+		string $testAttrValue = getAttr(attrId($__nodeAsMap_refHeads, $testAttrNames[$i]));
+		string $testAttrValue2 = getAttr(attrId($__nodeAsMap_srcFileNames, $testAttrNames[$i]));
+		print(" + " + $testAttrNames[$i] + ": " + $testAttrValue + " = " + $testAttrValue2 + "\n");
+
+		string $pathArray[] = stringToStringArray($testAttrValue, "|");
+		int $pathArraySize = size($pathArray);
+		int $j;
+		for($j = 0; $j < $pathArraySize; $j += 1)
+		{
+			string $tmpArray[] = {};
+			appendStringArray($tmpArray, $pathArray, $j+1);
+			string $curPath = stringArrayToString($tmpArray, "|");
+
+			string $fullAttrArray[] = `listRelatives -children -shapes $curPath`;
+			$fullAttrArray[size($fullAttrArray)] = $curPath;
+
+			int $k;
+			for($k = 0; $k < size($fullAttrArray); $k += 1)
+			{
+				string $attrPath = $fullAttrArray[$k];
+				string $attrNames[] = `listAttr -userDefined -shortNames $attrPath`;
+				int $l;
+				for($l = 0; $l < size($attrNames); $l += 1)
+				{
+					string $attrValue = getAttr(attrId($attrPath, $attrNames[$l]));
+					print("  `-> " + $attrNames[$l] + " = \"" + $attrValue + "\"\n");
+				}
+			}
+		}
+
+	}
+	print("==============================\n");
+	endLibrary($fileId);
+	fclose $fileId;
+
+	select -cl;
+	delete $__nodeAsMap_refHeads;
+	delete $__nodeAsMap_srcFileNames;
+}
+
+global proc wf2ExportLevel()
+{
+	global string $texturePrefix;
+	global string $meshPrefix;
+
+	$texturePrefix = `getenv "WF2_LEVELEXPORT_PREFIX_TEXTURE"`;
+	$meshPrefix = `getenv "WF2_LEVELEXPORT_PREFIX_MESH"`;
+
+	if($texturePrefix == "")
+		$texturePrefix = "sourceimages/";// "texture/";
+	if($meshPrefix == "")
+		$meshPrefix = "scenes/";//"mesh/";
+
+	catchQuiet(wf2ExportCloseCB());
+	window -title "Export" -width 242 exportLevel_win;
+		columnLayout;
+			rowLayout -numberOfColumns 2 -columnWidth 1 128;
+				text -label "Omit texture name prefix:";
+				textField -width 100 -text $texturePrefix texturePrefixTF;
+			setParent ..;
+			rowLayout -numberOfColumns 2 -columnWidth 1 128;
+				text -label "Omit mesh name prefix:";
+				textField -width 100 -text $meshPrefix meshPrefixTF;
+			setParent ..;
+			rowLayout -numberOfColumns 2 -columnWidth 1 68;
+				button -l "Export level" -c wf2ExportDoCB;
+				button -l "Close" -c wf2ExportCloseCB;
+			setParent ..;
+		setParent ..;
+	showWindow;
+}
+
+wf2ExportLevel();
