@@ -40,6 +40,7 @@ namespace mutant
 		void writeType( _T const& d )
 		{	mOutput->write( &d, sizeof(d), 0 ); }
 
+
 /*_	_gcc	template<>
 		void writeType<std::string>( std::string const& str )*/
 		void writeType( std::string const& str )
@@ -63,6 +64,8 @@ namespace mutant
 		~mutant_writer();
 
 		void write( anim_character_set& char_set );
+		void write( simple_skinned const& skinned );
+
 		void writeCharacterData( std::string const& char_name, anim_character& anim_char );
 		void writeHierarchyData( anim_hierarchy& hier );
 		void writeClipData( std::string const& clip_name, anim_clip& clip );
@@ -89,6 +92,27 @@ namespace mutant
 				++it;
 			}
 		}
+
+		template<typename _I>
+		void writeData( _I from, _I end )
+		{
+			while( from != end )
+			{
+				writeType( *from );
+				++from;
+			}
+		}
+
+		template<typename _I>
+		void writeData( _I it, size_t count )
+		{
+			while( count-- )
+			{
+				writeType( *it );
+				++it;
+			}
+		}
+
 	};
 }
 

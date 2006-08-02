@@ -63,12 +63,44 @@ void mutant_reader::read( anim_character_set& char_set )
 	}
 }
 
+void mutant_reader::read( simple_skinned& skinned )
+{
+	try
+	{
+		skinned.vertexCount = readDword();
+		skinned.positions = new simple_skinned::Vec3[skinned.vertexCount];
+		readArray( skinned.positions, skinned.vertexCount );
+
+		skinned.weightsPerVertex = readDword();
+		skinned.weights = new float[skinned.vertexCount * skinned.weightsPerVertex];
+		skinned.boneIndices = new unsigned short[skinned.vertexCount * skinned.weightsPerVertex];
+		readArray( skinned.weights, skinned.vertexCount * skinned.weightsPerVertex );
+		readArray( skinned.boneIndices, skinned.vertexCount * skinned.weightsPerVertex );
+
+		skinned.indexCount = readDword();
+		skinned.indices = new unsigned short[skinned.indexCount];
+		readArray( skinned.indices, skinned.indexCount );
+
+		skinned.boneCount = readDword();
+		skinned.bones = new simple_skinned::Bone[skinned.boneCount];
+		for( size_t q = 0; q < skinned.boneCount; ++q )
+		{
+			readType( skinned.bones[q].matrix );
+			readString( skinned.bones[q].name );
+		}
+	} catch( EIoEof& ) {
+		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
+	} catch( EIoError& ) {
+		mutant_throw( "Read/write error" );
+	}
+}
+
 std::string mutant_reader::readCharacter( anim_character& anim_char )
 {
 	std::string char_name = readString();
 
 	unsigned int hier_count = readDword();
-	unsigned int clip_count = readDword();
+	unsigned int clip_count = readDword();	
 
 	mutlog << "[mutant]: reading character `" << char_name << "' with " << clip_count << " clips, " << hier_count << " hierarchies\n";
 

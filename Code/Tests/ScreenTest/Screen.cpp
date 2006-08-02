@@ -4,8 +4,13 @@
 #include <Modules/mutant/mutant/reader.h>
 #include <Modules/mutant/mutant/io_factory.h>
 
-#include <Base/Math/Math.h>
-#include <Base/Std/Std.h>
+extern "C" {
+	#include <Base/Math/Math.h>
+	#include <Base/Std/Std.h>
+	#include <Base/Math/Lin.h>
+	#include <Base/Math/Quat.h>
+}
+
 
 #include <pspkernel.h>
 #include <pspdisplay.h>
@@ -105,6 +110,171 @@ std::auto_ptr<mutant::anim_character_set> mutantTest()
 	return mutCharSet;
 }
 
+std::auto_ptr<mutant::simple_skinned> skinTest()
+{
+	std::string fileName = "ms0:PSP/MUSIC/mutant1.msh";
+
+	std::auto_ptr<mutant::binary_input> input = mutant::reader_factory::createInput( fileName );
+	mutant::mutant_reader mutReader( input );
+	mutReader.enableLog( false );
+
+	std::auto_ptr<mutant::simple_skinned> mutSkinned( new mutant::simple_skinned );
+	mutReader.read( *mutSkinned );
+
+	return mutSkinned;
+}
+
+
+//Vertex __attribute__((aligned(16))) cylinder_vertices[CYLINDER_SLICES*CYLINDER_ROWS];
+//unsigned short __attribute__((aligned(16))) cylinder_indices[CYLINDER_SLICES*(CYLINDER_ROWS-1)*6];
+void skinToBuffers( mutant::simple_skinned& skin, void** vbuffer, void** ibuffer )
+{
+	*vbuffer = malloc( skin.vertexCount * sizeof(mutant::simple_skinned::Vec3) );
+	memcpy( *vbuffer, skin.positions, skin.vertexCount * sizeof(mutant::simple_skinned::Vec3) );
+//	*vbuffer = (void*)skin.positions; // copy
+	*ibuffer = (void*)skin.indices;
+}
+
+void skinToBuffers2( mutant::simple_skinned& skin, void** vbuffer, void** ibuffer )
+{
+	*vbuffer = malloc( skin.vertexCount * sizeof(mutant::simple_skinned::Vec3)*2 );
+//	memchr( *vbuffer, 0, skin.vertexCount * sizeof(mutant::simple_skinned::Vec3)*2 );
+	*ibuffer = (void*)skin.indices;
+}
+
+typedef std::vector<std::pair<int, int> > BoneMapT;
+BoneMapT& mapSkinnedBonesToHierarchy(
+	mutant::simple_skinned::Bone* bones, size_t boneCount,
+	mutant::anim_hierarchy const& hierarchy,
+	BoneMapT& remapedBones )
+{
+	remapedBones.reserve( remapedBones.size() + boneCount );
+
+	unsigned boneId = 0;
+	for( size_t q = 0; q < boneCount; ++q )
+	{
+		std::string const& boneName = bones[q].name;
+
+		while( hierarchy[ boneId ].name != boneName && boneId < hierarchy.size() )
+			++boneId;
+
+		if( hierarchy[ boneId ].name != boneName )
+			printf( "Couldn't find '%s' in hierarchy", boneName.c_str() );
+
+		remapedBones.push_back( std::make_pair( q, boneId ) );
+	}
+
+	return remapedBones;
+}
+
+void updateSkinMesh( mutant::simple_skinned& skin, BoneMapT& boneMap, CTransform::t_matrix const* data, float* vbuffer, size_t stride )
+{
+	static std::vector<CTransform::t_matrix> worldMatrices;
+	worldMatrices.resize( boneMap.size() );
+
+	unsigned i = 0;
+	BoneMapT::iterator bIdIt = boneMap.begin();
+	for( ; (i < boneMap.size()) && (bIdIt != boneMap.end()); ++bIdIt, ++i )
+	{
+		float* mat16 = skin.bones[ bIdIt->first ].matrix.data;
+		CTransform::t_matrix tm( // new-age wants transposed matrix
+			mat16[0], mat16[4], mat16[8],
+			mat16[1], mat16[5], mat16[9],
+			mat16[2], mat16[6], mat16[10],
+			mat16[12], mat16[13], mat16[14]
+		);
+		Mat34_mul( &worldMatrices[i], (Mat34*)&data[ bIdIt->second ], &tm );
+		worldMatrices[i] = worldMatrices[i];
+	}
+
+	while( i < worldMatrices.size() )
+		Mat34_setIdentity( &worldMatrices[i++] );
+
+	for( size_t q = 0; q < skin.vertexCount; ++q )
+	{
+		CTransform::t_vector pos3( skin.positions[q].data[0], skin.positions[q].data[1], skin.positions[q].data[2] );
+		CTransform::t_vector accum3( 0.0f, 0.0f, 0.0f );
+		float accumWeight = 0.0f;
+		const size_t weightsPerVertex = skin.weightsPerVertex;
+		for( size_t w = 0; w < weightsPerVertex; ++w )
+		{
+			unsigned short boneId = skin.boneIndices[q * skin.weightsPerVertex + w];
+			float boneWeight = skin.weights[q * skin.weightsPerVertex + w];
+			if( w != weightsPerVertex - 1 )
+				accumWeight += boneWeight;
+			else
+				boneWeight = 1.0f - accumWeight;
+
+			Vec3 v3;
+			Vec3_setMat34MulVec3( &v3, &worldMatrices[boneId], &pos3 );
+			Vec3_scale( &v3, &v3, boneWeight );
+			Vec3_add( &accum3, &accum3, &v3 );
+		}
+
+		vbuffer[0] = accum3.x;
+		vbuffer[1] = accum3.y;
+		vbuffer[2] = accum3.z;
+		vbuffer = (float*)((u8*)vbuffer + stride);
+	}
+}
+
+void updateSkinMesh2( mutant::simple_skinned& skin, BoneMapT& boneMap, CTransform::t_matrix const* data, float* vbuffer, size_t stride, Vec3 spriteR )
+{
+	static std::vector<CTransform::t_matrix> worldMatrices;
+	worldMatrices.resize( boneMap.size() );
+
+	unsigned i = 0;
+	BoneMapT::iterator bIdIt = boneMap.begin();
+	for( ; (i < boneMap.size()) && (bIdIt != boneMap.end()); ++bIdIt, ++i )
+	{
+		float* mat16 = skin.bones[ bIdIt->first ].matrix.data;
+		CTransform::t_matrix tm( // new-age wants transposed matrix
+			mat16[0], mat16[4], mat16[8],
+			mat16[1], mat16[5], mat16[9],
+			mat16[2], mat16[6], mat16[10],
+			mat16[12], mat16[13], mat16[14]
+		);
+		Mat34_mul( &worldMatrices[i], (Mat34*)&data[ bIdIt->second ], &tm );
+		worldMatrices[i] = worldMatrices[i];
+	}
+
+	while( i < worldMatrices.size() )
+		Mat34_setIdentity( &worldMatrices[i++] );
+
+	for( size_t q = 0; q < skin.vertexCount; ++q )
+	{
+		CTransform::t_vector pos3( skin.positions[q].data[0], skin.positions[q].data[1], skin.positions[q].data[2] );
+		CTransform::t_vector accum3( 0.0f, 0.0f, 0.0f );
+		float accumWeight = 0.0f;
+		const size_t weightsPerVertex = skin.weightsPerVertex;
+		for( size_t w = 0; w < weightsPerVertex; ++w )
+		{
+			unsigned short boneId = skin.boneIndices[q * skin.weightsPerVertex + w];
+			float boneWeight = skin.weights[q * skin.weightsPerVertex + w];
+			if( w != weightsPerVertex - 1 )
+				accumWeight += boneWeight;
+			else
+				boneWeight = 1.0f - accumWeight;
+
+			Vec3 v3;
+			Vec3_setMat34MulVec3( &v3, &worldMatrices[boneId], &pos3 );
+			Vec3_scale( &v3, &v3, boneWeight );
+			Vec3_add( &accum3, &accum3, &v3 );
+		}
+
+		vbuffer[0] = accum3.x - spriteR.x;
+		vbuffer[1] = accum3.y - spriteR.y;
+		vbuffer[2] = accum3.z - spriteR.z;
+
+		vbuffer[3] = accum3.x + spriteR.x;
+		vbuffer[4] = accum3.y + spriteR.y;
+		vbuffer[5] = accum3.z + spriteR.z;
+
+		vbuffer = (float*)((u8*)vbuffer + stride*2);
+	}
+}
+
+
 int main(int argc, char* argv[])
 {
 //	logSetMessageThreshold(5);
@@ -146,12 +316,25 @@ int main(int argc, char* argv[])
 
 	int val = 0;
 
+
 	std::auto_ptr<mutant::anim_character_set> animCharSet = mutantTest();
 	mutant::anim_character& animChar = (*animCharSet)["Mutant"];
 	mutant::anim_hierarchy& charHierarchy = animChar.hierarchy( mutant::sTypeNames::HIERARCHY_DEFAULT ) ;
 	CTransformArrayAnimator xformArrayAnimator;
 	xformArrayAnimator.createFromClip(
 		animChar["attack1"], charHierarchy );
+
+	std::auto_ptr<mutant::simple_skinned> skin = skinTest();
+
+	float* vbuffer = 0;
+	float* vbuffer2 = 0;
+	void* ibuffer = 0;
+	skinToBuffers( *skin, (void**)&vbuffer, &ibuffer );
+	skinToBuffers2( *skin, (void**)&vbuffer2, &ibuffer );
+
+	BoneMapT boneMap;
+	mapSkinnedBonesToHierarchy( skin->bones, skin->boneCount, charHierarchy, boneMap );
+
 
 	typedef std::vector<CTransform> TransformsT;
 	typedef std::vector<CTransform::t_matrix> MatricesT;
@@ -233,11 +416,24 @@ int main(int argc, char* argv[])
 
 //		sceGumDrawArray(GU_TRIANGLES,GU_TEXTURE_32BITF|GU_COLOR_8888|GU_VERTEX_32BITF|GU_TRANSFORM_3D,12*3,0,vertices);
 
+/*		ScePspFVector3 pos = { worldTransform.translation().x, worldTransform.translation().y, worldTransform.translation().z };
+		sceGumTranslate(&pos);
+
+		sceGumDrawArray(
+			GU_TRIANGLES,
+			GU_VERTEX_32BITF|GU_TRANSFORM_3D|GU_INDEX_16BIT,
+			skin->indexCount,
+			ibuffer, vbuffer );*/
+
 
 		pspDebugScreenSetOffset((int)fbp0);
 		pspDebugScreenSetXY(0,0);
 		pspDebugScreenPrintf("Hello world!");
 		pspDebugScreenPrintf("Cubbie is rotating");
+
+		pspDebugScreenPrintf("\n");
+		pspDebugScreenPrintf("skin: %d, %d, %d, %d\n", skin->vertexCount, skin->indexCount, skin->boneCount, skin->weightsPerVertex);
+
 
 		if( animCharSet.get() )
 		{
@@ -319,6 +515,26 @@ int main(int argc, char* argv[])
 
 				sceGumDrawArray(GU_TRIANGLES,GU_TEXTURE_32BITF|GU_COLOR_8888|GU_VERTEX_32BITF|GU_TRANSFORM_3D,12*3,0,vertices);
 			}
+
+			sceGumLoadIdentity();
+
+//			ScePspFVector3 pos = { worldTransform.translation().x, worldTransform.translation().y, worldTransform.translation().z };
+//			sceGumTranslate(&pos);
+
+//			updateSkinMesh( *skin, boneMap, &*matrices.begin(), vbuffer, sizeof(float)*3 );
+			updateSkinMesh2( *skin, boneMap, &*matrices.begin(), vbuffer2, sizeof(float)*3, xVec3( 0.03f, 0.03f, 0.0f ) );
+/*			sceGumDrawArray(
+				GU_TRIANGLES,
+				GU_VERTEX_32BITF|GU_TRANSFORM_3D|GU_INDEX_16BIT,
+				skin->indexCount,
+				ibuffer, vbuffer );
+*/
+			sceGumDrawArray(
+				GU_SPRITES,
+				GU_VERTEX_32BITF|GU_TRANSFORM_3D,
+				skin->vertexCount,
+				0, vbuffer2 );
+
 
 
 /*			pspDebugScreenPrintf("\n*) ");

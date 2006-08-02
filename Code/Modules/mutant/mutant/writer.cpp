@@ -38,6 +38,32 @@ void mutant_writer::write( anim_character_set& char_set )
 	}
 }
 
+void mutant_writer::write( simple_skinned const& skinned )
+{
+	try
+	{
+		writeDword( skinned.vertexCount );
+		writeData( skinned.positions, skinned.vertexCount );
+		writeDword( skinned.weightsPerVertex );
+		writeData( skinned.weights, skinned.vertexCount * skinned.weightsPerVertex );
+		writeData( skinned.boneIndices, skinned.vertexCount * skinned.weightsPerVertex );
+		writeDword( skinned.indexCount );
+		writeData( skinned.indices, skinned.indexCount );
+
+		writeDword( skinned.boneCount );
+		for( size_t q = 0; q < skinned.boneCount; ++q )
+		{
+			writeType( skinned.bones[q].matrix );
+			writeString( skinned.bones[q].name );
+		}
+
+	} catch( EIoEof& ) {
+		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
+	} catch( EIoError& ) {
+		mutant_throw( "Read/write error" );
+	}
+}
+
 void mutant_writer::writeCharacterData( std::string const& char_name, anim_character& anim_char )
 {
 	writeString( char_name );

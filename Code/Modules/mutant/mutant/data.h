@@ -7,6 +7,7 @@
 #include "bundle.h"
 #include "character.h"
 #include "hierarchy.h"
+#include "simple_skinned.h"
 
 //#include <boost/compose.hpp>
 #include <cassert>

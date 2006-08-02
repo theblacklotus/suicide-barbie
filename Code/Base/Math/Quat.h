@@ -10,6 +10,8 @@ typedef struct QuatTag
 	float_t x, y, z, w;
 } Quat;
 
+struct Vec3Tag;
+
 
 extern __asm float_t LengthQuat(__reg("a0") Quat *q0);
 extern __asm float_t NormQuat(__reg("a0") Quat *q0);
@@ -40,8 +42,8 @@ extern __asm void QuatSetZero(__reg("a5") Quat *q);
 extern __asm void QuatSetOne(__reg("a5") Quat *q);
 extern __asm void QuatSetIdentity(__reg("a5") Quat *q);
 extern __asm void QuatSetFromScalars(__reg("a5") Quat *q, __reg("fp0") float_t x, __reg("fp1") float_t y, __reg("fp2") float_t z, float_t w);
-extern __asm void QuatSetFromVec3Scalar(__reg("a5") Quat *q, __reg("a0") Vec3 *v0, __reg("fp0") float_t s);
-extern __asm void QuatSetFromAxisAngle(__reg("a5") Quat *q, __reg("a0") Vec3 *v0, __reg("fp0") float_t angle);
+extern __asm void QuatSetFromVec3Scalar(__reg("a5") Quat *q, __reg("a0") struct Vec3Tag *v0, __reg("fp0") float_t s);
+extern __asm void QuatSetFromAxisAngle(__reg("a5") Quat *q, __reg("a0") struct Vec3Tag *v0, __reg("fp0") float_t angle);
 extern __asm void QuatSetFromEulerAngle(__reg("a5") Quat* q, __reg("fp0") float xangle, __reg("fp1") float yangle, __reg("fp2") float zangle);
 
 

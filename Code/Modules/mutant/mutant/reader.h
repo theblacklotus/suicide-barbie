@@ -131,6 +131,7 @@ namespace mutant
 		virtual ~mutant_reader();
 
 		virtual void read( anim_character_set& char_set );
+		virtual void read( simple_skinned& skinned );
 
 		std::string readCharacter( anim_character& anim_char );
 		std::string readClip( anim_clip& clip );
@@ -143,10 +144,19 @@ namespace mutant
 		void readVector( _T& v, int count )
 		{
 			typename _T::value_type data;
+			v.reserve( v.size() + count );
 			while( count-- )
 			{
 				readType( data );
 				v.push_back( data );
+			}
+		}
+		template<typename _T>
+		void readArray( _T* v, int count )
+		{
+			for( int q = 0; q < count; ++q )
+			{
+				 readType( v[q] );
 			}
 		}
 
