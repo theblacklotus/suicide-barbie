@@ -11,13 +11,13 @@
 
 static inline u16 swap16(u16 i)
 {
-	return (int) (((((unsigned int) i) & 0xff00) >> 8)
+	return (u16)(((((unsigned int) i) & 0xff00) >> 8)
 		| ((((unsigned int) i) & 0xff) << 8));
 }
 
 static inline u32 swap32(u32 i)
 {
-	return (int) (((((unsigned int) i) & 0xff000000) >> 24)
+	return (u32)(((((unsigned int) i) & 0xff000000) >> 24)
 		| ((((unsigned int) i) & 0xff0000) >> 8)
 		| ((((unsigned int) i) & 0xff00) << 8)
 		| ((((unsigned int) i) & 0xff) << 24));
