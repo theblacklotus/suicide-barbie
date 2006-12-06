@@ -1,6 +1,8 @@
 #ifndef __SKIN_H
 #define __SKIN_H
 
+#include <Modules/mutant/mutant/simple_skinned.h>
+
 typedef std::vector<std::pair<int, int> > BoneMapT;
 BoneMapT& mapSkinnedBonesToHierarchy(
 	mutant::simple_skinned::Bone* bones, size_t boneCount,

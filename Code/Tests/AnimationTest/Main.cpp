@@ -105,11 +105,11 @@ std::auto_ptr<mutant::anim_character_set> mutantTest()
 	std::string fileName = "ms0:PSP/MUSIC/mutant1.man";
 
 	std::auto_ptr<mutant::binary_input> input = mutant::reader_factory::createInput( fileName );
-	mutant::mutant_reader mutReader( input );
-	mutReader.enableLog( false );
+//	mutant::mutant_reader mutReader( input );
+//	mutReader.enableLog( false );
 
 	std::auto_ptr<mutant::anim_character_set> mutCharSet( new mutant::anim_character_set );
-	mutReader.read( *mutCharSet );
+//	mutReader.read( *mutCharSet );
 
 	return mutCharSet;
 }
@@ -119,11 +119,11 @@ std::auto_ptr<mutant::simple_skinned> skinTest()
 	std::string fileName = "ms0:PSP/MUSIC/mutant1.msh";
 
 	std::auto_ptr<mutant::binary_input> input = mutant::reader_factory::createInput( fileName );
-	mutant::mutant_reader mutReader( input );
-	mutReader.enableLog( false );
+//	mutant::mutant_reader mutReader( input );
+//	mutReader.enableLog( false );
 
 	std::auto_ptr<mutant::simple_skinned> mutSkinned( new mutant::simple_skinned );
-	mutReader.read( *mutSkinned );
+//	mutReader.read( *mutSkinned );
 
 	return mutSkinned;
 }
