@@ -18,17 +18,18 @@ namespace mutant
 			std::string	name;
 		};
 
-		size_t vertexCount;
+		unsigned int vertexCount;
 		Vec3* positions;
+		Vec3* normals;
 
-		size_t weightsPerVertex;
+		unsigned int weightsPerVertex;
 		float* weights;
 		unsigned short* boneIndices;
 
-		size_t indexCount;
+		unsigned int indexCount;
 		unsigned short* indices;
 
-		size_t boneCount;
+		unsigned int boneCount;
 		Bone* bones;
 	};
 }

@@ -5,7 +5,7 @@
 namespace mutant
 {
 
-mutant_writer::mutant_writer( std::auto_ptr<binary_output>& output )
+mutant_writer::mutant_writer( std::auto_ptr<binary_output> output )
 :	binary_output_utils( output ) {
 }
 
@@ -37,25 +37,19 @@ void mutant_writer::write( anim_character_set& char_set )
 		mutant_throw( "Read/write error" );
 	}
 }
-
-void mutant_writer::write( simple_skinned const& skinned )
+/*
+void mutant_writer::write( data::base_mesh const& mesh )
 {
 	try
 	{
-		writeDword( skinned.vertexCount );
-		writeData( skinned.positions, skinned.vertexCount );
-		writeDword( skinned.weightsPerVertex );
-		writeData( skinned.weights, skinned.vertexCount * skinned.weightsPerVertex );
-		writeData( skinned.boneIndices, skinned.vertexCount * skinned.weightsPerVertex );
-		writeDword( skinned.indexCount );
-		writeData( skinned.indices, skinned.indexCount );
+		writeDword( mesh.vertexCount );
+		writeDword( mesh.vertexDataSize );
+		writeDword( mesh.vertexStride );
+		writeData ( mesh.vertexData, mesh.vertexDataSize );
 
-		writeDword( skinned.boneCount );
-		for( size_t q = 0; q < skinned.boneCount; ++q )
-		{
-			writeType( skinned.bones[q].matrix );
-			writeString( skinned.bones[q].name );
-		}
+		writeDword( mesh.indexCount );
+		writeDword( mesh.indexSize );
+		writeData ( mesh.indexData, mesh.indexCount * mesh.indexSize );
 
 	} catch( EIoEof& ) {
 		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
@@ -64,6 +58,118 @@ void mutant_writer::write( simple_skinned const& skinned )
 	}
 }
 
+void mutant_writer::write( data::dx9_mesh const& mesh )
+{
+	try
+	{
+		write( mesh.base() );
+		writeDword( mesh.fvfVertexDecl );
+		writeDword( mesh.primitiveType );
+
+		writeBool( (mesh.skinInfo != 0) );
+		if( mesh.skinInfo )
+			write( *mesh.skinInfo );
+
+	} catch( EIoEof& ) {
+		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
+	} catch( EIoError& ) {
+		mutant_throw( "Read/write error" );
+	}
+}
+
+void mutant_writer::write( data::skin_info const& skin )
+{
+	try
+	{
+		writeDword( skin.weightsPerVertex );
+		writeDword( skin.boneCount );
+		for( size_t q = 0; q < skin.boneCount; ++q )
+		{
+			writeType( skin.bones[q].matrix );
+			writeString( skin.bones[q].name );
+		}
+
+	} catch( EIoEof& ) {
+		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
+	} catch( EIoError& ) {
+		mutant_throw( "Read/write error" );
+	}
+}
+*/
+
+/*
+namespace {
+	unsigned blitRef( std::string const& names, simple_scene::Ref const& ref )
+	{
+		return unsigned(reinterpret_cast<std::string::value_type*>(ref.data) - &names[0]);
+	}
+
+	std::vector<unsigned> blitRefs( std::string const& names, simple_scene::Ref* refs, size_t count )
+	{
+		std::vector<unsigned> data( count );
+		for(size_t q = 0; q < count; ++q )
+			data[q] = blitRef( names, refs[q] );
+		return data;
+	}
+}*/
+/*
+void mutant_writer::write( simple_scene const& scene )
+{
+	try
+	{
+//		writeString( scene.meshIds );
+//		writeString( scene.clipIds );
+//		writeString( scene.nodeNames );
+//
+//		size_t nodeNamesRefDataIt = 0;
+
+		// meshes
+		writeDword( scene.meshCount );
+//		writeData( blitRefs( scene.meshIds, scene.meshes, scene.meshCount ).begin(), scene.meshCount );
+		writeData( scene.meshIds, scene.meshCount );
+
+		// lights
+		writeDword( scene.lightCount );
+		for( size_t q = 0; q < scene.lightCount; ++q )
+		{
+//			writeType( blitRef( scene.nodeNames, scene.lights[q].nodeName ) );
+			writeString( scene.lights[q].nodeName );
+			writeType( scene.lights[q].worldMatrix );
+		}
+
+		// cameras
+		writeDword( scene.cameraCount );
+		for( size_t q = 0; q < scene.cameraCount; ++q )
+		{
+//			writeType( blitRef( scene.nodeNames, scene.cameras[q].nodeName ) );
+			writeString( scene.cameras[q].nodeName );
+			writeType( scene.cameras[q].worldMatrix );
+		}
+		writeDword( scene.defaultCameraIndex );
+
+		// actors
+		writeDword( scene.actorCount );
+		for( size_t q = 0; q < scene.actorCount; ++q )
+		{
+//			writeType( blitRef( scene.nodeNames, scene.actors[q].nodeName ) );
+			writeString( scene.actors[q].nodeName );
+			writeType( scene.actors[q].worldMatrix );
+			writeDword( scene.actors[q].meshIndex );
+		}
+
+		// clips
+//		writeDword( scene.clipCount );
+//		writeData( blitRefs( scene.clipIds, scene.clips, scene.clipCount ).begin(), scene.clipCount );
+		writeString( scene.animCharId );
+		writeDword( scene.defaultClipIndex );
+
+	} catch( EIoEof& ) {
+		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
+	} catch( EIoError& ) {
+		mutant_throw( "Read/write error" );
+	}
+}
+*/
 void mutant_writer::writeCharacterData( std::string const& char_name, anim_character& anim_char )
 {
 	writeString( char_name );

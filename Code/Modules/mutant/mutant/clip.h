@@ -25,7 +25,7 @@ namespace mutant
 		};
 
 		anim_clip()
-			:	mClipLength( 0.0f ) {
+			:	mClipLength(0.0f), mFlags(0) {
 		}
 
 		~anim_clip() {

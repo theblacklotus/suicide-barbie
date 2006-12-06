@@ -2,7 +2,6 @@
 #define MUTANT_READER_FACTORY_H_
 
 #include "cfg.h"
-
 #include <memory>
 #include "binary_compressed_input.h"
 #include "binary_input.h"
@@ -97,7 +96,7 @@ namespace mutant
 				}
 			} catch( EIoEof& ) {
 				THROW_MutantError( "unexpected end of file while reading `" + name + "'" );
-			} catch( EIoError& e ) {
+			} catch( EIoError& /*e*/ ) {
 				THROW_MutantError( std::string("Error while reading file. ") + e.what() );
 			}
 			return ret_ptr(NULL);

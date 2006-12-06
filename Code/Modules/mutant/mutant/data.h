@@ -73,6 +73,8 @@
 
 namespace mutant
 {
+	#define FOURCC(a,b,c,d) ((a << 24) + (b << 16) + (c << 8) + d)
+
 	// number of components per channel
 	enum eAnimType
 	{
@@ -84,8 +86,8 @@ namespace mutant
 
 		ANIM_MAX,
 
-		ANIM_MAGIC = '1TUM',
-		ANIM_COMPR_MAGIC = '1cTM'
+		ANIM_MAGIC = FOURCC('1','T','U','M'),
+		ANIM_COMPR_MAGIC = FOURCC('1','c','T','M')
 	};
 
 	////////////////////////////////////////////////

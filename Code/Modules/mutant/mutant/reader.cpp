@@ -30,7 +30,7 @@ std::string& binary_input_utils::readString( std::string& str )
 }
 
 
-mutant_reader::mutant_reader( std::auto_ptr<binary_input>& input )
+mutant_reader::mutant_reader( std::auto_ptr<binary_input> input )
 :	binary_input_utils( input )
 {
 }
@@ -63,31 +63,22 @@ void mutant_reader::read( anim_character_set& char_set )
 	}
 }
 
-void mutant_reader::read( simple_skinned& skinned )
+/*
+void mutant_reader::read( data::base_mesh& mesh )
 {
 	try
 	{
-		skinned.vertexCount = readDword();
-		skinned.positions = new simple_skinned::Vec3[skinned.vertexCount];
-		readArray( skinned.positions, skinned.vertexCount );
+		mesh.vertexCount = readDword();
+		mesh.vertexDataSize = readDword();
+		mesh.vertexStride = readDword();
+		mesh.vertexData = new unsigned char[mesh.vertexDataSize];
+		readArray( mesh.vertexData, mesh.vertexDataSize );
 
-		skinned.weightsPerVertex = readDword();
-		skinned.weights = new float[skinned.vertexCount * skinned.weightsPerVertex];
-		skinned.boneIndices = new unsigned short[skinned.vertexCount * skinned.weightsPerVertex];
-		readArray( skinned.weights, skinned.vertexCount * skinned.weightsPerVertex );
-		readArray( skinned.boneIndices, skinned.vertexCount * skinned.weightsPerVertex );
+		mesh.indexCount = readDword();
+		mesh.indexSize = readDword();
+		mesh.indexData = new unsigned char[mesh.indexCount * mesh.indexSize];
+		readArray( mesh.indexData, mesh.indexCount * mesh.indexSize );
 
-		skinned.indexCount = readDword();
-		skinned.indices = new unsigned short[skinned.indexCount];
-		readArray( skinned.indices, skinned.indexCount );
-
-		skinned.boneCount = readDword();
-		skinned.bones = new simple_skinned::Bone[skinned.boneCount];
-		for( size_t q = 0; q < skinned.boneCount; ++q )
-		{
-			readType( skinned.bones[q].matrix );
-			readString( skinned.bones[q].name );
-		}
 	} catch( EIoEof& ) {
 		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
 	} catch( EIoError& ) {
@@ -95,9 +86,156 @@ void mutant_reader::read( simple_skinned& skinned )
 	}
 }
 
+void mutant_reader::read( data::dx9_mesh& mesh )
+{
+	try
+	{
+		read( mesh.base() );
+		mesh.fvfVertexDecl = readDword();
+		mesh.primitiveType = static_cast<D3DPRIMITIVETYPE>(readDword());
+		if( readBool() )
+		{
+			mesh.skinInfo = new data::skin_info;
+			read( *mesh.skinInfo );
+		}
+		else
+			mesh.skinInfo = 0;
+
+	} catch( EIoEof& ) {
+		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
+	} catch( EIoError& ) {
+		mutant_throw( "Read/write error" );
+	}
+}
+
+void mutant_reader::read( data::skin_info& skin )
+{
+	try
+	{
+		skin.weightsPerVertex = readDword();
+		skin.boneCount = readDword();
+		skin.bones = new data::skin_info::Bone[skin.boneCount];
+		for( size_t q = 0; q < skin.boneCount; ++q )
+		{
+			readType( skin.bones[q].matrix );
+			readString( skin.bones[q].name );
+		}
+	} catch( EIoEof& ) {
+		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
+	} catch( EIoError& ) {
+		mutant_throw( "Read/write error" );
+	}
+}
+*/
+/*namespace {
+	bool autoRef( std::string const& names, simple_scene::Ref& ref, unsigned& refDataIt )
+	{
+		if(refDataIt >= names.size())
+			return false;
+
+		ref.data = (void*)&names[refDataIt];
+		while( names[refDataIt] != 0x00 && refDataIt < names.size());
+		return true;
+	}
+
+	size_t autoRefs( std::string const& names, simple_scene::Ref* refs, size_t count )
+	{
+		size_t refIt = 0;
+		size_t refDataIt = 0;
+		while( autoRef( names, refs[refIt], refDataIt ) )
+			++refIt;
+
+		for(size_t nullRefIt = refIt; nullRefIt < count; ++nullRefIt)
+			refs[nullRefIt].data = 0;
+		
+		assert(refIt == count);
+		return refIt;
+	}
+
+	void fixupRef( std::string const& names, simple_scene::Ref& ref )
+	{
+		unsigned offset = (unsigned)ref.data;
+		ref.data = (void*)&names[offset];
+	}
+
+	void fixupRefs( std::string const& names, simple_scene::Ref* refs, size_t count )
+	{
+		for(size_t q = 0; q < count; ++q)
+			fixupRef( names, refs[q] );
+	}
+
+}*/
+
+/*
+void mutant_reader::read( simple_scene& scene )
+{
+	try
+	{
+//		scene.meshIds = readString();
+//		scene.clipIds = readString();
+//		scene.nodeNames = readString();
+//
+//		size_t nodeNamesRefDataIt = 0;
+
+		// meshes
+		scene.meshCount = readDword();
+		scene.meshIds = new simple_scene::Ref[scene.meshCount];
+		readArray( scene.meshIds, scene.meshCount );
+//		fixupRefs( scene.meshIds, scene.meshes, scene.meshCount );
+
+		// lights
+		scene.lightCount = readDword();
+		scene.lights = new simple_scene::Light[scene.lightCount];
+		for( size_t q = 0; q < scene.lightCount; ++q )
+		{
+//			readType( scene.lights[q].nodeName );
+//			fixupRef( scene.nodeNames, scene.lights[q].nodeName );
+			readString( scene.lights[q].nodeName );
+			readType( scene.lights[q].worldMatrix );
+		}
+
+		// cameras
+		scene.cameraCount = readDword();
+		scene.cameras = new simple_scene::Camera[scene.cameraCount];
+		for( size_t q = 0; q < scene.cameraCount; ++q )
+		{
+//			readType( scene.cameras[q].nodeName );
+//			fixupRef( scene.nodeNames, scene.cameras[q].nodeName );
+			readString( scene.cameras[q].nodeName );
+			readType( scene.cameras[q].worldMatrix );
+		}
+		scene.defaultCameraIndex = readDword();
+
+		// actors
+		scene.actorCount = readDword();
+		scene.actors = new simple_scene::Actor[scene.actorCount];
+		for( size_t q = 0; q < scene.actorCount; ++q )
+		{
+//			readType( scene.actors[q].nodeName );
+//			fixupRef( scene.nodeNames, scene.actors[q].nodeName );
+			readString( scene.actors[q].nodeName );
+			readType( scene.actors[q].worldMatrix );
+			scene.actors[q].meshIndex = readDword();
+		}
+
+		// clips
+//		scene.clipCount = readDword();
+//		scene.clips = new simple_scene::Ref[scene.clipCount];
+//		readArray( scene.clips, scene.clipCount );
+//		fixupRefs( scene.clipIds, scene.clips, scene.clipCount );
+		readString( scene.animCharId );
+		scene.defaultClipIndex = readDword();
+
+	} catch( EIoEof& ) {
+		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
+	} catch( EIoError& ) {
+		mutant_throw( "Read/write error" );
+	}
+}
+*/
 std::string mutant_reader::readCharacter( anim_character& anim_char )
 {
-	std::string char_name = readString();
+		std::string char_name = readString();
 
 	unsigned int hier_count = readDword();
 	unsigned int clip_count = readDword();	

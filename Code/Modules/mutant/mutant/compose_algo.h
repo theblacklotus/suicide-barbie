@@ -2,6 +2,7 @@
 #define MUTANT_COMPOSE_ALGO_H_
 
 extern "C" {
+	#include <Base/Std/Std.h>
 	#include <Base/Math/Lin.h>
 	#include <Base/Math/Quat.h>
 }
@@ -94,10 +95,15 @@ namespace mutant
 		 R operator()( A1 const& a1, A2 const& a2, A3 const& a3 ) const {
 
 			 float yaw = a1, pitch = a2, roll = a3;
-//             D3DXQuaternionRotationYawPitchRoll( &out, yaw, pitch, roll );
+//			 D3DXQUATERNION out;
+//			 D3DXQuaternionRotationYawPitchRoll( &out, yaw, pitch, roll );
 
 			 Quat rQ;
-			 QuatSetFromEulerAngle( &rQ, pitch, yaw, roll );
+			 QuatSetFromEulerAngle( &rQ, yaw, pitch, roll );
+//			rQ.x = out.x;
+//			rQ.y = out.y;
+//			rQ.z = out.z;
+//			rQ.w = out.w;
 			 return rQ;
 		 }
 	};

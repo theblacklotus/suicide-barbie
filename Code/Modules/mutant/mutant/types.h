@@ -3,12 +3,11 @@
 
 #include "cfg.h"
 
-#include <utility>
-#include <iosfwd>
+//#include <utility>
+//#include <iosfwd>
 #include <functional>
-#include <vector>
+//#include <vector>
 #include <stdexcept>
-//#include <d3dx9.h>
 
 // type output operators
 

@@ -141,8 +141,8 @@ namespace mutant
 					y2 = v2[0] - v2[2] * oneThird,
 					y3 = v2[0];
 
-			value_t	dx = x3-x0,
-					dy = y3-y0;
+			value_t	dx = x3-x0;
+					//dy = y3-y0;
 
 			// todo: check dx not equal 0.0
 			// todo: make assignment with traits
@@ -156,7 +156,7 @@ namespace mutant
 
 			value_t
 				p0 = y0, p1 = y3,
-				vv0 = t1, vv1 = t2,
+				vv0 = t1, //vv1 = t2,
 				vl0 = t1*dx, vl1 = t2*dx;
 
 			mData[0]=(	2.0f*p0 - 2.0f*p1	+      vl0	+ vl1	) / dx / dx / dx;

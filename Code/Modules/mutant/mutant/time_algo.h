@@ -164,7 +164,9 @@ namespace mutant
 	protected:
 		float value( float t )
 		{
-			assert( mLength > 0.0 );
+			if( mLength <= 0.0f )
+				return 0.0f;
+//			assert( mLength > 0.0 );
 
 			float ts = (t - mBegin) * mSpeed;
 
@@ -202,7 +204,6 @@ namespace mutant
 					break;
 				}
 			};
-			return 0.0f;
 		}
 
 	private:

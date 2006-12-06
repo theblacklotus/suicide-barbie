@@ -7,7 +7,7 @@ namespace mutant
 	template<typename KeysT>
 	struct key_search_base
 	{
-		key_search_base() : mPrevSearch( -1 ) {}
+		key_search_base() : mPrevSearch(size_t(~0)) {}
 
 		template<typename TimeT>
 		bool needNewSearch( TimeT t, KeysT const& data ) const

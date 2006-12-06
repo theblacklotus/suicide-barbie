@@ -2,7 +2,10 @@
 #define MUTANT_QUATERNION_EVALUATOR_H_
 
 #include "access_policy.h"
-#include <Base/Math/Quat.h>
+extern "C" {
+	#include <Base/Std/Std.h>
+	#include <Base/Math/Quat.h>
+}
 
 namespace mutant
 {

@@ -89,6 +89,9 @@ namespace mutant
 		}
 
 	private:
+		knot_data& operator=(knot_data const& c); 
+
+	private:
 		key_vector_t const&		mKeys;
 		value_vector_t const&	mValues;
 		size_t					mComponentSize;

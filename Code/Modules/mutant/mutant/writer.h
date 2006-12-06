@@ -18,7 +18,7 @@ namespace mutant
 
 	struct binary_output_utils
 	{
-		binary_output_utils( std::auto_ptr<binary_output>& output )
+		binary_output_utils( std::auto_ptr<binary_output> output )
 			:	mOutput( output ) {
 		}
 		
@@ -35,6 +35,10 @@ namespace mutant
 		
 		void writeByte( unsigned char c )
 		{	mOutput->write( &c, sizeof(c), 0 ); }
+
+		void writeBool( bool b )
+		{	writeByte( (b? 0xff: 0x00) ); }
+
 		
 		template<typename _T>
 		void writeType( _T const& d )
@@ -60,11 +64,16 @@ namespace mutant
 		:	public binary_output_utils
 	{
 	public:
-		mutant_writer( std::auto_ptr<binary_output>& output );
+		mutant_writer( std::auto_ptr<binary_output> output );
 		~mutant_writer();
 
 		void write( anim_character_set& char_set );
-		void write( simple_skinned const& skinned );
+
+/*		void write( simple_scene const& scene );
+		void write( data::base_mesh const& mesh );
+		void write( data::dx9_mesh const& mesh );
+		void write( data::skin_info const& skin );
+*/
 
 		void writeCharacterData( std::string const& char_name, anim_character& anim_char );
 		void writeHierarchyData( anim_hierarchy& hier );
@@ -112,7 +121,6 @@ namespace mutant
 				++it;
 			}
 		}
-
 	};
 }
 

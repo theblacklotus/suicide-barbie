@@ -40,7 +40,7 @@ namespace mutant { namespace util {
 		return R();
 	}
 
-	inline std::string& lower( std::string& s ) {
+	/*inline std::string& lower( std::string& s ) {
 		if( !s.empty() )
 			for( unsigned int i=0; i<s.size(); ++i )
 				if( s[i] >= 'A' && s[i] <= 'Z' )
@@ -54,7 +54,7 @@ namespace mutant { namespace util {
 				if( s[i] >= 'a' && s[i] <= 'z' )
 					s[i] -= 'a'-'A';
 		return s;
-	}
+	}*/
 
 	template<typename ValueContainerT>
 		typename ValueContainerT::value_type const& component( ValueContainerT const& data, int component_index, int component_size ) {

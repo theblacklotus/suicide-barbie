@@ -7,14 +7,12 @@
 #include "data.h"
 #include "types.h"
 
-#include <iostream>
-
 namespace mutant
 {
 	struct binary_input_utils
 	{
 	public:
-		binary_input_utils( std::auto_ptr<binary_input>& input )
+		binary_input_utils( std::auto_ptr<binary_input> input )
 		:	mInput( input )
 		{
 		}
@@ -100,6 +98,9 @@ namespace mutant
 			return c;
 		}
 
+		bool readBool()
+		{	return (readByte() != 0x00); }
+
 		template<typename T>
 		void readType( T& d )
 		{
@@ -127,11 +128,17 @@ namespace mutant
 	{
 	public:
 
-		mutant_reader( std::auto_ptr<binary_input>& input );
+		mutant_reader( std::auto_ptr<binary_input> input );
 		virtual ~mutant_reader();
 
 		virtual void read( anim_character_set& char_set );
-		virtual void read( simple_skinned& skinned );
+		virtual void read( simple_skinned& data ) {}
+
+/*		virtual void read( simple_scene& scene );
+		virtual void read( data::base_mesh& mesh );
+		virtual void read( data::dx9_mesh& mesh );
+		virtual void read( data::skin_info& skin );
+*/
 
 		std::string readCharacter( anim_character& anim_char );
 		std::string readClip( anim_clip& clip );
