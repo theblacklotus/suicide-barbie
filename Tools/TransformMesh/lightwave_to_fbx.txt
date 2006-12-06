@@ -1,0 +1,8 @@
+Lightwave to FBX world coordinate axis mapping
+
+xyz [lw]
+ |
+ v
+yzx [fbx]
+
+
