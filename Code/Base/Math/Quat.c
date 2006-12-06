@@ -7,6 +7,11 @@ float_t QuatDot(__reg("a5") Quat *q0, __reg("a0") Quat *q1)
 	return q0->x * q1->x + q0->y * q1->y + q0->z * q1->z + q0->w * q1->w;
 }
 
+float_t LengthQuat(__reg("a0") Quat *q0)
+{
+	return mathSqrt(q0->x * q0->x + q0->y * q0->y + q0->z * q0->z + q0->w * q0->w);
+}
+
 void QuatConjugate(__reg("a5") Quat *q, __reg("a0") Quat *q0)
 {
 	q->x = -q0->x;
@@ -114,4 +119,14 @@ void QuatMul(__reg("a5") Quat *q, __reg("a0") Quat *q0, __reg("a1") Quat *q1)
 	q->y = q0->w*q1->y + q0->y*q1->w + q0->z*q1->x - q0->x*q1->z;
 	q->z = q0->w*q1->z + q0->z*q1->w + q0->x*q1->y - q0->y*q1->x;
 	q->w = q0->w*q1->w - q0->x*q1->x - q0->y*q1->y - q0->z*q1->z; 
+}
+
+void QuatNormalize(__reg("a5") Quat *q, __reg("a0") Quat *q0)
+{
+	float len = LengthQuat(q0);
+
+	q->x = q0->x / len;
+	q->y = q0->y / len;
+	q->z = q0->z / len;
+	q->w = q0->w / len;
 }
