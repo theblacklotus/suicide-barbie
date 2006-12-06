@@ -27,6 +27,7 @@ elf_debug: libs_debug
 
 elf: libs
 	@$(MAKE) $(MAKEFLAGS) -C Tests/AnimationTest ELF
+	@$(MAKE) $(MAKEFLAGS) -C Tests/MutaliskTest ELF
 	@$(MAKE) $(MAKEFLAGS) -C Tests/PSPStubTest ELF
 	@$(MAKE) $(MAKEFLAGS) -C Tests/ScreenTest ELF
 
