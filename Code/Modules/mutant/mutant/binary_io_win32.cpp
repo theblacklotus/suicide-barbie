@@ -23,7 +23,7 @@ namespace mutant
 			throw EIoError( IO_NOFILE, "Failed to open `" + name + "' for reading" );
 	}
 
-	file_input::file_input( std::wstring const& name )
+/*	file_input::file_input( std::wstring const& name )
 	:	mFile( NULL )
 	{
 		mFile = CreateFileW(
@@ -38,7 +38,7 @@ namespace mutant
 		if( mFile == INVALID_HANDLE_VALUE )
 			throw EIoError( IO_NOFILE, "Failed to open `???' for reading" );
 	}
-
+*/
 	file_input::~file_input() {
 		if( mFile ) {
 			CloseHandle( (HANDLE)mFile );
@@ -79,7 +79,7 @@ namespace mutant
 			throw EIoError( IO_NOFILE, "Failed to open `" + name + "' for writing" );
 	}
 
-	file_output::file_output( std::wstring const& name ) {
+/*	file_output::file_output( std::wstring const& name ) {
 		mFile = CreateFileW(
 			name.c_str(),
 			GENERIC_WRITE,
@@ -92,7 +92,7 @@ namespace mutant
 		if( mFile == INVALID_HANDLE_VALUE )
 			throw EIoError( IO_NOFILE, "Failed to open `???' for writing" );
 	}
-
+*/
 	file_output::~file_output() {
 		if( mFile ) {
 			CloseHandle( (HANDLE)mFile );

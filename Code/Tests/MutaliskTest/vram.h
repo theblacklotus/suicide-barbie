@@ -14,6 +14,8 @@ extern "C" {
 void* getStaticVramBuffer(unsigned int width, unsigned int height, unsigned int psm);
 /* make a static allocation of vram memory and return absolute pointer */
 void* getStaticVramTexture(unsigned int width, unsigned int height, unsigned int psm);
+/* map pointer relative to vram start to absolute pointer */
+void* mapVramBufferToTexture(void* vramBuffer);
 
 // the following is not yet implemented
 /*

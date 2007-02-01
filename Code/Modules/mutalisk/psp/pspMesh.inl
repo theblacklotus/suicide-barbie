@@ -13,7 +13,12 @@ inline template <typename In> In& operator>> (In& i, psp_mesh& mesh)
 
 	try
 	{
+		assert(mesh.Version == i.readDword());
+
+		// base_mesh
 		i >> mesh.base();
+
+		// psp_mesh
 		mesh.vertexDecl = i.readDword();
 		mesh.primitiveType = i.readDword();
 		if( i.readBool() )
@@ -21,15 +26,11 @@ inline template <typename In> In& operator>> (In& i, psp_mesh& mesh)
 			mesh.skinInfo = new skin_info;
 			i >> *mesh.skinInfo;
 
-			mesh.boneIndexStride = 0;
-			mesh.boneIndexDataSize = 0;
-			mesh.boneIndexData = 0;
-
-/*			mesh.boneIndexStride = i.readDword();
+			mesh.boneIndexStride = i.readDword();
 			mesh.boneIndexDataSize = i.readDword();
 			mesh.boneIndexData = new unsigned char[mesh.boneIndexDataSize];
 			i.readArray(mesh.boneIndexData, mesh.boneIndexDataSize);
-*/		}
+		}
 		else
 		{	
 			mesh.skinInfo = 0;
@@ -50,7 +51,12 @@ inline template <typename Out> Out& operator<< (Out& o, psp_mesh& mesh)
 {
 	try
 	{
+		o.writeDword(mesh.Version);
+
+		// base_mesh
 		o << mesh.base();
+
+		// psp_mesh
 		o.writeDword(mesh.vertexDecl);
 		o.writeDword(mesh.primitiveType);
 

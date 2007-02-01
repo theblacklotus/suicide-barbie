@@ -71,7 +71,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="zlib_mt.lib fbxsdk_mt.lib d3dx9.lib"
+				AdditionalDependencies="zlib_mt.lib fbxsdk_mt.lib d3d9.lib d3dx9.lib"
 				OutputFile="..\..\bin\ImportScene.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -167,7 +167,7 @@
 				Name="VCLinkerTool"
 				IgnoreImportLibrary="true"
 				LinkLibraryDependencies="true"
-				AdditionalDependencies="zlib_mt.lib fbxsdk_mt.lib d3dx9.lib"
+				AdditionalDependencies="zlib_mt.lib fbxsdk_mt.lib d3d9.lib d3dx9.lib"
 				OutputFile="..\..\bin\ImportScene.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -614,28 +614,6 @@
 					/>
 				</FileConfiguration>
 			</File>
-			<File
-				RelativePath="main.cxx"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -712,6 +690,28 @@
 				RelativePath="DisplayTexture.h"
 				>
 			</File>
+			<File
+				RelativePath="main.cxx"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
 		</Filter>
 		<Filter
 			Name="lwobject"
@@ -758,6 +758,22 @@
 			</File>
 			<File
 				RelativePath=".\lwobject\vmap.c"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="dx9"
+			>
+			<File
+				RelativePath=".\ComPtr.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Dx9NullDevice.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Dx9NullDevice.h"
 				>
 			</File>
 		</Filter>

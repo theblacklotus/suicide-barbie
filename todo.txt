@@ -1,55 +1,67 @@
-+ Base
-+ Drivers
-- Hardcore
-	~ Cull
-		- Cull_cullObjectPolygonsAgainstCamera
-		- Cull_calcObjectVertexOutcodesAgainstViewFrustum
-		- Cull_clipObjectPolygonsAgainstViewFrustum
-	+ Camera
-	+ DataBuffer
-	+ Frustum
-	+ Light
-	+ Material
-	+ Object
-	~ Texture (interface)
-	+ Viewport
-	
-	
-	- Scene
-	- Mesh
-	- Play
-	- Panorama
-	- Polygon/PolygonBuffer
-	- Render
-	- Sprite/SpriteBuffer
-	- Vertex/VertexBuffer
-	
-+ LW
-- SugRender
+_RunTime_
+.	frustum culling
+~	material support
+ ~	 dx9 uber-shader simulating psp ffp
+  +	  diffuse path
+  .	  specular path
+ +	 effect framework
+~	 cpu vertexshader framework
+~	blur
+ ~	 CPU blur (optimize)
+ ~	 GPU
+.	directional 3-color lighting (2 polar colors and 1 equator color)
+.	textcoordgen
+ .	 envmap
+  . 	  diffuse envmap (normal)							[psp: 2 envmaps required for full surrounding]
+  . 	  specular envmap (reflected eye)						[psp: cpu only]
+  !	  hemisphere envmap with modifiable horizon 'height'				[texture projection matrix trick]
+ .	 projected
+.	render-to-texture
+.	cut-geometry|pseudo-decal|drop-shadow
+.	skybox
+.	sprites
+.	SH support
+ .	 render-to-cube									[dx9: only]
+ .	 cube-to-SH									[dx9: only]
+ .	 per-vertex SH lighting
+.	fix psp skinning
+.   	timeline helper functions (show_scene, clear_framebuffer, clear_zbuffer, apply_postprocess, blink, ...) 
 
 
+_Mutalisk_
+.	Exporter
+ +	 texture uv
+  .	  more than 1 layer uv support
+ +	 texture image
+ .	 vertex color
+ .	 aux vertex element stream support
+ .	 visibility flag animation
+ .	 camera target, fov, aspect animation
+ ~	 materials/shaders
+  +	  shader names
+  .	  instance specific mesh subsets
+ ~	 custom properties
+  +	 extract properties (string/vector types)
+  !	 store properties in scene file
+  .	 script (lua?) based property filter
+ +	 port exporter to fbx2006_11
+
+.	Resource loader
+ +	 d3d mesh loader
+  +	  d3d mesh subset support
+ +	 d3d texture loader
+ +	 psp mesh loader
+  .	  psp mesh subset support
+ .	 psp texture loader
+
+.	record frustum cull events
+.	record irradiance with dt step
 
 
-load Scene
-load Mesh
-load Animation
-load Texture
-
-updateAnimationPaths									-> mutant, Quaternions
-processBoneHierarchy
-transformObjects
-cullObjects
-	o simplistic
-	o none
-
-transformSkinnedMesh (CPU)
-transform VertexBuffer -> SpriteBuffer
-
-
-setTexture
-setModes
-renderVertexBuffer
-renderSprites
-
-
-
+		
+_System_
+.	errors
+.	log
+.	profiler
+.	move new containers
+.	move new containers

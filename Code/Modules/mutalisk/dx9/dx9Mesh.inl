@@ -13,7 +13,12 @@ inline template <typename In> In& operator>> (In& i, dx9_mesh& mesh)
 
 	try
 	{
+		ASSERT(mesh.Version == i.readDword());
+
+		// base_mesh
 		i >> mesh.base();
+
+		// dx9_mesh
 		mesh.fvfVertexDecl = i.readDword();
 		mesh.primitiveType = static_cast<D3DPRIMITIVETYPE>(i.readDword());
 		if( i.readBool() )
@@ -36,7 +41,12 @@ inline template <typename Out> Out& operator<< (Out& o, dx9_mesh& mesh)
 {
 	try
 	{
+		o.writeDword(mesh.Version);
+
+		// base_mesh
 		o << mesh.base();
+		
+		// dx9_mesh
 		o.writeDword( mesh.fvfVertexDecl );
 		o.writeDword( mesh.primitiveType );
 

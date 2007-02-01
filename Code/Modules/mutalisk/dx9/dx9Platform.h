@@ -8,6 +8,7 @@ namespace mutalisk { namespace data
 {
 	// macro
 	#define MUTALISK_DX9
+	//#define USE_EXCEPTIONS
 
 	// types
 	typedef dx9_mesh	mesh;

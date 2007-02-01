@@ -39,8 +39,13 @@ void* getStaticVramBuffer(unsigned int width, unsigned int height, unsigned int 
 	return result;
 }
 
+void* mapVramBufferToTexture(void* vramBuffer)
+{
+	return (void*)(((unsigned int)vramBuffer) + ((unsigned int)sceGeEdramGetAddr()));
+}
+
 void* getStaticVramTexture(unsigned int width, unsigned int height, unsigned int psm)
 {
 	void* result = getStaticVramBuffer(width,height,psm);
-	return (void*)(((unsigned int)result) + ((unsigned int)sceGeEdramGetAddr()));
+	return mapVramBufferToTexture(result);
 }

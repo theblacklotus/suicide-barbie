@@ -24,6 +24,13 @@ inline template <typename In> In& operator>> (In& i, base_mesh& mesh)
 		mesh.indexData = new unsigned char[mesh.indexCount * mesh.indexSize];
 		i.readArray( mesh.indexData, mesh.indexCount * mesh.indexSize );
 
+		mesh.subsets.resize(i.readDword());
+		for( size_t q = 0; q < mesh.subsets.size(); ++q )
+		{
+			mesh.subsets[q].offset = i.readDword();
+			mesh.subsets[q].count = i.readDword();
+		}
+
 	} catch( EIoEof& ) {
 		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
 	} catch( EIoError& ) {
@@ -45,6 +52,13 @@ inline template <typename Out> Out& operator<< (Out& o, base_mesh const& mesh)
 		o.writeDword( mesh.indexSize );
 		o.writeData ( mesh.indexData, mesh.indexCount * mesh.indexSize );
 
+		o.writeDword( mesh.subsets.size());
+		for( size_t q = 0; q < mesh.subsets.size(); ++q )
+		{
+			o.writeDword( mesh.subsets[q].offset );
+			o.writeDword( mesh.subsets[q].count );
+		}
+
 	} catch( EIoEof& ) {
 		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
 	} catch( EIoError& ) {
@@ -62,9 +76,8 @@ inline template <typename In> In& operator>> (In& i, skin_info& skin)
 	try
 	{
 		skin.weightsPerVertex = i.readDword();
-		skin.boneCount = i.readDword();
-		skin.bones = new data::skin_info::Bone[skin.boneCount];
-		for( size_t q = 0; q < skin.boneCount; ++q )
+		skin.bones.resize(i.readDword());
+		for( size_t q = 0; q < skin.bones.size(); ++q )
 		{
 			i.readType( skin.bones[q].matrix );
 			i.readString( skin.bones[q].name );
@@ -82,8 +95,8 @@ inline template <typename Out> Out& operator<< (Out& o, skin_info const& skin)
 	try
 	{
 		o.writeDword( skin.weightsPerVertex );
-		o.writeDword( skin.boneCount );
-		for( size_t q = 0; q < skin.boneCount; ++q )
+		o.writeDword( skin.bones.size() );
+		for( size_t q = 0; q < skin.bones.size(); ++q )
 		{
 			o.writeType( skin.bones[q].matrix );
 			o.writeString( skin.bones[q].name );

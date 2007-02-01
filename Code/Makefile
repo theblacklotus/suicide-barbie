@@ -13,15 +13,19 @@ libs_debug:
 	@$(MAKE) $(MAKEFLAGS) -C zlib LIB
 	@$(MAKE) $(MAKEFLAGS) -C Base LIB
 	@$(MAKE) $(MAKEFLAGS) -C Modules/animator LIB
+	@$(MAKE) $(MAKEFLAGS) -C Modules/effects LIB
 	@$(MAKE) $(MAKEFLAGS) -C Modules/mutalisk LIB
 	@$(MAKE) $(MAKEFLAGS) -C Modules/mutant LIB
+	@$(MAKE) $(MAKEFLAGS) -C Modules/player LIB
 
 libs:
 	@$(MAKE) $(MAKEFLAGS) -C zlib LIB
 	@$(MAKE) $(MAKEFLAGS) -C Base LIB
 	@$(MAKE) $(MAKEFLAGS) -C Modules/animator LIB
+	@$(MAKE) $(MAKEFLAGS) -C Modules/effects LIB
 	@$(MAKE) $(MAKEFLAGS) -C Modules/mutalisk LIB
 	@$(MAKE) $(MAKEFLAGS) -C Modules/mutant LIB
+	@$(MAKE) $(MAKEFLAGS) -C Modules/player LIB
 
 elf_debug: libs_debug
 

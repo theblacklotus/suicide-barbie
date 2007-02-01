@@ -31,7 +31,6 @@ void clear(base_mesh& data)
 //
 skin_info::skin_info()
 : weightsPerVertex(0)
-, boneCount(0)
 , bones(0)
 {
 }
@@ -43,7 +42,6 @@ skin_info::~skin_info()
 
 void clear(skin_info& data)
 {
-	delete[] data.bones;
 }
 
 } // namespace data 

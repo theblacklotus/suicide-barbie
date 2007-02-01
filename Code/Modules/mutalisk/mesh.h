@@ -18,6 +18,13 @@ namespace mutalisk { namespace data
 		unsigned int indexSize;
 		byte* indexData;
 
+		struct Subset
+		{
+			unsigned int offset;
+			unsigned int count;
+		};
+		array<Subset> subsets;
+
 		// memory management
 		base_mesh(); ~base_mesh();
 	};
@@ -31,8 +38,8 @@ namespace mutalisk { namespace data
 		};
 
 		unsigned int weightsPerVertex;
-		unsigned int boneCount;
-		Bone* bones;
+//		unsigned int boneCount;
+		array<Bone> bones;
 
 		// memory management
 		skin_info(); ~skin_info();

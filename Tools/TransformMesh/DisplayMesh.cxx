@@ -266,11 +266,25 @@ void DisplayMaterialMapping(KFbxMesh* pMesh)
 			kInt lMaterialCount = 0;
 			KString lString;
 
+			/*
 			if (leMat->GetReferenceMode() == KFbxLayerElement::eDIRECT ||
 				leMat->GetReferenceMode() == KFbxLayerElement::eINDEX_TO_DIRECT)
 			{
 				lMaterialCount = leMat->GetDirectArray().GetCount();
+			}*/
+
+			switch (leMat->GetMappingMode())
+			{
+			case KFbxLayerElement::eBY_POLYGON:
+				lMaterialCount = pMesh->GetPolygonCount();
+				break;
+			case KFbxLayerElement::eALL_SAME:
+				lMaterialCount = 1;
+				break;
+			default:
+				break; // other type should not occur.
 			}
+
 	
 			if (leMat->GetReferenceMode() == KFbxLayerElement::eINDEX ||
 				leMat->GetReferenceMode() == KFbxLayerElement::eINDEX_TO_DIRECT)

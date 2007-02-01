@@ -10,6 +10,8 @@ namespace mutalisk { namespace data
 
 	struct dx9_mesh : public parent<base_mesh>
 	{
+		enum { Version = 0x0102 };
+
 		unsigned int fvfVertexDecl;
 		D3DPRIMITIVETYPE primitiveType;
 		skin_info* skinInfo;	// $HACK

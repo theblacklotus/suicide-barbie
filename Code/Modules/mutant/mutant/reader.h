@@ -162,8 +162,14 @@ namespace mutant
 		void readArray( _T* v, int count )
 		{
 			for( int q = 0; q < count; ++q )
+				readType( v[q] );
+		}
+		template<typename _I>
+		void readArray( _I from, _I end )
+		{
+			while( from != end )
 			{
-				 readType( v[q] );
+				readType( *from ); ++from;
 			}
 		}
 

@@ -23,8 +23,8 @@ public:
 //				*outIt = *inIt * *( outRootIt + it->parent );
 				*outIt = *( outRootIt + it->parent ) * *inIt;
 			else
-				*outIt = rootTransform * *inIt;
 //				*outIt = *inIt * rootTransform;
+				*outIt = rootTransform * *inIt;
 
 			++outIt;
 			++inIt;
@@ -48,7 +48,8 @@ public:
 				break;
 			
 			if( it->parent != mutant::anim_node::nparent )
-				*outIt = *inIt * *( outRootIt + it->parent );
+//				*outIt = *inIt * *( outRootIt + it->parent );
+				*outIt = *( outRootIt + it->parent ) * *inIt;
 			else
 				*outIt = *inIt;
 
@@ -69,7 +70,7 @@ public:
 	{
 		for( ; beginIt != endIt; ++beginIt )
 		{
-			*outIt = *beginIt * rootTransform;
+			*outIt = rootTransform * *beginIt;
 			++outIt;
 		}
 	}
@@ -84,40 +85,6 @@ public:
 			++outIt;
 		}
 	}
-
-/*	///
-	struct FTransformToMatrix : public std::unary_function<CTransform::t_matrix,CTransform const&>
-	{
-		CTransform::t_matrix operator()( CTransform const& arg ) {
-			return arg.matrix();
-		}
-	};
-
-	///
-	struct FTransformWorldToMatrix : public std::unary_function<CTransform::t_matrix,CTransform const&>
-	{
-		FTransformWorldToMatrix( CTransform const& t )
-			:	mWorldTransform( t ) { }
-
-		CTransform::t_matrix operator()( CTransform const& arg ) {
-			return (arg * mWorldTransform).matrix();
-		}
-
-		CTransform	mWorldTransform;
-	};
-
-	///
-	struct FTransformWorldByBoneToMatrix : public std::unary_function<CTransform::t_matrix,CTransform const&>
-	{
-		FTransformWorldByBoneToMatrix( CTransform const& t )
-			:	mWorldTransform( t ) { }
-
-		CTransform::t_matrix operator()( CTransform const& localTransform, CTransform const& boneTransform ) {
-			return (boneTransform * localTransform * mWorldTransform).matrix();
-		}
-
-		CTransform	mWorldTransform;
-	};*/
 };
 
 #endif

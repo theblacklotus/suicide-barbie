@@ -27,8 +27,8 @@
 
 #include <mutalisk/dx9/dx9Platform.h>
 #include <mutalisk/mutalisk.h>
-#include <mutalisk/player/ScenePlayer.h>
-#include <mutalisk/player/Dx9ScenePlayer.h>
+#include <player/ScenePlayer.h>
+#include <player/dx9/dx9ScenePlayer.h>
 
 //#include "Transform.h"
 //#include "animator/Animators.h"
@@ -51,9 +51,9 @@ struct ScenePlayerApp
 		scene.renderable = prepare(renderContext, *scene.blueprint);
 	}
 
-	void setViewProjMatrix(D3DXMATRIX const& viewProjMatrix)
+	void setViewMatrix(D3DXMATRIX const& viewMatrix)
 	{
-		renderContext.viewProjMatrix = viewProjMatrix;
+		renderContext.viewMatrix = viewMatrix;
 	}
 
 	void setProjMatrix(D3DXMATRIX const& projMatrix)
@@ -62,14 +62,14 @@ struct ScenePlayerApp
 	}
 
 
-	void update(float deltaTime) { scene.renderable->update(deltaTime); }
-	void process() { scene.renderable->process(); }
+	void update(float deltaTime) { ::update(*scene.renderable, deltaTime); }
+	void process() { ::process(*scene.renderable); }
 	void render(int maxActors = -1) { ::render(renderContext, *scene.renderable, true, true, maxActors); }
 
 	struct Scene
 	{
 		std::auto_ptr<mutalisk::data::scene> blueprint;
-		std::auto_ptr<RenderableScene> renderable;
+		std::auto_ptr<Dx9RenderableScene> renderable;
 	};
 	
 	RenderContext	renderContext;
@@ -85,6 +85,7 @@ static bool gRenderDebugSkeleton = true;
 
 
 std::string gSceneFileName = "test_baked.msk";
+//std::string gSceneFileName = "test_texture.msk";
 
 //*
 std::string gAnimFileName = "guffy.man";
@@ -724,7 +725,7 @@ CDXUTDialog             g_SampleUI;             // dialog for sample specific co
 bool_                    g_bEnablePreshader;     // if TRUE, then D3DXSHADER_NO_PRESHADER is used when compiling the shader
 D3DXMATRIXA16           g_mCenterWorld;
 
-#define MAX_LIGHTS 3
+#define MAX_LIGHTS 4
 CDXUTDirectionWidget g_LightControl[MAX_LIGHTS];
 float                g_fLightScale;
 int                  g_nNumActiveLights;
@@ -803,7 +804,7 @@ INT WINAPI WinMain( HINSTANCE, HINSTANCE, LPSTR, int )
     // allow you to set several options which control the behavior of the framework.
     DXUTInit( true, true, true ); // Parse the command line, handle the default hotkeys, and show msgboxes
     DXUTCreateWindow( L"BasicHLSL" );
-    DXUTCreateDevice( D3DADAPTER_DEFAULT, true, 640, 480, (LPDXUTCALLBACKISDEVICEACCEPTABLE)IsDeviceAcceptable, (LPDXUTCALLBACKMODIFYDEVICESETTINGS)ModifyDeviceSettings );
+    DXUTCreateDevice( D3DADAPTER_DEFAULT, true, 480*2, 282*2, (LPDXUTCALLBACKISDEVICEACCEPTABLE)IsDeviceAcceptable, (LPDXUTCALLBACKMODIFYDEVICESETTINGS)ModifyDeviceSettings );
 
     // Pass control to DXUT for handling the message pump and 
     // dispatching render calls. DXUT will call your FrameMove 
@@ -1007,7 +1008,7 @@ HRESULT CALLBACK OnCreateDevice( IDirect3DDevice9* pd3dDevice, const D3DSURFACE_
 
     // Read the D3DX effect file
     WCHAR str[MAX_PATH];
-    V_RETURN( DXUTFindDXSDKMediaFileCch( str, MAX_PATH, L"BasicHLSL.fx" ) );
+    V_RETURN( DXUTFindDXSDKMediaFileCch( str, MAX_PATH, L"MutaliskUberShader.fx" ) );
 
     // If this fails, there should be debug output as to 
     // why the .fx file failed to compile
@@ -1020,14 +1021,6 @@ HRESULT CALLBACK OnCreateDevice( IDirect3DDevice9* pd3dDevice, const D3DSURFACE_
                                        D3DX_DEFAULT, 0, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, 
                                        D3DX_DEFAULT, D3DX_DEFAULT, 0, 
                                        NULL, NULL, &g_pMeshTexture ) );
-
-    // Set effect variables as needed
-    D3DXCOLOR colorMtrlDiffuse(1.0f, 1.0f, 1.0f, 1.0f);
-    D3DXCOLOR colorMtrlAmbient(0.35f, 0.35f, 0.35f, 0);
-
-    V_RETURN( g_pEffect->SetValue("g_MaterialAmbientColor", &colorMtrlAmbient, sizeof(D3DXCOLOR) ) );
-    V_RETURN( g_pEffect->SetValue("g_MaterialDiffuseColor", &colorMtrlDiffuse, sizeof(D3DXCOLOR) ) );    
-    V_RETURN( g_pEffect->SetTexture( "g_MeshTexture", g_pMeshTexture) );
 
     // Setup the camera's view parameters
     D3DXVECTOR3 vecEye(0.0f, 0.0f, -15.0f);
@@ -1208,9 +1201,11 @@ void CALLBACK OnFrameRender( IDirect3DDevice9* pd3dDevice, double fTime, float f
     // Render the scene
     if( SUCCEEDED( pd3dDevice->BeginScene() ) )
     {
+		D3DXMATRIX cameraInvMatrix;
+		D3DXMatrixInverse(&cameraInvMatrix, 0, g_Camera.GetWorldMatrix());
         // Get the projection & view matrix from the camera class
         mWorld = g_mCenterWorld * *g_Camera.GetWorldMatrix();
-        mProj = *g_Camera.GetProjMatrix();
+		mProj = *g_Camera.GetProjMatrix();
         mView = *g_Camera.GetViewMatrix();
 
 /*		updateAnim( pd3dDevice );
@@ -1319,47 +1314,30 @@ void CALLBACK OnFrameRender( IDirect3DDevice9* pd3dDevice, double fTime, float f
 */
 
 		mWorldViewProjection = mWorld * mView * mProj;
-
-        // Render the light arrow so the user can visually see the light dir
         for( int i=0; i<g_nNumActiveLights; i++ )
         {
-            D3DXCOLOR arrowColor = ( i == g_nActiveLight ) ? D3DXCOLOR(1,1,0,1) : D3DXCOLOR(1,1,1,1);
-            V( g_LightControl[i].OnRender( arrowColor, &mView, &mProj, g_Camera.GetEyePt() ) );
             vLightDir[i] = g_LightControl[i].GetLightDirection();
             vLightDiffuse[i] = g_fLightScale * D3DXCOLOR(1,1,1,1);
+            
+			D3DXCOLOR arrowColor = ( i == g_nActiveLight ) ? D3DXCOLOR(1,1,0,1) : D3DXCOLOR(1,1,1,1);
+            V( g_LightControl[i].OnRender( arrowColor, &mView, &mProj, g_Camera.GetEyePt() ) );
         }
 
-        V( g_pEffect->SetValue( "g_LightDir", vLightDir, sizeof(D3DXVECTOR3)*MAX_LIGHTS ) );
-        V( g_pEffect->SetValue( "g_LightDiffuse", vLightDiffuse, sizeof(D3DXVECTOR4)*MAX_LIGHTS ) );
+        V( g_pEffect->SetTechnique( "Main" ) );
+        V( g_pEffect->SetValue( "vLightDir", vLightDir, sizeof(D3DXVECTOR3)*MAX_LIGHTS ) );
+        V( g_pEffect->SetValue( "vLightDiffuse", vLightDiffuse, sizeof(D3DXVECTOR4)*MAX_LIGHTS ) );
+		int lightTypes[MAX_LIGHTS] = {0,0,0,0}; // lightDIRECTIONAL = 0
+		V( g_pEffect->SetIntArray( "nLightType", lightTypes, MAX_LIGHTS ) );
+		V( g_pEffect->SetInt( "iNumLights", g_nNumActiveLights ) );
+		if(g_nNumActiveLights > 0)
+		{
+			D3DXVECTOR4 ambientColor = D3DXVECTOR4(0,0,0,0);
+			V( g_pEffect->SetValue( "vLightAmbient", ambientColor, sizeof(ambientColor) ) );
+		}
 
-        // Update the effect's variables.  Instead of using strings, it would 
-        // be more efficient to cache a handle to the parameter by calling 
-        // ID3DXEffect::GetParameterByName
-        V( g_pEffect->SetMatrix( "g_mWorldViewProjection", &mWorldViewProjection ) );
-        V( g_pEffect->SetMatrix( "g_mWorld", &mWorld ) );
-        V( g_pEffect->SetFloat( "g_fTime", (float)fTime ) );
-
-        D3DXCOLOR vWhite = D3DXCOLOR(1,1,1,1);
-        V( g_pEffect->SetValue("g_MaterialDiffuseColor", &vWhite, sizeof(D3DXCOLOR) ) );
-        V( g_pEffect->SetFloat( "g_fTime", (float)fTime ) );      
-        V( g_pEffect->SetInt( "g_nNumLights", g_nNumActiveLights ) );
-
-
-
-
-        // Render the scene with this technique 
-        // as defined in the .fx file
-        switch( g_nNumActiveLights )
-        {
-            case 1: V( g_pEffect->SetTechnique( "RenderSceneWithTexture1Light" ) ); break;
-            case 2: V( g_pEffect->SetTechnique( "RenderSceneWithTexture2Light" ) ); break;
-            case 3: V( g_pEffect->SetTechnique( "RenderSceneWithTexture3Light" ) ); break;
-        }
-
-	
-		scenePlayerApp->setViewProjMatrix(mView * mProj);
+		scenePlayerApp->setViewMatrix(mView);
 		scenePlayerApp->setProjMatrix(mProj);
-		scenePlayerApp->update(fTime * 0.2f);
+		scenePlayerApp->update(static_cast<float>(fTime) * 0.2f);
 		scenePlayerApp->process();
 		static int maxActors = -1;
 		scenePlayerApp->render(maxActors);

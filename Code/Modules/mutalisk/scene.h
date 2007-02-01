@@ -22,12 +22,14 @@ namespace mutalisk { namespace data
 
 	struct scene
 	{
+		enum { Version = 0x0108 };
+
 		typedef std::string Ref;
 		struct Node {
 			Ref nodeName;
 			Mat16 worldMatrix;
 		};
-		struct Light : Node {
+		struct Light : parent<Node> {
 			enum Type {
 				Directional, Spot, Point
 			};
@@ -39,24 +41,37 @@ namespace mutalisk { namespace data
 			float theta;
 			float phi;
 		};
-		struct Camera : Node {
+		struct Camera : parent<Node> {
 		};
-		struct Actor : Node {
+		struct Actor : parent<Node> {
+			struct Material {
+				Color ambient;
+				Color diffuse;
+				Color specular;
+				unsigned textureIndex;
+				unsigned shaderIndex;
+			};
 			unsigned meshIndex;
+			array<Material> materials;
 		};
 
-		size_t meshCount;
-		Ref* meshIds;
+//		size_t meshCount;
+		array<Ref> meshIds;
 
-		size_t lightCount;
-		Light* lights;
+//		size_t meshCount;
+		array<Ref> textureIds;
 
-		size_t cameraCount;
-		Camera* cameras;
+		array<Ref> shaderIds;
+
+//		size_t lightCount;
+		array<Light> lights;
+
+//		size_t cameraCount;
+		array<Camera> cameras;
 		unsigned defaultCameraIndex;
 
-		size_t actorCount;
-		Actor* actors;
+//		size_t actorCount;
+		array<Actor> actors;
 
 		Ref animCharId;
 		unsigned defaultClipIndex;
@@ -66,6 +81,8 @@ namespace mutalisk { namespace data
 	};
 
 	// I/O
+	template <typename In> In& operator>> (In& i, scene::Node& data);
+	template <typename Out> Out& operator<< (Out& o, scene::Node const& data);
 	template <typename In> In& operator>> (In& i, scene& data);
 	template <typename Out> Out& operator<< (Out& o, scene const& data);
 

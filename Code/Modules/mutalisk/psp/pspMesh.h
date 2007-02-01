@@ -8,6 +8,8 @@ namespace mutalisk { namespace data
 {
 	struct psp_mesh : public parent<base_mesh>
 	{
+		enum { Version = 0x0102 };
+
 		unsigned int vertexDecl;
 		unsigned int primitiveType;
 		

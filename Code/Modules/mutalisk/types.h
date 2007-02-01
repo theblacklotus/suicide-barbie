@@ -2,6 +2,7 @@
 #define MUTALISK_DATA_TYPES_H_
 
 #include "cfg.h"
+#include "array.h"
 
 namespace mutalisk { namespace data
 {
@@ -21,8 +22,6 @@ namespace mutalisk { namespace data
 		float & operator[](unsigned int index) { return data[index]; }
 		float data[16];
 	};
-
-	// $TBD: static_array
 
 } // namespace data
 } // namespace mutalisk

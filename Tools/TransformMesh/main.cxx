@@ -51,6 +51,10 @@
 #include "DisplayPivotsAndLimits.h"
 #include "DisplayUserProperties.h"
 
+#include <d3d9.h>
+#include "ComPtr.h"
+#include "Dx9NullDevice.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -98,42 +102,13 @@ double const ANIM_SAMPLING_FREQ = 1.0f / 30.0;
 #include <d3d9.h>
 #include <d3dx9.h>
 
+void error(std::string msg) { throw std::runtime_error(msg); }
+void warning(std::string msg) { printf("WARNING: %s\n", msg.c_str()); }// assert(!!!"WARNING"); }
+//void assertWarning(bool condition, std::string msg) { if(!condition) warning(msg); }
+void assertWarning(int condition, std::string msg) { if(!condition) warning(msg); }
+#define warning(msg, action) { warning(msg); action; }
+#define assertWarning(condition, msg, action) { if(!(condition)) {warning(msg); action;} }
 
-#define THROW_ERROR(msg) throw std::runtime_error(msg)
-
-/*
-struct OutputSkinnedMesh : public BaseSkinnedMesh
-{
-	std::string name;
-
-	// memory management
-	OutputSkinnedMesh() { positions = 0; normals = 0; weights = 0; boneIndices = 0; indices = 0; bones = 0; }
-	~OutputSkinnedMesh() { freeDataArrays(); }
-
-	void allocDataArrays()
-	{
-		freeDataArrays();
-		this->positions = new Vec3[this->vertexCount];
-		this->normals = new Vec3[this->vertexCount];
-		this->weights = new float[this->vertexCount * this->weightsPerVertex];
-		this->boneIndices = new unsigned short[this->vertexCount * this->weightsPerVertex];
-		this->indices = new unsigned short[this->indexCount];
-		this->bones = new Bone[this->boneCount];
-	}
-
-	void freeDataArrays()
-	{
-		delete[] this->positions;
-		delete[] this->normals;
-		delete[] this->weights;
-		delete[] this->boneIndices;
-		delete[] this->indices;
-		delete[] this->bones;
-	}
-};*/
-//mutant::anim_character_set gAnimCharacterSet;
-//typedef std::list<OutputSkinnedMesh>	OutputMeshesT;
-//OutputMeshesT gOutputMeshes;
 
 struct BaseSkinnedMesh
 {
@@ -159,15 +134,22 @@ struct BaseSkinnedMesh
 
 		Vec3 pos;
 		Vec3 normal;
+		Vec3 uvw;
 
 		std::vector<
 			std::pair<BoneIndexT, float> > weights;
 	};
 	typedef unsigned short IndexT;
+	struct Subset
+	{
+		std::vector<IndexT> indices;
+	};
+	typedef std::vector<Subset> SubsetsT;
 
 	// data
 	std::vector<Vertex> vertices;
 	std::vector<IndexT> indices;
+	std::vector<Subset> subsets;
 	std::vector<Bone> bones;
 };
 
@@ -185,16 +167,34 @@ struct OutputSkinnedMesh : public BaseSkinnedMesh
 	}
 };
 
+struct OutputTexture
+{
+	std::string					name;
+	KFbxTexture*				parameters;
+	com_ptr<IDirect3DTexture9>	data;
+};
+
 struct OutputScene
 {
 	// definition
+	struct Material
+	{
+		OutputTexture*		texture;
+		KFbxMaterial*		parameters;
+		//Shader*			shader;
+	};
+	typedef std::vector<Material>						MaterialsT;
+
 	struct Actor
 	{
 		OutputSkinnedMesh*	mesh;
+		MaterialsT			materials;
+
 		KFbxNode*			node;
 	};
 
 	typedef std::map<std::string, OutputSkinnedMesh>	OutputMeshesT;
+	typedef std::map<std::string, OutputTexture>		OutputTexturesT;
 	typedef std::vector<KFbxCamera*>					CamerasT;
 	typedef std::vector<KFbxLight*>						LightsT;
 	typedef std::vector<Actor>							ActorsT;
@@ -205,6 +205,7 @@ struct OutputScene
 	mutant::anim_character_set
 							animResource;
 	OutputMeshesT			meshResources;
+	OutputTexturesT			textureResources;
 	CamerasT				cameras;
 	LightsT					lights;
 	ActorsT					actors;
@@ -236,6 +237,10 @@ CurvesT gCurves;
 unsigned short processIndex(kInt srcIndex);
 void processMatrix(float* dstMatrix, KFbxXMatrix const& srcMatrix);
 void processMesh(KFbxNode* pNode);
+void processMaterials(KFbxMesh* pMesh, OutputScene::MaterialsT& materials, OutputSkinnedMesh::SubsetsT* subsets = 0);
+void processSubsets(KFbxMesh* pMesh, OutputSkinnedMesh::SubsetsT& subsets);
+void processProperties(KFbxNode* pNode);
+OutputTexture& processTextureResource(KFbxTexture* pTexture);
 OutputSkinnedMesh& processMeshResource(KFbxNode* pNode);
 OutputSkinnedMesh& processMeshResource(lwLayer* subset, std::string resourceName);
 void processCamera(KFbxCamera* pCamera);
@@ -270,7 +275,7 @@ Platform gPlatform = Platform::DX9;
 
 KFbxSdkManager* gFbxSdkManager = 0;
 KFbxGeometryConverter* gFbxGeomConverter = 0;
-
+com_ptr<IDirect3DDevice9> gDxNullRefDevice = 0;
 
 
 std::string cutEnd(std::string const& nodeName)
@@ -306,17 +311,35 @@ std::string getBaseName(char const* nodeName)
 	return getBaseName(std::string(nodeName));
 }
 
-std::string fileName2SceneName(std::string sceneName)
+std::string withoutExtension(std::string fileName)
 {
-	return sceneName.substr(0, sceneName.find_last_of("."));
+	return fileName.substr(0, fileName.find_last_of("."));
 }
 
-std::string nodeName2FileName(std::string nodeName)
+std::string onlyExtension(std::string fileName)
+{
+	size_t pos = fileName.find_last_of(".");
+	if(pos == std::string::npos)
+		return "";
+	return fileName.substr(pos + 1);
+}
+
+std::string fileName2SceneName(std::string sceneFileName)
+{
+	return withoutExtension(sceneFileName);
+}
+
+std::string meshName2FileName(std::string nodeName)
 {
 	std::replace(nodeName.begin(), nodeName.end(), ':', '_');
 	std::replace(nodeName.begin(), nodeName.end(), '.', '_');
 	std::replace(nodeName.begin(), nodeName.end(), ' ', '_');
 	return nodeName + ".msh";
+}
+
+std::string textureName2FileName(std::string textureName)
+{
+	return withoutExtension(textureName) + ".png";
 }
 
 std::string sceneName2FileName(std::string sceneName)
@@ -329,20 +352,54 @@ std::string sceneName2AnimFileName(std::string sceneName)
 	return sceneName + ".man";
 }
 
+std::string outputFileName(std::string fileName)
+{
+	return gPlatform.targetDir + fileName;
+}
+
 template <typename Data>
 void save(std::string dstName, Data& data)
 {
-	mutant::mutant_writer mutWriter(mutant::writer_factory::createOutput(gPlatform.targetDir + dstName));
+	mutant::mutant_writer mutWriter(mutant::writer_factory::createOutput(outputFileName(dstName)));
 	mutWriter << data;
 }
 
 template <>
 void save(std::string dstName, mutant::anim_character_set& data)
 {
-	mutant::mutant_writer mutWriter(mutant::writer_factory::createOutput(gPlatform.targetDir + dstName));
+	mutant::mutant_writer mutWriter(mutant::writer_factory::createOutput(outputFileName(dstName)));
 	mutWriter.write(data);
 }
 
+template <>
+void save(std::string dstName, IDirect3DTexture9& texture)
+{
+	std::string ext = onlyExtension(dstName);
+	D3DXIMAGE_FILEFORMAT format = D3DXIFF_DDS;
+	if(ext == "bmp")
+		format = D3DXIFF_BMP;
+	else if(ext == "jpg")
+		format = D3DXIFF_JPG;
+	else if(ext == "tga")
+		format = D3DXIFF_TGA;
+	else if(ext == "png")
+		format = D3DXIFF_PNG;
+	else if(ext == "dds")
+		format = D3DXIFF_DDS;
+	else if(ext == "ppm")
+		format = D3DXIFF_PPM;
+	else if(ext == "dib")
+		format = D3DXIFF_DIB;
+	else if(ext == "hdr")
+		format = D3DXIFF_HDR;
+	else if(ext == "pfm")
+		format = D3DXIFF_PFM;
+	else
+		warning("Texture format not recognized, defaulting to DDS");
+
+	HRESULT hr = D3DXSaveTextureToFile(outputFileName(dstName).c_str(), format, &texture, 0);
+	assertWarning(SUCCEEDED(hr), std::string("Failed to save texture: ") + dstName);
+}
 
 void blitBaseMesh(OutputSkinnedMesh const& mesh, mutalisk::data::base_mesh& data)
 {
@@ -353,30 +410,35 @@ void blitBaseMesh(OutputSkinnedMesh const& mesh, mutalisk::data::base_mesh& data
 	{
 		float* asFloat = reinterpret_cast<float*>(data.vertexData + q * data.vertexStride);
 
+		int i = 0;
 		if(gLWMode)
 		{
-			asFloat[0] = mesh.vertices[q].pos[2]* 100.0f;
-			asFloat[1] = mesh.vertices[q].pos[0]* 100.0f;
-			asFloat[2] = mesh.vertices[q].pos[1]* 100.0f;
-			asFloat[3] = mesh.vertices[q].normal[0]* 1.0f;
-			asFloat[4] = mesh.vertices[q].normal[1]* 1.0f;
-			asFloat[5] = mesh.vertices[q].normal[2]* 1.0f;
+			asFloat[i++] = mesh.vertices[q].pos[2]* 100.0f;
+			asFloat[i++] = mesh.vertices[q].pos[0]* 100.0f;
+			asFloat[i++] = mesh.vertices[q].pos[1]* 100.0f;
+			asFloat[i++] = mesh.vertices[q].normal[0]* 1.0f;
+			asFloat[i++] = mesh.vertices[q].normal[1]* 1.0f;
+			asFloat[i++] = mesh.vertices[q].normal[2]* 1.0f;
+			asFloat[i++] = mesh.vertices[q].uvw[0];
+			asFloat[i++] = mesh.vertices[q].uvw[1];
 		}
 		else
 		{
-			asFloat[0] = mesh.vertices[q].pos[0];
-			asFloat[1] = mesh.vertices[q].pos[1];
-			asFloat[2] = mesh.vertices[q].pos[2];
-			asFloat[3] = mesh.vertices[q].normal[0];
-			asFloat[4] = mesh.vertices[q].normal[1];
-			asFloat[5] = mesh.vertices[q].normal[2];
+			asFloat[i++] = mesh.vertices[q].pos[0];
+			asFloat[i++] = mesh.vertices[q].pos[1];
+			asFloat[i++] = mesh.vertices[q].pos[2];
+			asFloat[i++] = mesh.vertices[q].normal[0];
+			asFloat[i++] = mesh.vertices[q].normal[1];
+			asFloat[i++] = mesh.vertices[q].normal[2];
+			asFloat[i++] = mesh.vertices[q].uvw[0];
+			asFloat[i++] = mesh.vertices[q].uvw[1];
 		}
 	}
 }
 
 void blitMesh(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 {
-	data.fvfVertexDecl = D3DFVF_XYZ | D3DFVF_NORMAL;
+	data.fvfVertexDecl = D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX1 | D3DFVF_TEXCOORDSIZE2(0);
 	data.vertexStride = D3DXGetFVFVertexSize(data.fvfVertexDecl);
 	data.skinInfo = 0;
 
@@ -385,8 +447,8 @@ void blitMesh(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 
 void blitMesh(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 {
-	data.vertexDecl = GU_VERTEX_32BITF | GU_NORMAL_32BITF;
-	data.vertexStride = sizeof(float) * 6;
+	data.vertexDecl = GU_VERTEX_32BITF | GU_NORMAL_32BITF | GU_TEXTURE_32BITF;
+	data.vertexStride = sizeof(float) * (3+3+2);
 	data.skinInfo = 0;
 
 //	blitBaseMesh(mesh, data);
@@ -399,21 +461,27 @@ void blitMesh(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 
 		if(gLWMode)
 		{
-			asFloat[0] = mesh.vertices[q].normal[0]* 1.0f;
-			asFloat[1] = mesh.vertices[q].normal[1]* 1.0f;
-			asFloat[2] = mesh.vertices[q].normal[2]* 1.0f;
-			asFloat[3] = mesh.vertices[q].pos[2]* 100.0f;
-			asFloat[4] = mesh.vertices[q].pos[0]* 100.0f;
-			asFloat[5] = mesh.vertices[q].pos[1]* 100.0f;
+			int i = 0;
+			asFloat[i++] = mesh.vertices[q].uvw[0];
+			asFloat[i++] = mesh.vertices[q].uvw[1];
+			asFloat[i++] = mesh.vertices[q].normal[0]* 1.0f;
+			asFloat[i++] = mesh.vertices[q].normal[1]* 1.0f;
+			asFloat[i++] = mesh.vertices[q].normal[2]* 1.0f;
+			asFloat[i++] = mesh.vertices[q].pos[2]* 100.0f;
+			asFloat[i++] = mesh.vertices[q].pos[0]* 100.0f;
+			asFloat[i++] = mesh.vertices[q].pos[1]* 100.0f;
 		}
 		else
 		{
-			asFloat[0] = mesh.vertices[q].normal[0];
-			asFloat[1] = mesh.vertices[q].normal[1];
-			asFloat[2] = mesh.vertices[q].normal[2];
-			asFloat[3] = mesh.vertices[q].pos[0];
-			asFloat[4] = mesh.vertices[q].pos[1];
-			asFloat[5] = mesh.vertices[q].pos[2];
+			int i = 0;
+			asFloat[i++] = mesh.vertices[q].uvw[0];
+			asFloat[i++] = mesh.vertices[q].uvw[1];
+			asFloat[i++] = mesh.vertices[q].normal[0];
+			asFloat[i++] = mesh.vertices[q].normal[1];
+			asFloat[i++] = mesh.vertices[q].normal[2];
+			asFloat[i++] = mesh.vertices[q].pos[0];
+			asFloat[i++] = mesh.vertices[q].pos[1];
+			asFloat[i++] = mesh.vertices[q].pos[2];
 		}
 	}
 }
@@ -442,7 +510,7 @@ std::pair<BaseSkinnedMesh::Vertex::BoneIndexT, float> getBoneWeight(OutputSkinne
 void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 {
 	data.vertexCount = mesh.vertices.size();
-	data.fvfVertexDecl = D3DFVF_XYZB5 | D3DFVF_LASTBETA_UBYTE4 | D3DFVF_NORMAL;
+	data.fvfVertexDecl = D3DFVF_XYZB5 | D3DFVF_LASTBETA_UBYTE4 | D3DFVF_NORMAL | D3DFVF_TEX1 | D3DFVF_TEXCOORDSIZE2(0);
 	// struct VERTEXPOSITION
 	// {
 	//    float pos[3];
@@ -463,9 +531,8 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 
 	data.skinInfo = new mutalisk::data::skin_info;
 	data.skinInfo->weightsPerVertex = getWeightsPerVertex(mesh);
-	data.skinInfo->boneCount = mesh.bones.size();
-	data.skinInfo->bones = new mutalisk::data::skin_info::Bone[data.skinInfo->boneCount];
-	for(size_t q = 0; q < data.skinInfo->boneCount; ++q)
+	data.skinInfo->bones.resize(mesh.bones.size());
+	for(size_t q = 0; q < data.skinInfo->bones.size(); ++q)
 	{
 		assert(sizeof(data.skinInfo->bones[q].matrix) == sizeof(mesh.bones[q].matrix));
 		memcpy(&data.skinInfo->bones[q].matrix, &mesh.bones[q].matrix, sizeof(mesh.bones[q].matrix));
@@ -477,23 +544,28 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 		float* asFloat = reinterpret_cast<float*>(data.vertexData + q * data.vertexStride);
 		DWORD* asDword = reinterpret_cast<DWORD*>(data.vertexData + q * data.vertexStride);
 
+		int i = 0;
 		if(gLWMode)
 		{
-			asFloat[0] = mesh.vertices[q].pos[2]* 100.0f;
-			asFloat[1] = mesh.vertices[q].pos[0]* 100.0f;
-			asFloat[2] = mesh.vertices[q].pos[1]* 100.0f;
-			asFloat[3] = mesh.vertices[q].normal[0]* 1.0f;
-			asFloat[4] = mesh.vertices[q].normal[1]* 1.0f;
-			asFloat[5] = mesh.vertices[q].normal[2]* 1.0f;
+			asFloat[i++] = mesh.vertices[q].pos[2]* 100.0f;
+			asFloat[i++] = mesh.vertices[q].pos[0]* 100.0f;
+			asFloat[i++] = mesh.vertices[q].pos[1]* 100.0f;
+			asFloat[i++] = mesh.vertices[q].normal[0]* 1.0f;
+			asFloat[i++] = mesh.vertices[q].normal[1]* 1.0f;
+			asFloat[i++] = mesh.vertices[q].normal[2]* 1.0f;
+			asFloat[i++] = mesh.vertices[q].uvw[0];
+			asFloat[i++] = mesh.vertices[q].uvw[1];
 		}
 		else
 		{
-			asFloat[0] = mesh.vertices[q].pos[0];
-			asFloat[1] = mesh.vertices[q].pos[1];
-			asFloat[2] = mesh.vertices[q].pos[2];
-			asFloat[3] = mesh.vertices[q].normal[0];
-			asFloat[4] = mesh.vertices[q].normal[1];
-			asFloat[5] = mesh.vertices[q].normal[2];
+			asFloat[i++] = mesh.vertices[q].pos[0];
+			asFloat[i++] = mesh.vertices[q].pos[1];
+			asFloat[i++] = mesh.vertices[q].pos[2];
+			asFloat[i++] = mesh.vertices[q].normal[0];
+			asFloat[i++] = mesh.vertices[q].normal[1];
+			asFloat[i++] = mesh.vertices[q].normal[2];
+			asFloat[i++] = mesh.vertices[q].uvw[0];
+			asFloat[i++] = mesh.vertices[q].uvw[1];
 		}
 
 		size_t weightsPerVertex = data.skinInfo->weightsPerVertex;
@@ -502,18 +574,19 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 		for(; w < weightsPerVertex; ++w)
 		{
 			float weight = getBoneWeight(mesh, q, w).second;				// weight
-			asFloat[3+w] = weight;
+			asFloat[i++] = weight;
 		}
 		for(; w < 4; ++w)
-			asFloat[3+w] = 0.0f;
+			asFloat[i++] = 0.0f;
 
-		asDword[7] = 0;
+		asDword[i] = 0;
 		for(size_t w = 0; w < weightsPerVertex; ++w)
 		{
 			unsigned short boneIndex = getBoneWeight(mesh, q, w).first;		// boneIndex
 			assert(boneIndex < 256);
-			asDword[7] |= ((0xff & boneIndex) << (w * 8));
+			asDword[i] |= ((0xff & boneIndex) << (w * 8));
 		}
+		++i;
 	}
 }
 
@@ -522,7 +595,7 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 	size_t weightsPerVertex = getWeightsPerVertex(mesh);
 
 	data.vertexCount = mesh.vertices.size();
-	data.vertexDecl = GU_VERTEX_32BITF|GU_NORMAL_32BITF|GU_WEIGHT_32BITF|GU_WEIGHTS(weightsPerVertex);
+	data.vertexDecl = GU_VERTEX_32BITF | GU_NORMAL_32BITF | GU_TEXTURE_32BITF | GU_WEIGHT_32BITF|GU_WEIGHTS(weightsPerVertex);
 	// struct VERTEXPOSITION
 	// {
 	//	float skinWeight[WEIGHTS_PER_VERTEX];
@@ -540,9 +613,8 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 
 	data.skinInfo = new mutalisk::data::skin_info;
 	data.skinInfo->weightsPerVertex = weightsPerVertex;
-	data.skinInfo->boneCount = mesh.bones.size();
-	data.skinInfo->bones = new mutalisk::data::skin_info::Bone[data.skinInfo->boneCount];
-	for(size_t q = 0; q < data.skinInfo->boneCount; ++q)
+	data.skinInfo->bones.resize(mesh.bones.size());
+	for(size_t q = 0; q < data.skinInfo->bones.size(); ++q)
 	{
 		assert(sizeof(data.skinInfo->bones[q].matrix) == sizeof(mesh.bones[q].matrix));
 		memcpy(&data.skinInfo->bones[q].matrix, &mesh.bones[q].matrix, sizeof(mesh.bones[q].matrix));
@@ -565,27 +637,62 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 			asByte[w] = static_cast<byte>(boneIndex);				
 		}
 
+		w = weightsPerVertex;
 		if(gLWMode)
 		{
-			asFloat[w+0] = mesh.vertices[q].normal[0]* 1.0f;
-			asFloat[w+1] = mesh.vertices[q].normal[1]* 1.0f;
-			asFloat[w+2] = mesh.vertices[q].normal[2]* 1.0f;
-			asFloat[w+3] = mesh.vertices[q].pos[0]* 100.0f;
-			asFloat[w+4] = mesh.vertices[q].pos[1]* 100.0f;
-			asFloat[w+5] = mesh.vertices[q].pos[2]* 100.0f;
+			asFloat[w++] = mesh.vertices[q].uvw[0];
+			asFloat[w++] = mesh.vertices[q].uvw[1];
+			asFloat[w++] = mesh.vertices[q].normal[0]* 1.0f;
+			asFloat[w++] = mesh.vertices[q].normal[1]* 1.0f;
+			asFloat[w++] = mesh.vertices[q].normal[2]* 1.0f;
+			asFloat[w++] = mesh.vertices[q].pos[0]* 100.0f;
+			asFloat[w++] = mesh.vertices[q].pos[1]* 100.0f;
+			asFloat[w++] = mesh.vertices[q].pos[2]* 100.0f;
 		}
 		else
 		{
-			asFloat[w+0] = mesh.vertices[q].normal[0];
-			asFloat[w+1] = mesh.vertices[q].normal[1];
-			asFloat[w+2] = mesh.vertices[q].normal[2];
-			asFloat[w+3] = mesh.vertices[q].pos[0];
-			asFloat[w+4] = mesh.vertices[q].pos[1];
-			asFloat[w+5] = mesh.vertices[q].pos[2];
+			asFloat[w++] = mesh.vertices[q].uvw[0];
+			asFloat[w++] = mesh.vertices[q].uvw[1];
+			asFloat[w++] = mesh.vertices[q].normal[0];
+			asFloat[w++] = mesh.vertices[q].normal[1];
+			asFloat[w++] = mesh.vertices[q].normal[2];
+			asFloat[w++] = mesh.vertices[q].pos[0];
+			asFloat[w++] = mesh.vertices[q].pos[1];
+			asFloat[w++] = mesh.vertices[q].pos[2];
 		}
 	}
 }
 
+void blitIndices(OutputSkinnedMesh const& mesh, mutalisk::data::base_mesh& data)
+{
+	data.indexCount = mesh.indices.size();
+	data.indexSize = sizeof(OutputSkinnedMesh::IndexT);
+	data.indexData = new byte[data.indexCount * data.indexSize];
+
+	unsigned int indexOffset = 0;
+	data.subsets.resize(mesh.subsets.size());
+	if(mesh.subsets.empty())
+	{
+		for(size_t q = 0; q < data.indexCount; ++q)
+			reinterpret_cast<OutputSkinnedMesh::IndexT*>(data.indexData)[q] = mesh.indices[q];
+	}
+	else
+	for(size_t q = 0; q < mesh.subsets.size(); ++q)
+	{
+		unsigned int indexCount = 0;
+
+		typedef std::vector<OutputSkinnedMesh::IndexT> IndicesT;
+		IndicesT const& indices = mesh.subsets[q].indices;
+		for(IndicesT::const_iterator indexIt = indices.begin(); indexIt != indices.end(); ++indexIt, ++indexCount) 
+			reinterpret_cast<OutputSkinnedMesh::IndexT*>(data.indexData)[indexOffset + indexCount] = *indexIt;
+		assert(indexCount == indices.size());
+
+		data.subsets[q].offset = indexOffset;
+		data.subsets[q].count = indexCount;
+		indexOffset += indexCount;
+		assert(indexOffset <= data.indexCount);
+	}
+}
 
 void blit(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 {
@@ -595,106 +702,96 @@ void blit(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 		blitMesh(mesh, data);
 
 	// $TBD: 32 bit indices
-	data.indexCount = mesh.indices.size();
-	data.indexSize = sizeof(OutputSkinnedMesh::IndexT);
-	data.indexData = new byte[data.indexCount * data.indexSize];
-	for(size_t q = 0; q < data.indexCount; ++q)
-	{
-		reinterpret_cast<OutputSkinnedMesh::IndexT*>(data.indexData)[q] = mesh.indices[q];
-	}
+	blitIndices(mesh, data);
 
 	data.primitiveType = D3DPT_TRIANGLELIST;
 }
 
 void blit(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 {
-//	if(getWeightsPerVertex(mesh) > 0)
-//		blitSkinned(mesh, data);
-//	else
+	if(getWeightsPerVertex(mesh) > 0)
+		blitSkinned(mesh, data);
+	else
 		blitMesh(mesh, data);
 
-	data.indexCount = mesh.indices.size();
-	data.indexSize = sizeof(OutputSkinnedMesh::IndexT);
-	data.indexData = new byte[data.indexCount * data.indexSize];
-	for(size_t q = 0; q < data.indexCount; ++q)
-	{
-		reinterpret_cast<OutputSkinnedMesh::IndexT*>(data.indexData)[q] = mesh.indices[q];
-	}
+	blitIndices(mesh, data);
 
 	data.primitiveType = GU_TRIANGLES;
 }
 
 void blit(OutputScene const& scene, mutalisk::data::scene& data)
 {
-/*	data.meshIds = "_";
-	data.animIds = "_";
-	data.nodeNames = "_";*/
-
-	data.meshCount = scene.meshResources.size();
-	data.meshIds = new mutalisk::data::scene::Ref[data.meshCount];
 	size_t q = 0;
+	data.meshIds.resize(scene.meshResources.size());
 	for(OutputScene::OutputMeshesT::const_iterator i = scene.meshResources.begin(); i != scene.meshResources.end(); ++i, ++q)
 	{
-/*		data.meshes[q].data = (void*)&(data.meshIds[data.meshIds.size()-1]+1);
-		data.meshIds += '0x00';
-		data.meshIds += nodeName2FileName(i->first);*/
-		data.meshIds[q] = nodeName2FileName(i->first);
+		data.meshIds[q] = meshName2FileName(i->first);
 	}
 
-	data.lightCount = 0;//scene.lights.size();
+	q = 0;
+	data.textureIds.resize(scene.textureResources.size());
+	for(OutputScene::OutputTexturesT::const_iterator i = scene.textureResources.begin(); i != scene.textureResources.end(); ++i, ++q)
+	{
+		data.textureIds[q] = textureName2FileName(i->first);
+	}	
 
-	data.cameraCount = scene.cameras.size();
-	data.cameras = new mutalisk::data::scene::Camera[data.cameraCount];
-	data.defaultCameraIndex = 0;
+	data.lights.resize(0);//scene.lights.size();
+
+	data.cameras.resize(scene.cameras.size());
+	if(!scene.cameras.empty())
+		data.defaultCameraIndex = 0;
+	else
+		data.defaultCameraIndex = ~0U;
+
 	q = 0;
 	for(OutputScene::CamerasT::const_iterator i = scene.cameras.begin(); i != scene.cameras.end(); ++i, ++q)
 	{
-		assert(scene.cameras[q]);
-		assert(scene.cameras[q]->GetNode());
-		assert(scene.cameras[q]->GetAttributeType() == KFbxNodeAttribute::eCAMERA ||
-			scene.cameras[q]->GetAttributeType() == KFbxNodeAttribute::eCAMERA_SWITCHER);
-		char const* name = scene.cameras[q]->GetNode()->GetName();
+		assert(*i);
+		assert((*i)->GetNode());
+		assert((*i)->GetAttributeType() == KFbxNodeAttribute::eCAMERA ||
+			(*i)->GetAttributeType() == KFbxNodeAttribute::eCAMERA_SWITCHER);
+		char const* name = (*i)->GetNode()->GetName();
 		data.cameras[q].nodeName = name;
-		processMatrix(data.cameras[q].worldMatrix.data, scene.cameras[q]->GetNode()->GetGlobalFromDefaultTake());
+		processMatrix(data.cameras[q].worldMatrix.data, (*i)->GetNode()->GetGlobalFromDefaultTake());
 	}
 
-	data.actorCount = scene.actors.size();
-	data.actors = new mutalisk::data::scene::Actor[data.actorCount];
-	for(size_t q = 0; q < data.actorCount; ++q)
+	data.actors.resize(scene.actors.size());
+	q = 0;
+	for(OutputScene::ActorsT::const_iterator i = scene.actors.begin(); i != scene.actors.end(); ++i, ++q)
 	{
-		assert(scene.actors[q].node);
-		assert(scene.actors[q].mesh);
+		assert(i->node);
+		assert(i->mesh);
 
-/*		data.actors[q].nodeName.data = (void*)&(data.nodeNames[data.nodeNames.size()-1]+1);
-		data.nodeNames += '0x00';
-		data.nodeNames += scene.actors[q].node->GetName();
-*/
+		// node
 		data.actors[q].nodeName = scene.actors[q].node->GetName();
 
-		processMatrix(data.actors[q].worldMatrix.data, scene.actors[q].node->GetGlobalFromDefaultTake());
-//			GetGlobalMatrix(KFbxNode::eSOURCE_SET, true));
-		size_t meshIndex = std::distance(scene.meshResources.begin(), scene.meshResources.find(scene.actors[q].mesh->name));
+		// mesh
+		processMatrix(data.actors[q].worldMatrix.data, i->node->GetGlobalFromDefaultTake());
+		size_t meshIndex = std::distance(scene.meshResources.begin(), scene.meshResources.find(i->mesh->name));
 		assert(meshIndex < scene.meshResources.size());
 		data.actors[q].meshIndex = meshIndex;
+
+		// materials
+		data.actors[q].materials.resize(i->materials.size());
+		for(size_t w = 0; w < i->materials.size(); ++w)
+		{
+			std::string textureName = "";
+			if(i->materials[w].texture)
+				textureName = i->materials[w].texture->name;
+
+			size_t textureIndex = std::distance(scene.textureResources.begin(), scene.textureResources.find(textureName));
+			if(textureIndex == scene.textureResources.size())
+				textureIndex = ~0U;
+
+			data.actors[q].materials[w].textureIndex = textureIndex;
+		}
 	}
 
-/*	scene.animChar.data = (void*)&(data.animIds[data.animIds.size()-1]+1);
-	data.animIds += '0x00';
-	data.animIds += sceneName2AnimFileName(scene.name);
-*/
-
-/*	mutant::anim_character const& animCharacter = scene.animResource["scene"];
-	data.clipCount = animCharacter.size();
-	data.clips = new mutant::simple_scene::Ref[data.clipCount];
-	for(size_t q = 0; q < data.clipCount; ++q)
-	{
-		data.clips[q].data = (void*)&(data.animIds[data.animIds.size()-1]+1);
-		data.animIds += '0x00';
-		data.animIds += animCharacter.clipPair(q).first;
-	}*/
-
 	data.animCharId = sceneName2AnimFileName(scene.name);
-	data.defaultClipIndex = 0;
+	if(scene.animResource.charPair(0).second && scene.animResource.charPair(0).second->size() > 0)
+		data.defaultClipIndex = 0;
+	else
+		data.defaultClipIndex = ~0U;
 }
 
 
@@ -702,7 +799,7 @@ unsigned short processIndex(kInt srcIndex)
 {
 	unsigned long dw = static_cast<unsigned long>(srcIndex);
 	if( dw & 0xffffff00000000 )
-		THROW_ERROR( "couldn't convert 32bit index to 16bit index" );
+		warning("Couldn't convert 32bit index to 16bit index", dw = 0);
 	return static_cast<unsigned short>(dw);
 }
 
@@ -715,24 +812,151 @@ void processMatrix(float* dstMatrix, KFbxXMatrix const& srcMatrix_)
 			dstMatrix[q*4+w] = static_cast<float>(srcMatrix.Get(q, w));
 }
 
+void processSubsets(KFbxMesh* pMesh, OutputSkinnedMesh::SubsetsT& subsets)
+{
+	OutputScene::MaterialsT tmpMaterials;
+	processMaterials(pMesh, tmpMaterials, &subsets);
+}
+
+void processMaterials(KFbxMesh* pMesh, OutputScene::MaterialsT& materials, OutputSkinnedMesh::SubsetsT* subsets)
+{
+	// NOTE: use only 1st layer for subset splitting
+	kInt const MAX_LAYER_COUNT = 1;
+	for (kInt l = 0; l < min(MAX_LAYER_COUNT, pMesh->GetLayerCount()); l++)
+	{
+		KFbxLayerElementTexture* leTex = pMesh->GetLayer(l)->GetTextures();
+		KFbxLayerElementMaterial* leMat = pMesh->GetLayer(l)->GetMaterials();
+
+		assertWarning(leMat, "No materials found", continue);
+
+		int textureCount = 0;
+		int textureIndexCount = 0;
+		kInt* textureIndices = 0;
+		if (leTex)
+		{
+			if (leTex->GetReferenceMode() != KFbxLayerElement::eINDEX &&
+				leTex->GetReferenceMode() != KFbxLayerElement::eINDEX_TO_DIRECT)
+				warning("Not supported reference mode for KFbxLayerElement<Texture>", continue);
+
+			if (leTex->GetMappingMode() == KFbxLayerElement::eBY_POLYGON)
+				textureIndexCount = pMesh->GetPolygonCount();
+			else if (leTex->GetMappingMode() == KFbxLayerElement::eALL_SAME)
+				textureIndexCount = 1;
+			else
+				warning("Not supported mapping mode for KFbxLayerElement<Texture>", continue);
+
+			textureCount = leTex->GetDirectArray().GetCount();
+			textureIndices = leTex->GetIndexArray().GetArray();
+		}
+
+		int materialCount = 0;
+		int materialIndexCount = 0;
+		kInt* materialIndices = 0;
+		assert(leMat);
+		{
+			if (leMat->GetReferenceMode() != KFbxLayerElement::eINDEX &&
+				leMat->GetReferenceMode() != KFbxLayerElement::eINDEX_TO_DIRECT)
+				warning("Not supported reference mode for KFbxLayerElement<Material>", continue);
+
+			if (leMat->GetMappingMode() == KFbxLayerElement::eBY_POLYGON)
+				materialIndexCount = pMesh->GetPolygonCount();
+			else if(leMat->GetMappingMode() == KFbxLayerElement::eALL_SAME)
+				materialIndexCount = 1;
+			else
+				warning("Not supported mapping mode for KFbxLayerElement<Material>", continue);
+
+			materialCount = leMat->GetDirectArray().GetCount();
+			materialIndices = leMat->GetIndexArray().GetArray();
+		}
+
+		// find all unique material/texture combinations and store them as subsets
+		typedef int MaterialIndexT;
+		typedef int TextureIndexT;
+		typedef size_t CombinationIndexT;
+		typedef std::pair<MaterialIndexT, TextureIndexT> CombinationKeyT;
+		std::map<CombinationKeyT, CombinationIndexT> combinationIndices;
+
+		// preallocate enough space for all possible material/texture permutations
+		materials.resize(materialCount * textureCount);
+		if (subsets)
+			subsets->resize(materialCount * textureCount);
+
+		if (materials.empty())
+			continue;
+
+		CombinationIndexT nextCombinationIndex = 0;
+		for (int i = 0, materialIt = 0, textureIt = 0; i < pMesh->GetPolygonCount(); ++i)
+		{
+			assert(leMat);
+			assert(materialIndices);
+			kInt materialIndex = materialIndices[materialIt];
+			KFbxMaterial* lMaterial = leMat->GetDirectArray().GetAt(materialIndex);
+
+			KFbxTexture* lTexture = 0;
+			kInt textureIndex = -1;
+			if (leTex)
+			{
+				assert(textureIndices);
+				textureIndex = textureIndices[textureIt];
+				if (textureIndex >= 0)
+					lTexture = leTex->GetDirectArray().GetAt(textureIndex);
+			}
+
+			if (materialIt < materialIndexCount - 1)
+				++materialIt;
+			if (textureIt < textureIndexCount - 1)
+				++textureIt;
+
+			CombinationKeyT combKey = std::make_pair(materialIndex, textureIndex);
+			if (combinationIndices.find(combKey) == combinationIndices.end())
+				combinationIndices[combKey] = nextCombinationIndex++;
+			int combIndex = combinationIndices[combKey];
+
+			{
+				materials[combIndex].texture = (lTexture)? &processTextureResource(lTexture): 0;
+				materials[combIndex].parameters = lMaterial;
+
+				if (subsets)
+				{
+					kInt const POLY_SIZE = 3;
+					assert(pMesh->GetPolygonSize(i) <= POLY_SIZE);
+					for (kInt j = 0; j < min(POLY_SIZE, pMesh->GetPolygonSize(i)); j++)
+					{
+						kInt lControlPointIndex = pMesh->GetPolygonVertex(i, j);
+						(*subsets)[combIndex].indices.push_back(processIndex(lControlPointIndex));
+					}
+				}
+			}
+		}
+
+		assert(nextCombinationIndex <= combinationIndices.size());
+		materials.resize(combinationIndices.size());
+		if (subsets)
+			subsets->resize(combinationIndices.size());
+	}
+}
+
 void processMesh(KFbxNode* pNode)
 {
 	std::string nodeName = pNode->GetName();
+	KFbxMesh* pMesh = (KFbxMesh*)pNode->GetNodeAttribute();
 
 	if(gLWMode)
 	{
 		std::string resourceName = getBaseName(nodeName) + ".lwo";
 
-		unsigned int failID = 0;
+		unsigned int failId = 0;
 		int failpos = 0;
-		lwObject* lwo = lwGetObject(const_cast<char*>(resourceName.c_str()), &failID, &failpos);
+		lwObject* lwo = lwGetObject(const_cast<char*>(resourceName.c_str()), &failId, &failpos);
 		lwLayer* layer = lwo->layer;
 		for(; layer; layer = layer->next)
 		{
-			std::string layerName = (layer->name)?std::string("_") + std::string(layer->name): "";
+			std::string layerName = (layer->name)? std::string("_") + std::string(layer->name): "";
 
 			OutputScene::Actor newActor;
 			newActor.mesh = &processMeshResource(layer, getBaseName(nodeName) + layerName);
+			processMaterials(pMesh, newActor.materials);	// $TBD: support multiple layers
+			assertWarning(newActor.mesh->subsets.size() == newActor.materials.size(), "Mesh subset count and actor material count doesn't match.");
 			newActor.node = pNode;
 	
 			gOutputScene.actors.push_back(newActor);
@@ -742,12 +966,51 @@ void processMesh(KFbxNode* pNode)
 	{
 		OutputScene::Actor newActor;
 		newActor.mesh = &processMeshResource(pNode);
+		processMaterials(pMesh, newActor.materials);
+		assertWarning(newActor.mesh->subsets.size() == newActor.materials.size(), "Mesh subset count and actor material count doesn't match.");
 		newActor.node = pNode;
 
 		gOutputScene.actors.push_back(newActor);
 	}
 }
-	
+
+void processProperties(KFbxObject* pObject)
+{
+	std::map<std::string, std::string> PropertyMapT;
+
+	int count = pObject->GetPropertyCount();
+	for (int i=0; i<count; i++)
+	{
+		KFbxUserProperty* lProperty = pObject->GetProperty(i);
+		if (!lProperty->GetFlag(KFbxUserProperty::eUSER))
+			continue; // process only user properties
+
+		std::string propertyName( lProperty->GetLabel().Buffer() );
+
+		// NOTE: hacky way to workaround FBX not having string type properties
+		size_t pos = propertyName.find_first_of("___");
+	}
+}
+
+OutputTexture& processTextureResource(KFbxTexture* pTexture)
+{
+	std::string resourceName = pTexture->GetRelativeFileName();
+
+	if(gOutputScene.textureResources.find(resourceName) != gOutputScene.textureResources.end())
+		return gOutputScene.textureResources[resourceName];
+
+	OutputTexture& result = gOutputScene.textureResources[resourceName];
+
+	result.name = resourceName;
+	result.parameters = pTexture;
+
+	assert(gDxNullRefDevice);
+	HRESULT hr = D3DXCreateTextureFromFile(gDxNullRefDevice, resourceName.c_str(), &result.data);
+	assertWarning(SUCCEEDED(hr), std::string("Failed to load texture: ") + resourceName);
+
+	return result;
+}
+
 OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 {
 	std::string nodeName = pNode->GetName();
@@ -764,6 +1027,8 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 	// mesh triangulized => can safely assume that all polys == triangles
 	KFbxMesh* pMeshTriangulated = gFbxGeomConverter->TriangulateMesh(pMesh);
 
+	assert(pMesh->GetLayerCount() == pMeshTriangulated->GetLayerCount());
+
 	kInt lControlPointsCount = pMesh->GetControlPointsCount();
 	kInt lPolygonCount = pMeshTriangulated->GetPolygonCount();
 	kInt lLinkCount = pMesh->GetLinkCount();
@@ -777,7 +1042,6 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 	// [FBX gather] vertices & normals
 	{
 		// $TBD: extract vertex colors from layer
-		// $TBD: extract uv from layer
 		KFbxVector4* lControlPoints = pMesh->GetControlPoints();
 		KFbxVector4* lNormals = pMesh->GetNormals();
 		for (kInt i = 0; i < lControlPointsCount; i++)
@@ -789,7 +1053,82 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 				result.vertices[i].normal[w] = static_cast<float>(lNormals[i][w]);
 			}
 		}
-	}
+	} // \[FBX gather] vertices & normals
+
+	// [FBX gather] uv (single layer)
+//	if(0)
+	{
+		KFbxMesh* pMeshWithUv = pMeshTriangulated;
+
+		// $TBD: support multiple layers
+		kInt const MAX_LAYER_COUNT = 1;
+		for (kInt l = 0; l < min(MAX_LAYER_COUNT, pMeshWithUv->GetLayerCount()); l++)
+		{
+			KFbxLayerElementUV* leUV = pMeshWithUv->GetLayer(l)->GetUVs();
+			if (!leUV)
+				continue;
+
+			for (kInt i = 0; i < pMeshWithUv->GetPolygonCount(); i++)
+			{
+				for (kInt j = 0; j < pMeshWithUv->GetPolygonSize(i); j++)
+				{
+					kInt lControlPointIndex = pMeshWithUv->GetPolygonVertex(i, j);
+
+					int tmpId;
+					KFbxVector2 uv;
+					switch (leUV->GetMappingMode())
+					{
+					case KFbxLayerElement::eBY_CONTROL_POINT:
+						switch (leUV->GetReferenceMode())
+						{
+						case KFbxLayerElement::eDIRECT:
+							uv = leUV->GetDirectArray().GetAt(lControlPointIndex);
+							break;
+						case KFbxLayerElement::eINDEX_TO_DIRECT:
+							tmpId = leUV->GetIndexArray().GetAt(lControlPointIndex);
+							uv = leUV->GetDirectArray().GetAt(tmpId);
+							break;
+						default:
+							break; // other reference modes not shown here!
+						}
+						break;
+
+					case KFbxLayerElement::eBY_POLYGON_VERTEX:
+						{
+//						kInt tmpTextureUVIndex = pMeshWithUv->GetTextureUVIndex(i, j);
+						switch (leUV->GetReferenceMode())
+						{
+						case KFbxLayerElement::eDIRECT:
+							tmpId = leUV->GetIndexArray().GetAt(lControlPointIndex);
+							uv = leUV->GetDirectArray().GetAt(tmpId);
+							break;
+						case KFbxLayerElement::eINDEX_TO_DIRECT:
+//							tmpId = tmpTextureUVIndex;//leUV->GetIndexArray().GetAt(tmpTextureUVIndex);
+							tmpId = leUV->GetIndexArray().GetAt(lControlPointIndex);
+							uv = leUV->GetDirectArray().GetAt(tmpId);
+							break;
+						default:
+							break; // other reference modes not shown here!
+						}
+						}
+						break;
+
+					case KFbxLayerElement::eBY_POLYGON: // doesn't make much sense for UVs
+					case KFbxLayerElement::eALL_SAME:   // doesn't make much sense for UVs
+					case KFbxLayerElement::eNONE:       // doesn't make much sense for UVs
+						break;
+					}
+
+					KFbxVector4 uvw(uv[0], 1.0f - uv[1], 0.0f, 0.0f);
+					for(int w = 0; w < 3; ++w)
+					{
+						assert(lControlPointIndex < (kInt)result.vertices.size());
+						result.vertices[lControlPointIndex].uvw[w] = static_cast<float>(uvw[w]);
+					}
+				}
+			}
+		}
+	} // \[FBX gather] uv
 
 	// [FBX gather] bone weights
 	{
@@ -815,7 +1154,7 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 				result.vertices[vertexId].weights.push_back(std::make_pair(boneId, boneWeight));
 			}
 		}
-	}
+	} // \[FBX gather] bone weights
 
 	// [FBX gather] indices
 	{
@@ -839,7 +1178,12 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 				result.indices[i*POLY_SIZE + j] = processIndex(lControlPointIndex);
 			}
 		}
-	}
+	} // \[FBX gather] indices
+
+	// [FBX gather] subsets
+	{
+		processSubsets(pMeshTriangulated, result.subsets);
+	} // \[FBX gather] subsets
 
 	// [FBX gather] bones
 	{
@@ -862,7 +1206,7 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 //			D3DXMatrixInverse(&inverseBoneMatrix, 0, &inverseBoneMatrix);
 //			memcpy(result.bones[i].matrix.data, &inverseBoneMatrix, sizeof(float)*16);
 		}
-	}
+	} // \[FBX gather] bones
 
 	return result;
 }
@@ -1277,7 +1621,7 @@ CurveT processCurve(KFCurve *pCurve)
 		return CurveT(keys, values, 1);
 
 	kInt lastKey = pCurve->KeyGetCountAll() - 1;
-	KTime totalTime = pCurve->KeyGetTimeAll(lastKey);
+	KTime totalTime; if(lastKey > 0) totalTime = pCurve->KeyGetTimeAll(lastKey); else totalTime.SetSecondDouble(1.0/ANIM_SAMPLING_FREQ);
 	KTime curTime; curTime.SetSecondDouble(0.0);
 	KTime deltaTime; deltaTime.SetSecondDouble(ANIM_SAMPLING_FREQ);
 
@@ -1324,7 +1668,6 @@ void DisplayMetaData(KFbxScene* pScene);
 
 int main(int argc, char** argv)
 {
-
 	std::string s;
 	assert((s=getBaseName("hello")) == "hello");
 	assert((s=getBaseName("hello_ () world")) == "hello_");
@@ -1342,6 +1685,9 @@ int main(int argc, char** argv)
 
 	KFbxScene* lScene = NULL;
 	bool lResult;
+
+	// Prepate DX9
+	gDxNullRefDevice = createDx9NullDevice();
 
 	// Prepare the FBX SDK.
 	InitializeSdkObjects(gFbxSdkManager, lScene);
@@ -1420,8 +1766,8 @@ int main(int argc, char** argv)
 	}
 
 	mutalisk::data::scene sceneData;
-	blit( gOutputScene, sceneData );
-	save( sceneName2FileName(gOutputScene.name), sceneData );
+	blit(gOutputScene, sceneData);
+	save(sceneName2FileName(gOutputScene.name), sceneData);
 
 	for(OutputScene::OutputMeshesT::const_iterator i = gOutputScene.meshResources.begin(); i != gOutputScene.meshResources.end(); ++i)
 	{
@@ -1430,15 +1776,33 @@ int main(int argc, char** argv)
 		{
 			mutalisk::data::dx9_mesh meshData;
 			blit(i->second, meshData);
-			save(nodeName2FileName(i->first), meshData);
+			save(meshName2FileName(i->first), meshData);
 		}
 		else if(gPlatform == Platform::PSP)
 		{
 			mutalisk::data::psp_mesh meshData;
 			blit(i->second, meshData);
-			save(nodeName2FileName(i->first), meshData);
+			save(meshName2FileName(i->first), meshData);
 		}
 	}
+
+	for(OutputScene::OutputTexturesT::const_iterator i = gOutputScene.textureResources.begin(); i != gOutputScene.textureResources.end(); ++i)
+	{
+		assert(i->first == i->second.name);
+		if(!i->second.data)
+			continue;
+
+		if(gPlatform == Platform::DX9)
+		{
+			// i->second.parameters
+			save(textureName2FileName(i->first), *i->second.data);
+		}
+		else if(gPlatform == Platform::PSP)
+		{
+			warning("Not implemented");
+		}
+	}
+
 
 	save(sceneName2AnimFileName(gOutputScene.name), gOutputScene.animResource);
 	gCurves.clear();
@@ -1512,6 +1876,8 @@ void DisplayContent(KFbxNode* pNode)
 	}
 
 	DisplayUserProperties(pNode);
+	processProperties(pNode);
+
 	DisplayTarget(pNode);
 	DisplayPivotsAndLimits(pNode);
 	DisplayTransformPropagation(pNode);

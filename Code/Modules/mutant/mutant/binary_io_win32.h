@@ -12,7 +12,7 @@ namespace mutant
 	{
 	public:
 		file_input( std::string const& name );
-		file_input( std::wstring const& name );
+//		file_input( std::wstring const& name );
 		~file_input();
 		virtual void read( void* dest, int n, int* wasRead );
 
@@ -24,7 +24,7 @@ namespace mutant
 	{
 	public:
 		file_output( std::string const& name );
-		file_output( std::wstring const& name );
+//		file_output( std::wstring const& name );
 		~file_output();
 		virtual void write( void const* src, int n, int* wasWritten );
 
