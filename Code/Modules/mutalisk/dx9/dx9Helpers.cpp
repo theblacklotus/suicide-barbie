@@ -2,7 +2,7 @@
 
 #include <string>
 #include <stdlib.h>
-#include <mutalisk/errors.h>
+#include "../errors.h"
 
 using namespace dx;
 
