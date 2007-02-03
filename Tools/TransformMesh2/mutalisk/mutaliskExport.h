@@ -4,7 +4,6 @@
 #include <fbxsdk.h>
 
 #include <d3d9.h>
-#include "../dx9/ComPtr.h"
 #include "../dx9/Dx9NullDevice.h"
 
 
@@ -803,6 +802,49 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 					shaderIndex = ~0U;
 
 				data.actors[q].materials[w].shaderIndex = shaderIndex;
+			}
+
+			{ // surface properties
+				mutalisk::data::Color& ambient = data.actors[q].materials[w].ambient;
+				mutalisk::data::Color& diffuse = data.actors[q].materials[w].diffuse;
+				mutalisk::data::Color& specular = data.actors[q].materials[w].specular;
+
+/*				if(lMaterial->GetNewFbxClassId().Is(KFbxSurfaceLambert::ClassId))
+				{
+					KFbxSurfaceLambert* surface = static_cast<KFbxSurfaceLambert*>(lMaterial);
+					ambient.r = surface->GetAmbientColor()[0];
+					ambient.g = surface->GetAmbientColor()[1];
+					ambient.b = surface->GetAmbientColor()[2];
+					ambient.a = 1.0f;
+
+					diffuse.r = surface->GetDiffuseColor()[0];
+					diffuse.g = surface->GetDiffuseColor()[1];
+					diffuse.b = surface->GetDiffuseColor()[2];
+					diffuse.a = 1.0f;
+
+					specular.r = 0.0f;
+					specular.g = 0.0f;
+					specular.b = 0.0f;
+					specular.a = 1.0f;
+				}
+				else if (lMaterial->GetNewFbxClassId().Is(KFbxSurfacePhong::ClassId))
+				{
+					KFbxSurfacePhong* surface = static_cast<KFbxSurfacePhong*>(lMaterial);
+					ambient.r = surface->GetAmbientColor()[0];
+					ambient.g = surface->GetAmbientColor()[1];
+					ambient.b = surface->GetAmbientColor()[2];
+					ambient.a = 1.0f;
+
+					diffuse.r = surface->GetDiffuseColor()[0];
+					diffuse.g = surface->GetDiffuseColor()[1];
+					diffuse.b = surface->GetDiffuseColor()[2];
+					diffuse.a = 1.0f;
+
+					specular.r = surface->GetSpecularColor()[0];
+					specular.g = surface->GetSpecularColor()[1];
+					specular.b = surface->GetSpecularColor()[2];
+					specular.a = 1.0f;
+				}*/
 			}
 		}
 	}

@@ -3,7 +3,7 @@
 
 #include "cfg.h"
 
-#include <d3dx9.h>
+//#include <d3dx9.h>
 #include "util.h"
 
 namespace mutant

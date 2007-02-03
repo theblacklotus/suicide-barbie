@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include\fbx\;..\include\;&quot;$(NEWAGEPSP)/Code&quot;;&quot;$(NEWAGEPSP)/Code/Modules&quot;;&quot;$(NEWAGEPSP)/Code/Modules/mutant&quot;;lwobject\;&quot;$(PSP_ROOT)\psp\sdk\include&quot;"
+				AdditionalIncludeDirectories="..\include\directx\;..\include\fbx\;..\include\;&quot;$(NEWAGEPSP)/Code&quot;;&quot;$(NEWAGEPSP)/Code/Modules&quot;;&quot;$(NEWAGEPSP)/Code/Modules/mutant&quot;;lwobject\"
 				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;K_PLUGIN;K_FBXSDK;K_NODLL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -138,7 +138,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include\fbx\;..\include\;&quot;$(NEWAGEPSP)/Code&quot;;&quot;$(NEWAGEPSP)/Code/Modules&quot;;&quot;$(NEWAGEPSP)/Code/Modules/mutant&quot;;lwobject\"
+				AdditionalIncludeDirectories="..\include\directx\;..\include\fbx\;..\include\;&quot;$(NEWAGEPSP)/Code&quot;;&quot;$(NEWAGEPSP)/Code/Modules&quot;;&quot;$(NEWAGEPSP)/Code/Modules/mutant&quot;;lwobject\"
 				PreprocessorDefinitions="_DEBUG;WIN32;_CONSOLE;K_PLUGIN;K_FBXSDK;K_NODLL;_CRT_SECURE_NO_DEPRECATE;KARCH_ENV_WIN"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -750,10 +750,6 @@
 		<Filter
 			Name="dx9"
 			>
-			<File
-				RelativePath=".\dx9\ComPtr.h"
-				>
-			</File>
 			<File
 				RelativePath=".\dx9\Dx9NullDevice.cpp"
 				>
