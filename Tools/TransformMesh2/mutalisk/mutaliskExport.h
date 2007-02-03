@@ -16,9 +16,9 @@ extern "C" {
 #endif 
 
 // mutalisk stuff ======================================================================================
-#pragma warning( disable:4512 )
+#pragma warning(disable:4512)
+#pragma warning(disable:4996)
 //#pragma warning( disable:4239 )
-
 
 float const WEIGHT_EPSILON = 1e-4f;
 double const ANIM_SAMPLING_FREQ = 1.0f / 30.0;
