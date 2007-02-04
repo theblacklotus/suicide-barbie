@@ -4,7 +4,6 @@
 #include "../cfg.h"
 
 #include <memory>
-#include <utility>
 #include "../BaseEffect.h"
 
 namespace mutalisk { namespace effects {
@@ -22,7 +21,8 @@ protected:
 		request.required.vecs.push_back(BaseEffect::AmbientColor);
 		request.required.vecs.push_back(BaseEffect::DiffuseColor);
 		request.required.vecs.push_back(BaseEffect::SpecularColor);
-		request.lightCountRange = std::make_pair(0, MAX_LIGHTS);
+		request.lightCountRange.first = 0;
+		request.lightCountRange.second = MAX_LIGHTS;
 	}
 
 public:

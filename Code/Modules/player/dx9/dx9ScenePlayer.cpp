@@ -273,7 +273,7 @@ namespace {
 			effect.SetTexture("tDiffuse", texture);
 	}
 
-	void render(RenderContext& rc, RenderableMesh const& mesh, unsigned int subset = 0)
+	void render(RenderContext& rc, RenderableMesh const& mesh, unsigned subset = 0)
 	{
 		// $TBD: support for 'undefined' (~0) subset, whole mesh should be rendered
 		rc.device->SetFVF(mesh.mBlueprint.fvfVertexDecl);

@@ -1,6 +1,6 @@
 #include "BaseEffect.h"
+#include <stdlib.h>
 #include <algorithm>
-#include <utility>
 
 using namespace mutalisk;
 using namespace mutalisk::effects;
@@ -59,6 +59,7 @@ namespace {
 
 void BaseEffect::allocInput(Input& input, Request const& request)
 {
+	using namespace std;
 	unsigned textureCount = max(
 		minimalSize(request.required.textures.begin(), 
 			request.required.textures.end()),
@@ -78,9 +79,9 @@ void BaseEffect::allocInput(Input& input, Request const& request)
 	unsigned intCount = minimalSize(request.required.ints.begin(), 
 			request.required.ints.end());
 
-	input.textures.resize(max(textureCount, BaseEffect::MaxCount_nTexture));
-	input.matrices.resize(max(matrixCount, BaseEffect::MaxCount_nMatrix));
-	input.vecs.resize(max(vecCount, BaseEffect::MaxCount_nVec));
+	input.textures.resize(max(textureCount, (unsigned)BaseEffect::MaxCount_nTexture));
+	input.matrices.resize(max(matrixCount, (unsigned)BaseEffect::MaxCount_nMatrix));
+	input.vecs.resize(max(vecCount, (unsigned)BaseEffect::MaxCount_nVec));
 	input.floats.resize(floatCount);
 	input.ints.resize(intCount);
 

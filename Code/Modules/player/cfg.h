@@ -3,16 +3,18 @@
 
 #include <mutalisk/common.h>
 
-// disable:  unreferenced local function has been removed
-#pragma warning(disable : 4505)
+#if defined(WIN32)
+	// disable:  unreferenced local function has been removed
+	#pragma warning(disable : 4505)
 
-// disable:  assignment operator could not be generated
-#pragma warning(disable : 4512)
+	// disable:  assignment operator could not be generated
+	#pragma warning(disable : 4512)
 
-// disable: forcing value to bool 'true' or 'false' (performance warning)
-#pragma warning( disable:4800 )
+	// disable: forcing value to bool 'true' or 'false' (performance warning)
+	#pragma warning(disable:4800)
 
-// disable:  name was marked as #pragma deprecated
-#pragma warning(disable : 4995)
+	// disable:  name was marked as #pragma deprecated
+	#pragma warning(disable : 4995)
+#endif
 
 #endif // MUTALISK_EFFECTS__CFG_H_

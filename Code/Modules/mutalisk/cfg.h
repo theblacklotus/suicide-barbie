@@ -2,7 +2,9 @@
 #define MUTALISK_CFG_H_
 
 // c4996: 'std::_Copy_opt' was declared deprecated
-#pragma warning(disable:4996)
+#if defined WIN32
+	#pragma warning(disable:4996)
+#endif
 
 // c1055: compiler limit : out of keys VC workaround
 //#define __ERROR_C1055_WORKAROUND

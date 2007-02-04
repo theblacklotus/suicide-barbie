@@ -1,17 +1,20 @@
 #include "pspScenePlayer.h"
-#include "ScenePlayer.h"
+#include "../ScenePlayer.h"
 
 #include <memory>
+#include <effects/BaseEffect.h>
+#include <effects/all.h>
 
-using namespace std;
+using namespace mutalisk;
+using namespace mutalisk::effects;
 
 ////////////////////////////////////////////////
-auto_ptr<RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene const& data, std::string const& pathPrefix)
+std::auto_ptr<RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene const& data, std::string const& pathPrefix)
 {
-	auto_ptr<RenderableScene> scene(new RenderableScene(data));
+	std::auto_ptr<RenderableScene> scene(new RenderableScene(data));
 
 	// load shared resources
-	scene->mResources.meshes = new RenderableScene::SharedResources::Mesh[data.meshIds.size()];
+	scene->mResources.meshes.resize(data.meshIds.size());
 	for(size_t q = 0; q < data.meshIds.size(); ++q)
 	{
 		scene->mResources.meshes[q].blueprint = loadResource<mutalisk::data::mesh>(pathPrefix + data.meshIds[q]);
@@ -40,9 +43,9 @@ namespace {
 	}
 }
 
-auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh const& data)
+std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh const& data)
 {
-	auto_ptr<RenderableMesh> mesh(new RenderableMesh(data));
+	std::auto_ptr<RenderableMesh> mesh(new RenderableMesh(data));
 	if(data.skinInfo)
 	{
 		;;printf("has skinInfo \n");
@@ -69,6 +72,27 @@ auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh const& 
 }
 
 namespace {
+	struct MatrixState
+	{
+		void applyWorldMatrix(RenderContext const& rc, ScePspFMatrix4 const& inWorldMatrix, BaseEffect::Input& dst)
+		{
+			world = inWorldMatrix;
+
+			gumFastInverse(&invWorld, &world);
+			gumMultMatrix(&worldViewProj, &rc.viewProjMatrix, &world);
+
+			dst.matrices[BaseEffect::WorldMatrix] = &world;
+			dst.matrices[BaseEffect::ViewMatrix] = &rc.viewMatrix;
+			dst.matrices[BaseEffect::ViewProjMatrix] = &rc.viewProjMatrix;
+			dst.matrices[BaseEffect::WorldViewProjMatrix] = &worldViewProj;
+			dst.matrices[BaseEffect::InvWorldMatrix] = &invWorld;
+		}
+
+		ScePspFMatrix4 world;
+		ScePspFMatrix4 worldViewProj;
+		ScePspFMatrix4 invWorld;
+	};
+
 	void toNative(CTransform::t_matrix const& src, ScePspFMatrix4& dst)
 	{
 		float static scale = 1.0f;
@@ -103,6 +127,14 @@ namespace {
 		dstColor |= (unsigned int)(srcColor.b * 255.0f) << 16;
 		dstColor |= (unsigned int)(srcColor.a * 255.0f) << 24;
 		return dstColor;
+	}
+
+	void toNative(mutalisk::data::Color const& color, ScePspFVector4& vec)
+	{
+		vec.x = color.r;
+		vec.y = color.g;
+		vec.z = color.b;
+		vec.w = color.a;
 	}
 
 	void setCameraMatrix(RenderContext& rc, ScePspFMatrix4 const& cameraMatrix)
@@ -193,7 +225,7 @@ namespace {
 		setDefaultLight(state, identityMatrix);
 	}
 
-	void render(RenderContext& rc, RenderableMesh const& mesh)
+	void render(RenderContext& rc, RenderableMesh const& mesh, unsigned subset = 0)
 	{
 		unsigned char* vertexData = mesh.mBlueprint.vertexData;
 		int vertexFlag = mesh.mBlueprint.vertexDecl;
@@ -205,9 +237,11 @@ namespace {
 		}
 
 		int indexCount = 0;
+		int indexDataOffset = 0;
 		if(mesh.mBlueprint.indexData)
 		{
-			indexCount = mesh.mBlueprint.indexCount;
+			indexCount = mesh.mBlueprint.subsets[subset].count;//mesh.mBlueprint.indexCount;
+			indexDataOffset = mesh.mBlueprint.subsets[subset].offset * 2;	// $TBD: GU_INDEX_8BIT support
 			vertexFlag |= GU_INDEX_16BIT;
 		}
 		else
@@ -216,11 +250,11 @@ namespace {
 		sceGumDrawArray(
 			mesh.mBlueprint.primitiveType, vertexFlag | GU_TRANSFORM_3D,
 			indexCount,
-			mesh.mBlueprint.indexData, vertexData);
+			mesh.mBlueprint.indexData + indexDataOffset, vertexData);
 	}
 } // namespace
 
-
+/*
 void render(RenderContext& rc, RenderableScene const& scene, bool animatedActors, bool animatedCamera, int maxActors, int maxLights)
 {
 	ScePspFMatrix4 nativeMatrix;
@@ -283,6 +317,106 @@ void render(RenderContext& rc, RenderableScene const& scene, bool animatedActors
 	}
 //	DX_MSG("end effect") = rc.defaultEffect->End();
 
+}*/
+
+void render(RenderContext& rc, RenderableScene const& scene, bool animatedActors, bool animatedCamera, int maxActors)
+{
+	ScePspFMatrix4 nativeMatrix;
+
+	if(scene.mBlueprint.defaultClipIndex == ~0U)
+	{
+		animatedActors = false;
+		animatedCamera = false;
+	}
+
+	if(scene.mBlueprint.defaultCameraIndex != ~0U)
+	{
+		unsigned int cameraIndex = scene.mBlueprint.defaultCameraIndex;
+		if(animatedCamera)
+		{
+			ASSERT(cameraIndex >= 0 && cameraIndex < scene.mState.camera2XformIndex.size());
+			toNative(scene.mState.matrices[scene.mState.camera2XformIndex[cameraIndex]], nativeMatrix);
+		}
+		else
+		{
+			ASSERT(cameraIndex >= 0 && cameraIndex < scene.mBlueprint.cameras.size());
+			toNative(scene.mBlueprint.cameras[cameraIndex].worldMatrix.data, nativeMatrix);
+		}
+
+		setCameraMatrix(rc, nativeMatrix);
+	}
+
+	MatrixState matrixState;
+
+	static Lambert fx;
+	BaseEffect::Input& fxInput = fx.allocInput();
+
+	fx.captureState();
+	unsigned passCount = fx.begin();
+
+	size_t nextLightIndex = 0;
+	for(size_t q = 0; q < scene.mBlueprint.lights.size(); ++q, ++nextLightIndex)
+	{
+		mutalisk::data::scene::Light const& light = scene.mBlueprint.lights[q];
+
+		ASSERT(q >= 0 && q < scene.mState.light2XformIndex.size());
+		toNative(scene.mState.matrices[scene.mState.light2XformIndex[q]], nativeMatrix);
+
+		ASSERT(q < fxInput.lights.size());
+		fxInput.lights[q].first = &light;
+		fxInput.lights[q].second = nativeMatrix;
+	}
+	if(nextLightIndex < fxInput.lights.size())
+		fxInput.lights[nextLightIndex].first = 0;
+
+	for(unsigned pass = 0; pass < passCount; ++pass)
+	{
+		for(size_t q = 0; q < ((maxActors>0)?maxActors: scene.mBlueprint.actors.size()); ++q)
+		{
+			mutalisk::data::scene::Actor const& actor = scene.mBlueprint.actors[q];
+
+			if(animatedActors)
+			{
+				ASSERT(q >= 0 && q < scene.mState.actor2XformIndex.size());
+				toNative(scene.mState.matrices[scene.mState.actor2XformIndex[q]], nativeMatrix);
+			}
+			else
+				toNative(actor.worldMatrix.data, nativeMatrix);
+
+//			if(!scene.mResources.meshes[actor.meshIndex].blueprint->skinInfo)
+				matrixState.applyWorldMatrix(rc, nativeMatrix, fxInput);
+
+			RenderableMesh const& mesh = *scene.mResources.meshes[actor.meshIndex].renderable;
+			if(actor.materials.empty())
+			{
+				ScePspFVector4 const black = {0,0,0,1};
+				ScePspFVector4 const white = {0,0,0,1};
+
+				fxInput.vecs[BaseEffect::AmbientColor] = black;
+				fxInput.vecs[BaseEffect::DiffuseColor] = white;
+				fxInput.vecs[BaseEffect::SpecularColor] = white;
+
+				fx.pass(pass);
+				render(rc, mesh);
+			}
+			else
+			for(unsigned int materialIt = 0; materialIt < actor.materials.size(); ++materialIt)
+			{
+				unsigned int textureIndex = actor.materials[materialIt].textureIndex;
+				// $TBD: texture support
+				//fxInput.textures[BaseEffect::DiffuseTexture] = 
+				//	((textureIndex != ~0U)? scene.mNativeResources.textures[textureIndex]: 0);
+
+				toNative(actor.materials[materialIt].ambient, fxInput.vecs[BaseEffect::AmbientColor]);
+				toNative(actor.materials[materialIt].diffuse, fxInput.vecs[BaseEffect::DiffuseColor]);
+				toNative(actor.materials[materialIt].specular, fxInput.vecs[BaseEffect::SpecularColor]);
+
+				fx.pass(pass);
+				render(rc, mesh, materialIt);
+			}
+		}
+	}
+	fx.end();
 }
 
 ////////////////////////////////////////////////
@@ -291,37 +425,6 @@ void CSkinnedAlgos::processSkinMesh(RenderableMesh& mesh, BoneMapT const& boneMa
 {
 	assert(mesh.mBlueprint.skinInfo);
 	assert(!boneMap.empty());
-
-/*	size_t positionsOffset = ~0U;
-	size_t normalsOffset = sizeof(float)*mesh.mBlueprint.skinInfo->weightsPerVertex;//~0U;
-	size_t weightsOffset = 0U;//~0U;
-	size_t boneIndicesOffset = 0U;//~0U;
-
-	for(size_t q = 0; q < MAX_FVF_DECL_SIZE && dx9Declaration[q].Stream != 0xff; ++q)
-	{
-		size_t offset = dx9Declaration[q].Offset;
-		switch(dx9Declaration[q].Usage)
-		{
-		case D3DDECLUSAGE_POSITION:
-			positionsOffset = offset;
-			break;
-		case D3DDECLUSAGE_BLENDWEIGHT:
-			weightsOffset = offset;
-			break;
-		case D3DDECLUSAGE_BLENDINDICES:
-			boneIndicesOffset = offset;
-			break;
-		case D3DDECLUSAGE_NORMAL:
-			normalsOffset = offset;
-			break;
-		}
-	}
-
-	assert(positionsOffset != ~0);
-	assert(normalsOffset != ~0);
-	assert(weightsOffset != ~0);
-	assert(boneIndicesOffset != ~0);
-	*/
 
 	// $HACK: hardcoded offsets
 	// $TBD: calc offsets using vertexDecl

@@ -1,7 +1,7 @@
 #ifndef NEWAGE_PSP_SCENEPLAYER_H_
 #define NEWAGE_PSP_SCENEPLAYER_H_
 
-#include "cfg.h"
+#include "../cfg.h"
 #include <memory>
 
 #include <pspgu.h>
@@ -22,15 +22,11 @@
 //{
 //};
 
-struct Effect
-{
-};
-
 struct RenderContext
 {
-	Effect*			defaultEffect;
-	ScePspFMatrix4	viewProjMatrix;
+	ScePspFMatrix4	viewMatrix;
 	ScePspFMatrix4	projMatrix;
+	ScePspFMatrix4	viewProjMatrix;
 };
 
 struct RenderableMesh
