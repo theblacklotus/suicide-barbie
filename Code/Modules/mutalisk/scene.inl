@@ -86,6 +86,9 @@ inline template <typename In> In& operator>> (In& i, scene& data)
 			data.actors[q].materials.resize(i.readDword());
 			for(size_t w = 0; w < data.actors[q].materials.size(); ++w)
 			{
+				i.readType(data.actors[q].materials[w].ambient);
+				i.readType(data.actors[q].materials[w].diffuse);
+				i.readType(data.actors[q].materials[w].specular);
 				data.actors[q].materials[w].textureIndex = i.readDword();
 				data.actors[q].materials[w].shaderIndex = i.readDword();
 			}
@@ -151,6 +154,9 @@ inline template <typename Out> Out& operator<< (Out& o, scene const& data)
 			o.writeDword(data.actors[q].materials.size());
 			for(size_t w = 0; w < data.actors[q].materials.size(); ++w)
 			{
+				o.writeType(data.actors[q].materials[w].ambient);
+				o.writeType(data.actors[q].materials[w].diffuse);
+				o.writeType(data.actors[q].materials[w].specular);
 				o.writeDword(data.actors[q].materials[w].textureIndex);
 				o.writeDword(data.actors[q].materials[w].shaderIndex);
 			}

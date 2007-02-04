@@ -216,6 +216,14 @@ namespace {
 		worldMatrix = D3DXMATRIX(worldMatrixData);
 	}
 
+	void toNative(mutalisk::data::Color const& color, D3DXVECTOR4& vec)
+	{
+		vec.x = color.r;
+		vec.y = color.g;
+		vec.z = color.b;
+		vec.w = color.a;
+	}
+
 	void setCameraMatrix(RenderContext& rc, D3DXMATRIX const& cameraMatrix)
 	{
 		D3DXMATRIX viewMatrix = cameraMatrix;
@@ -439,13 +447,13 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedAct
 //			if(!scene.mResources.meshes[actor.meshIndex].blueprint->skinInfo)
 				matrixState.applyWorldMatrix(rc, nativeMatrix, fxInput);
 
-			fxInput.vecs[BaseEffect::AmbientColor] = D3DXVECTOR4(0,0,0,1);
-			fxInput.vecs[BaseEffect::DiffuseColor] = D3DXVECTOR4(1,1,1,1);
-			fxInput.vecs[BaseEffect::SpecularColor] = D3DXVECTOR4(1,1,1,1);
-
 			RenderableMesh const& mesh = *scene.mResources.meshes[actor.meshIndex].renderable;
 			if(actor.materials.empty())
 			{
+				fxInput.vecs[BaseEffect::AmbientColor] = D3DXVECTOR4(0,0,0,1);
+				fxInput.vecs[BaseEffect::DiffuseColor] = D3DXVECTOR4(1,1,1,1);
+				fxInput.vecs[BaseEffect::SpecularColor] = D3DXVECTOR4(1,1,1,1);
+
 				fx.pass(pass);
 				render(rc, mesh);
 			}
@@ -455,6 +463,10 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedAct
 				unsigned int textureIndex = actor.materials[materialIt].textureIndex;
 				fxInput.textures[BaseEffect::DiffuseTexture] = 
 					((textureIndex != ~0U)? scene.mNativeResources.textures[textureIndex]: 0);
+
+				toNative(actor.materials[materialIt].ambient, fxInput.vecs[BaseEffect::AmbientColor]);
+				toNative(actor.materials[materialIt].diffuse, fxInput.vecs[BaseEffect::DiffuseColor]);
+				toNative(actor.materials[materialIt].specular, fxInput.vecs[BaseEffect::SpecularColor]);
 
 				fx.pass(pass);
 //				fx.commitChanges();

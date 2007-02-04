@@ -22,7 +22,7 @@ namespace mutalisk { namespace data
 
 	struct scene
 	{
-		enum { Version = 0x0108 };
+		enum { Version = 0x0109 };
 
 		typedef std::string Ref;
 		struct Node {
