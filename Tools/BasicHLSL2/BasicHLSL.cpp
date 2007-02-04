@@ -770,12 +770,15 @@ void    RenderText( double fTime );
 // Entry point to the program. Initializes everything and goes into a message processing 
 // loop. Idle time is used to render the scene.
 //--------------------------------------------------------------------------------------
-INT WINAPI WinMain( HINSTANCE, HINSTANCE, LPSTR, int )
+INT WINAPI WinMain( HINSTANCE, HINSTANCE, LPSTR cmdLine, int )
 {
     // Enable run-time memory check for debug builds.
 #if defined(DEBUG) | defined(_DEBUG)
     _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
+
+	if(*cmdLine)
+		gSceneFileName = cmdLine;
 
     // Set the callback functions. These functions allow DXUT to notify
     // the application about device changes, user input, and windows messages.  The 
