@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../include;&quot;$(NEWAGEPSP)/Code&quot;;&quot;$(NEWAGEPSP)/Code/Modules&quot;;&quot;$(NEWAGEPSP)/Code/Modules/mutant&quot;"
+				AdditionalIncludeDirectories="../include;&quot;$(NEWAGEPSP)/Code&quot;;&quot;$(NEWAGEPSP)/Code/Modules&quot;;&quot;$(NEWAGEPSP)/Code/Modules/mutant&quot;;..\include\directx"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
@@ -128,7 +128,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="../include;&quot;$(NEWAGEPSP)/Code&quot;;&quot;$(NEWAGEPSP)/Code/Modules&quot;;&quot;$(NEWAGEPSP)/Code/Modules/mutant&quot;"
+				AdditionalIncludeDirectories="../include;&quot;$(NEWAGEPSP)/Code&quot;;&quot;$(NEWAGEPSP)/Code/Modules&quot;;&quot;$(NEWAGEPSP)/Code/Modules/mutant&quot;;..\include\directx"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				StringPooling="true"
 				ExceptionHandling="0"
