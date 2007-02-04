@@ -177,7 +177,7 @@ BoneMapT& mapSkinnedBonesToHierarchy(
 	return remapedBones;
 }
 */
-/*
+/*	
 void updateSkinMesh( mutant::simple_skinned& skin, BoneMapT& boneMap, CTransform::t_matrix const* data, float* vbuffer, size_t stride )
 {
 //	CMeshSegment::TBoneMap const& boneIds = mSlotBuffer[segment]->bonesInCombination();

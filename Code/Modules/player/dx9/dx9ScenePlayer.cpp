@@ -292,75 +292,6 @@ void process(Dx9RenderableScene& scene)
 {
 	scene.process();
 }
-/*
-void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedActors, bool animatedCamera, int maxActors)
-{
-	D3DXMATRIX nativeMatrix;
-	ASSERT(rc.defaultEffect);
-
-	if(scene.mBlueprint.defaultClipIndex == ~0U)
-	{
-		animatedActors = false;
-		animatedCamera = false;
-	}
-
-	if(scene.mBlueprint.defaultCameraIndex != ~0U)
-	{
-		unsigned int cameraIndex = scene.mBlueprint.defaultCameraIndex;
-		if(animatedCamera)
-		{
-			ASSERT(cameraIndex >= 0 && cameraIndex < scene.mState.camera2XformIndex.size());
-			toNative(scene.mState.matrices[scene.mState.camera2XformIndex[cameraIndex]], nativeMatrix);
-		}
-		else
-		{
-			ASSERT(cameraIndex >= 0 && cameraIndex < scene.mBlueprint.cameras.size());
-			toNative(scene.mBlueprint.cameras[cameraIndex].worldMatrix.data, nativeMatrix);
-		}
-
-		setCameraMatrix(rc, nativeMatrix);
-	}
-
-	unsigned int passCount = 0;
-	DX_MSG("begin effect") = rc.defaultEffect->Begin(&passCount, 0);
-    for(unsigned int iPass = 0; iPass < passCount; iPass++)
-    {
-		DX_MSG("begin pass") = rc.defaultEffect->BeginPass(iPass);	
-		for(size_t q = 0; q < ((maxActors>0)?maxActors: scene.mBlueprint.actors.size()); ++q)
-		{
-			mutalisk::data::scene::Actor const& actor = scene.mBlueprint.actors[q];
-
-			if(animatedActors)
-			{
-				ASSERT(q >= 0 && q < scene.mState.actor2XformIndex.size());
-				toNative(scene.mState.matrices[scene.mState.actor2XformIndex[q]], nativeMatrix);
-			}
-			else
-				toNative(actor.worldMatrix.data, nativeMatrix);
-
-//			if(!scene.mResources.meshes[actor.meshIndex].blueprint->skinInfo)
-				setWorldMatrix(rc, *rc.defaultEffect, nativeMatrix);
-
-			RenderableMesh const& mesh = *scene.mResources.meshes[actor.meshIndex].renderable;
-			if(actor.materials.empty())
-			{
-				DX_MSG("commit changes") = rc.defaultEffect->CommitChanges();
-				render(rc, mesh);
-			} else
-			for(unsigned int materialIt = 0; materialIt < actor.materials.size(); ++materialIt)
-			{
-				unsigned int textureIndex = actor.materials[materialIt].textureIndex;
-				setDiffuseTexture(rc, *rc.defaultEffect, 
-					(textureIndex != ~0U)? scene.mNativeResources.textures[textureIndex]: 0);
-
-				DX_MSG("commit changes") = rc.defaultEffect->CommitChanges();
-				render(rc, mesh, materialIt);
-			}
-		}
-		DX_MSG("end pass") = rc.defaultEffect->EndPass();
-	}
-	DX_MSG("end effect") = rc.defaultEffect->End();
-}*/
 
 namespace {
 
@@ -417,21 +348,33 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedAct
 
 	MatrixState matrixState;
 
-//	BaseEffect& effect;
 	gContext.device = rc.device;
 	gContext.uberShader = rc.defaultEffect;
-
-	gContext.device = rc.device;
 
 	static Lambert fx;
 	BaseEffect::Input& fxInput = fx.allocInput();
 
 	fx.captureState();
 	unsigned passCount = fx.begin();
+
+
+	size_t nextLightIndex = 0;
+	for(size_t q = 0; q < scene.mBlueprint.lights.size(); ++q, ++nextLightIndex)
+	{
+		mutalisk::data::scene::Light const& light = scene.mBlueprint.lights[q];
+
+		ASSERT(q >= 0 && q < scene.mState.light2XformIndex.size());
+		toNative(scene.mState.matrices[scene.mState.light2XformIndex[q]], nativeMatrix);
+
+		ASSERT(q < fxInput.lights.size());
+		fxInput.lights[q].first = &light;
+		fxInput.lights[q].second = nativeMatrix;
+	}
+	if(nextLightIndex < fxInput.lights.size())
+		fxInput.lights[nextLightIndex].first = 0;
+
 	for(unsigned pass = 0; pass < passCount; ++pass)
 	{
-//		fx.beginPass(pass);
-
 		for(size_t q = 0; q < ((maxActors>0)?maxActors: scene.mBlueprint.actors.size()); ++q)
 		{
 			mutalisk::data::scene::Actor const& actor = scene.mBlueprint.actors[q];
@@ -469,7 +412,6 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedAct
 				toNative(actor.materials[materialIt].specular, fxInput.vecs[BaseEffect::SpecularColor]);
 
 				fx.pass(pass);
-//				fx.commitChanges();
 				render(rc, mesh, materialIt);
 			}
 		}

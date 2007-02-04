@@ -46,7 +46,6 @@ double const ANIM_SAMPLING_FREQ = 1.0f / 30.0;
 
 namespace mutalisk
 {
-
 void error(std::string msg) { throw std::runtime_error(msg); }
 void warning(std::string msg) { printf("WARNING: %s\n", msg.c_str()); }// assert(!!!"WARNING"); }
 //void assertWarning(bool condition, std::string msg) { if(!condition) warning(msg); }
@@ -137,6 +136,9 @@ struct OutputScene
 		typedef std::map<std::string, std::string>			StringPropertyMapT;
 		typedef std::map<std::string, array<double> >		VectorPropertyMapT;
 
+		bool hasString(std::string const& byName) const { return (strings.find(byName) != strings.end()); }
+		bool hasVector(std::string const& byName) const { return (vectors.find(byName) != vectors.end()); }
+
 		StringPropertyMapT	strings;
 		VectorPropertyMapT	vectors;
 	};
@@ -205,7 +207,7 @@ std::string processShaderResource(KFbxSurfaceMaterial* pMaterial);
 OutputSkinnedMesh& processMeshResource(KFbxNode* pNode);
 OutputSkinnedMesh& processMeshResource(lwLayer* subset, std::string resourceName);
 void processCamera(KFbxNode* pNode);
-void processLight(KFbxLight* pLight);
+void processLight(KFbxNode* pLight);
 
 int processHierarchy(mutant::anim_hierarchy& hierarchy, KFbxNode* pNode, int pDepth);
 //std::auto_ptr<mutant::anim_hierarchy> processHierarchy(KFbxScene* pScene);
@@ -722,6 +724,7 @@ void blit(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 
 void blit(OutputScene const& scene, mutalisk::data::scene& data)
 {
+	// shared resources
 	size_t q = 0;
 	data.meshIds.resize(scene.meshResources.size());
 	for(OutputScene::OutputMeshesT::const_iterator i = scene.meshResources.begin(); i != scene.meshResources.end(); ++i, ++q)
@@ -743,8 +746,63 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 		data.shaderIds[q] = *i;
 	}
 
-	data.lights.resize(0);//scene.lights.size();
+	// lights
+	q = 0;
+	data.lights.resize(scene.lights.size());
+	for(OutputScene::LightsT::const_iterator i = scene.lights.begin(); i != scene.lights.end(); ++i, ++q)
+	{
+		assert(*i);
+		assert((*i)->GetNode());
+		assert((*i)->GetAttributeType() == KFbxNodeAttribute::eLIGHT);
+		char const* name = (*i)->GetNode()->GetName();
+		data.lights[q].nodeName = name;
+		processMatrix(data.lights[q].worldMatrix.data, (*i)->GetNode()->GetGlobalFromDefaultTake());
 
+		OutputScene::Properties properties;
+		processProperties((*i)->GetNode(), properties);
+
+		switch((*i)->GetLightType())
+		{
+		case KFbxLight::eDIRECTIONAL:
+			data.lights[q].type = mutalisk::data::scene::Light::Directional;
+			break;
+		case KFbxLight::ePOINT:
+			data.lights[q].type = mutalisk::data::scene::Light::Point;
+			break;
+		case KFbxLight::eSPOT:
+			data.lights[q].type = mutalisk::data::scene::Light::Spot;
+			break;
+		}
+/*		if(properties.hasString("typeEx"))
+		{
+			if(properties.strings["typeEx"] == "DirectionalExt")
+			{
+				assertWarning(properties.hasVector("backColor"), "DirectionalExt light type misses 'Back Color' property");
+				assertWarning(properties.hasVector("equatorColor"), "DirectionalExt light type misses 'Equator Color' property");
+			}
+		}*/
+		data.lights[q].ambient.r = data.lights[q].ambient.g = data.lights[q].ambient.b = 0.0f;
+		data.lights[q].ambient.a = 1.0f;
+
+		KFbxColor lColor; (*i)->GetDefaultColor(lColor);
+		float intensity = static_cast<float>((*i)->GetDefaultIntensity()) * 0.01f;
+		data.lights[q].diffuse.r = static_cast<float>(lColor.mRed) * intensity;		
+		data.lights[q].diffuse.g = static_cast<float>(lColor.mGreen) * intensity;
+		data.lights[q].diffuse.b = static_cast<float>(lColor.mBlue) * intensity;		
+		data.lights[q].diffuse.a = static_cast<float>(lColor.mAlpha) * intensity;
+
+		data.lights[q].specular = data.lights[q].diffuse;
+
+		// $TBD: light attenuation (decay)
+		//(*i)->GetDecayStart();
+		//(*i)->GetDecayEnd();
+		//(*i)->GetDecayType();
+
+		data.lights[q].phi = static_cast<float>((*i)->GetDefaultConeAngle()) * (D3DX_PI / 180.0f);
+		data.lights[q].theta = 0.0f;
+	}
+
+	// cameras
 	data.cameras.resize(scene.cameras.size());
 	if(!scene.cameras.empty())
 		data.defaultCameraIndex = 0;
@@ -763,6 +821,7 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 		processMatrix(data.cameras[q].worldMatrix.data, (*i)->GetNode()->GetGlobalFromDefaultTake());
 	}
 
+	// actors
 	data.actors.resize(scene.actors.size());
 	q = 0;
 	for(OutputScene::ActorsT::const_iterator i = scene.actors.begin(); i != scene.actors.end(); ++i, ++q)
@@ -855,6 +914,7 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 		}
 	}
 
+	// animations
 	data.animCharId = sceneName2AnimFileName(scene.name);
 	if(scene.animResource.charPair(0).second && scene.animResource.charPair(0).second->size() > 0)
 		data.defaultClipIndex = 0;
@@ -1115,7 +1175,7 @@ void processProperties(KFbxObject const* pObject, OutputScene::Properties& prope
 
 void applyProperties(OutputScene::Actor& actor, OutputScene::Properties const& properties)
 {
-	// @TBD: props
+	// $TBD: props
 	// "shaderOverride"
 }
 
@@ -1465,8 +1525,9 @@ void processCamera(KFbxNode* pNode)
 	gOutputScene.cameras.push_back(pCamera);
 }
 
-void processLight(KFbxLight* pLight)
+void processLight(KFbxNode* pNode)
 {
+	KFbxLight* pLight = (KFbxLight*)pNode->GetNodeAttribute();
 	gOutputScene.lights.push_back(pLight);
 }
 

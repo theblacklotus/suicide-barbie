@@ -238,6 +238,7 @@ void DisplayContent(KFbxNode* pNode)
 	
 			case KFbxNodeAttribute::eLIGHT:     
 				DisplayLight(pNode);
+				mutalisk::processLight(pNode);
 				break;
 	    }   
 	}

@@ -62,6 +62,13 @@ inline template <typename In> In& operator>> (In& i, scene& data)
 //			i.readString( data.lights[q].nodeName );
 //			i.readType( data.lights[q].worldMatrix );
 			i >> data.lights[q].base();
+			i.readType(data.lights[q].type);
+			i.readType(data.lights[q].ambient);
+			i.readType(data.lights[q].diffuse);
+			i.readType(data.lights[q].specular);
+			i.readType(data.lights[q].attenuation);
+			i.readType(data.lights[q].theta);
+			i.readType(data.lights[q].phi);
 		}
 
 		// cameras
@@ -131,6 +138,13 @@ inline template <typename Out> Out& operator<< (Out& o, scene const& data)
 //			o.writeString(data.lights[q].nodeName);
 //			o.writeType(data.lights[q].worldMatrix);
 			o << data.lights[q].base();
+			o.writeType(data.lights[q].type);
+			o.writeType(data.lights[q].ambient);
+			o.writeType(data.lights[q].diffuse);
+			o.writeType(data.lights[q].specular);
+			o.writeType(data.lights[q].attenuation);
+			o.writeType(data.lights[q].theta);
+			o.writeType(data.lights[q].phi);
 		}
 
 		// cameras

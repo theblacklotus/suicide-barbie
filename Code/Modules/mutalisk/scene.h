@@ -22,7 +22,7 @@ namespace mutalisk { namespace data
 
 	struct scene
 	{
-		enum { Version = 0x0109 };
+		enum { Version = 0x0110 };
 
 		typedef std::string Ref;
 		struct Node {
@@ -32,6 +32,7 @@ namespace mutalisk { namespace data
 		struct Light : parent<Node> {
 			enum Type {
 				Directional, Spot, Point
+//				DirectionalExt
 			};
 			Type type;
 			Color ambient;
