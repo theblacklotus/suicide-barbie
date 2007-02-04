@@ -217,7 +217,7 @@ void Lambert::pass(unsigned passIndex)
 	case 0:
 		if(resetPass)
 			mImpl->pass(0);
-//		mImpl->setupLights(mInput);
+		mImpl->setupLights(mInput);
 		mImpl->setupSurface(mInput);
 		mImpl->setupGeometry(mInput);
 		break;
