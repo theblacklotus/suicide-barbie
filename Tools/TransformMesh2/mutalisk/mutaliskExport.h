@@ -809,17 +809,20 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 				mutalisk::data::Color& diffuse = data.actors[q].materials[w].diffuse;
 				mutalisk::data::Color& specular = data.actors[q].materials[w].specular;
 
-/*				if(lMaterial->GetNewFbxClassId().Is(KFbxSurfaceLambert::ClassId))
+				KFbxPropertyDouble3 lKFbxDouble3;
+				if(i->materials[w].parameters->GetNewFbxClassId().Is(KFbxSurfaceLambert::ClassId))
 				{
-					KFbxSurfaceLambert* surface = static_cast<KFbxSurfaceLambert*>(lMaterial);
-					ambient.r = surface->GetAmbientColor()[0];
-					ambient.g = surface->GetAmbientColor()[1];
-					ambient.b = surface->GetAmbientColor()[2];
+					KFbxSurfaceLambert* surface = static_cast<KFbxSurfaceLambert*>(i->materials[w].parameters);
+					lKFbxDouble3 = surface->GetAmbientColor();
+					ambient.r = static_cast<float>(lKFbxDouble3.Get()[0]);
+					ambient.g = static_cast<float>(lKFbxDouble3.Get()[1]);
+					ambient.b = static_cast<float>(lKFbxDouble3.Get()[2]);
 					ambient.a = 1.0f;
 
-					diffuse.r = surface->GetDiffuseColor()[0];
-					diffuse.g = surface->GetDiffuseColor()[1];
-					diffuse.b = surface->GetDiffuseColor()[2];
+					lKFbxDouble3 = surface->GetDiffuseColor();
+					diffuse.r = static_cast<float>(lKFbxDouble3.Get()[0]);
+					diffuse.g = static_cast<float>(lKFbxDouble3.Get()[1]);
+					diffuse.b = static_cast<float>(lKFbxDouble3.Get()[2]);
 					diffuse.a = 1.0f;
 
 					specular.r = 0.0f;
@@ -827,24 +830,27 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 					specular.b = 0.0f;
 					specular.a = 1.0f;
 				}
-				else if (lMaterial->GetNewFbxClassId().Is(KFbxSurfacePhong::ClassId))
+				else if (i->materials[w].parameters->GetNewFbxClassId().Is(KFbxSurfacePhong::ClassId))
 				{
-					KFbxSurfacePhong* surface = static_cast<KFbxSurfacePhong*>(lMaterial);
-					ambient.r = surface->GetAmbientColor()[0];
-					ambient.g = surface->GetAmbientColor()[1];
-					ambient.b = surface->GetAmbientColor()[2];
+					KFbxSurfacePhong* surface = static_cast<KFbxSurfacePhong*>(i->materials[w].parameters);
+					lKFbxDouble3 = surface->GetAmbientColor();
+					ambient.r = static_cast<float>(lKFbxDouble3.Get()[0]);
+					ambient.g = static_cast<float>(lKFbxDouble3.Get()[1]);
+					ambient.b = static_cast<float>(lKFbxDouble3.Get()[2]);
 					ambient.a = 1.0f;
 
-					diffuse.r = surface->GetDiffuseColor()[0];
-					diffuse.g = surface->GetDiffuseColor()[1];
-					diffuse.b = surface->GetDiffuseColor()[2];
+					lKFbxDouble3 = surface->GetDiffuseColor();
+					diffuse.r = static_cast<float>(lKFbxDouble3.Get()[0]);
+					diffuse.g = static_cast<float>(lKFbxDouble3.Get()[1]);
+					diffuse.b = static_cast<float>(lKFbxDouble3.Get()[2]);
 					diffuse.a = 1.0f;
 
-					specular.r = surface->GetSpecularColor()[0];
-					specular.g = surface->GetSpecularColor()[1];
-					specular.b = surface->GetSpecularColor()[2];
+					lKFbxDouble3 = surface->GetSpecularColor();
+					specular.r = static_cast<float>(lKFbxDouble3.Get()[0]);
+					specular.g = static_cast<float>(lKFbxDouble3.Get()[1]);
+					specular.b = static_cast<float>(lKFbxDouble3.Get()[2]);
 					specular.a = 1.0f;
-				}*/
+				}
 			}
 		}
 	}
