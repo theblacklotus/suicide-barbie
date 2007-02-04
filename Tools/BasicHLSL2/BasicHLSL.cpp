@@ -717,7 +717,7 @@ bool_                    g_bShowHelp = true;     // If true, it renders the UI c
 CModelViewerCamera      g_Camera;               // A model viewing camera
 ID3DXEffect*            g_pEffect = NULL;       // D3DX effect interface
 ID3DXMesh*              g_pMesh = NULL;         // Mesh object
-IDirect3DTexture9*      g_pMeshTexture = NULL;  // Mesh texture
+//IDirect3DTexture9*      g_pMeshTexture = NULL;  // Mesh texture
 CDXUTDialogResourceManager g_DialogResourceManager; // manager for shared resources of dialogs
 CD3DSettingsDlg         g_SettingsDlg;          // Device settings dialog
 CDXUTDialog             g_HUD;                  // manages the 3D UI
@@ -949,14 +949,14 @@ HRESULT CALLBACK OnCreateDevice( IDirect3DDevice9* pd3dDevice, const D3DSURFACE_
                               L"Arial", &g_pFont ) );
 
     // Load the mesh
-	V_RETURN( LoadMesh( pd3dDevice, L"test.x", &g_pMesh ) );
+//	V_RETURN( LoadMesh( pd3dDevice, L"test.x", &g_pMesh ) );
 
     D3DXVECTOR3* pData; 
     D3DXVECTOR3 vCenter;
     FLOAT fObjectRadius;
-    V( g_pMesh->LockVertexBuffer( 0, (LPVOID*) &pData ) );
-    V( D3DXComputeBoundingSphere( pData, g_pMesh->GetNumVertices(), D3DXGetFVFVertexSize( g_pMesh->GetFVF() ), &vCenter, &fObjectRadius ) );
-    V( g_pMesh->UnlockVertexBuffer() );
+//    V( g_pMesh->LockVertexBuffer( 0, (LPVOID*) &pData ) );
+//    V( D3DXComputeBoundingSphere( pData, g_pMesh->GetNumVertices(), D3DXGetFVFVertexSize( g_pMesh->GetFVF() ), &vCenter, &fObjectRadius ) );
+//    V( g_pMesh->UnlockVertexBuffer() );
 
 	static float newRadius = 250.0f;
 	if(newRadius > 0)
@@ -978,7 +978,7 @@ HRESULT CALLBACK OnCreateDevice( IDirect3DDevice9* pd3dDevice, const D3DSURFACE_
     for( int i=0; i<MAX_LIGHTS; i++ )
         g_LightControl[i].SetRadius( fObjectRadius );
 
-	g_pMesh->Release();
+//	g_pMesh->Release();
 	g_pMesh = 0;
 	static float radius = 10.0f;
 	V_RETURN( D3DXCreateSphere( pd3dDevice, radius, 6, 6, &g_pMesh, 0 ) );
@@ -1018,12 +1018,13 @@ HRESULT CALLBACK OnCreateDevice( IDirect3DDevice9* pd3dDevice, const D3DSURFACE_
     V_RETURN( D3DXCreateEffectFromFile( pd3dDevice, str, NULL, NULL, dwShaderFlags, NULL, &g_pEffect, NULL ) );
 
     // Create the mesh texture from a file
-    V_RETURN( DXUTFindDXSDKMediaFileCch( str, MAX_PATH, L"test.bmp" ) );
+/*    V_RETURN( DXUTFindDXSDKMediaFileCch( str, MAX_PATH, L"test.bmp" ) );
 
     V_RETURN( D3DXCreateTextureFromFileEx( pd3dDevice, str, D3DX_DEFAULT, D3DX_DEFAULT, 
                                        D3DX_DEFAULT, 0, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, 
                                        D3DX_DEFAULT, D3DX_DEFAULT, 0, 
                                        NULL, NULL, &g_pMeshTexture ) );
+*/
 
     // Setup the camera's view parameters
     D3DXVECTOR3 vecEye(0.0f, 0.0f, -15.0f);
@@ -1573,8 +1574,8 @@ void CALLBACK OnDestroyDevice( void* pUserContext )
     CDXUTDirectionWidget::StaticOnDestroyDevice();
     SAFE_RELEASE(g_pEffect);
     SAFE_RELEASE(g_pFont);
-    SAFE_RELEASE(g_pMesh);
-    SAFE_RELEASE(g_pMeshTexture);
+//    SAFE_RELEASE(g_pMesh);
+//    SAFE_RELEASE(g_pMeshTexture);
 }
 
 
