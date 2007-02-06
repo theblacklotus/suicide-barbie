@@ -83,8 +83,9 @@ namespace {
 
 			dst.matrices[BaseEffect::WorldMatrix] = &world;
 			dst.matrices[BaseEffect::ViewMatrix] = &rc.viewMatrix;
+//			dst.matrices[BaseEffect::ProjMatrix] = &rc.projMatrix;
 			dst.matrices[BaseEffect::ViewProjMatrix] = &rc.viewProjMatrix;
-			dst.matrices[BaseEffect::WorldViewProjMatrix] = &worldViewProj;
+			dst.matrices[BaseEffect::WorldViewProjMatrix] = &rc.projMatrix;//&worldViewProj;
 			dst.matrices[BaseEffect::InvWorldMatrix] = &invWorld;
 		}
 
@@ -139,7 +140,23 @@ namespace {
 
 	void setCameraMatrix(RenderContext& rc, ScePspFMatrix4 const& cameraMatrix)
 	{
-		sceGumMatrixMode(GU_VIEW);
+		ScePspFMatrix4 viewMatrix = cameraMatrix;
+
+/*		D3DXMATRIX sm;
+		D3DXMatrixScaling(&sm, 1.0f, 1.0f, -1.0f);
+		D3DXMatrixMultiply(&viewMatrix, &sm, &viewMatrix);*/
+
+//		ScePspFVector3 flipZ = {1.0f, 1.0f, -1.0f};
+//		gumScale(&viewMatrix, &flipZ);
+
+		static bool overrideCamera = false;
+		gumFastInverse(&viewMatrix, &viewMatrix);
+		rc.viewMatrix = viewMatrix;
+//		if(!overrideCamera)
+			gumMultMatrix(&rc.viewMatrix, &rc.viewMatrix, &viewMatrix);
+		gumMultMatrix(&rc.viewProjMatrix, &rc.projMatrix, &viewMatrix);
+
+/*		sceGumMatrixMode(GU_VIEW);
 
 		ScePspFMatrix4 viewMatrix;
 		gumFastInverse(&viewMatrix, &cameraMatrix);
@@ -148,7 +165,7 @@ namespace {
 		if(overrideCamera)
 			sceGumLoadMatrix(&viewMatrix);
 		else
-			sceGumMultMatrix(&viewMatrix);
+			sceGumMultMatrix(&viewMatrix);*/
 	}
 
 	void setWorldMatrix(RenderContext& rc, ScePspFMatrix4 const& worldMatrix)
@@ -319,7 +336,7 @@ void render(RenderContext& rc, RenderableScene const& scene, bool animatedActors
 
 }*/
 
-void render(RenderContext& rc, RenderableScene const& scene, bool animatedActors, bool animatedCamera, int maxActors)
+void render(RenderContext& rc, RenderableScene const& scene, bool animatedActors, bool animatedCamera, int maxActors, int maxLights)
 {
 	ScePspFMatrix4 nativeMatrix;
 
@@ -387,7 +404,7 @@ void render(RenderContext& rc, RenderableScene const& scene, bool animatedActors
 				matrixState.applyWorldMatrix(rc, nativeMatrix, fxInput);
 
 			RenderableMesh const& mesh = *scene.mResources.meshes[actor.meshIndex].renderable;
-			if(actor.materials.empty())
+			if(true) //actor.materials.empty())
 			{
 				ScePspFVector4 const black = {0,0,0,1};
 				ScePspFVector4 const white = {0,0,0,1};

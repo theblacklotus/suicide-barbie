@@ -16,6 +16,7 @@ protected:
 	{
 		request.required.matrices.push_back(BaseEffect::WorldMatrix);
 		request.required.matrices.push_back(BaseEffect::ViewMatrix);
+//		request.required.matrices.push_back(BaseEffect::ProjMatrix);
 		request.required.matrices.push_back(BaseEffect::WorldViewProjMatrix);
 		request.optional.textures.push_back(BaseEffect::DiffuseTexture);
 		request.required.vecs.push_back(BaseEffect::AmbientColor);

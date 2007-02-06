@@ -13,6 +13,7 @@ struct BaseEffect
 	enum nMatrix {
 		WorldMatrix,
 		ViewMatrix,
+		ProjMatrix,
 		ViewProjMatrix,
 		WorldViewProjMatrix,
 		InvWorldMatrix,

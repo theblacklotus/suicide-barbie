@@ -14,8 +14,8 @@ BaseEffect::Input& BaseEffect::allocInput()
 }
 
 namespace {
-	template <typename PortIterator, typename InputArray>
-	bool validateInputPorts(PortIterator first, PortIterator last, InputArray const& inputs)
+	template <typename PortIterator, typename T>
+	bool validateInputPorts(PortIterator first, PortIterator last, T const* inputs)
 	{
 		for (; first != last; ++first)
 			if(inputs[*first] == 0)
@@ -33,11 +33,11 @@ bool BaseEffect::validateInput(Input const& input, Request const& request)
 				return false;
 
 		bool valid = 
-			validateInputPorts(request.required.textures.begin(), request.required.textures.end(), input.textures) &
-			validateInputPorts(request.required.matrices.begin(), request.required.matrices.end(), input.matrices) &
-			validateInputPorts(request.required.vecs.begin(), request.required.vecs.end(), input.vecs) &
-			validateInputPorts(request.required.floats.begin(), request.required.floats.end(), input.floats) &
-			validateInputPorts(request.required.ints.begin(), request.required.ints.end(), input.ints);
+			validateInputPorts(request.required.textures.begin(), request.required.textures.end(), &input.textures[0]) &
+			validateInputPorts(request.required.matrices.begin(), request.required.matrices.end(), &input.matrices[0]);// &
+			//validateInputPorts(request.required.vecs.begin(), request.required.vecs.end(), input.vecs) &
+			//validateInputPorts(request.required.floats.begin(), request.required.floats.end(), input.floats) &
+			//validateInputPorts(request.required.ints.begin(), request.required.ints.end(), input.ints);
 
 		if(!valid)
 			return false;
