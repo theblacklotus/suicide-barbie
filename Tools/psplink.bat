@@ -1,2 +1,2 @@
 start usbhostfs_pc ../Code/Tests Data
-telnet localhost 10000
+pcterm -p 10000 localhost
