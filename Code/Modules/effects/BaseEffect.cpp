@@ -87,8 +87,6 @@ void BaseEffect::allocInput(Input& input, Request const& request)
 
 	if(request.lightCountRange.second > 0)
 		input.lights.resize(request.lightCountRange.second);
-
-	ASSERT(validateInput(input, request));
 }
 
 void BaseEffect::clearInput(Input& input)

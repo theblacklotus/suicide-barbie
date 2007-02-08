@@ -12,19 +12,7 @@ class Lambert : public BaseEffect
 {
 protected:
 	enum { MAX_LIGHTS = 4 };
-	static void fillRequest(Request& request)
-	{
-		request.required.matrices.push_back(BaseEffect::WorldMatrix);
-		request.required.matrices.push_back(BaseEffect::ViewMatrix);
-//		request.required.matrices.push_back(BaseEffect::ProjMatrix);
-		request.required.matrices.push_back(BaseEffect::WorldViewProjMatrix);
-		request.optional.textures.push_back(BaseEffect::DiffuseTexture);
-		request.required.vecs.push_back(BaseEffect::AmbientColor);
-		request.required.vecs.push_back(BaseEffect::DiffuseColor);
-		request.required.vecs.push_back(BaseEffect::SpecularColor);
-		request.lightCountRange.first = 0;
-		request.lightCountRange.second = MAX_LIGHTS;
-	}
+	static void fillRequest(Request& request);
 
 public:
 	Lambert();

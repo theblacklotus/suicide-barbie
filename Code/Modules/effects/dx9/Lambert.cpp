@@ -5,6 +5,19 @@
 using namespace mutalisk;
 using namespace mutalisk::effects;
 
+void Lambert::fillRequest(Request& request)
+{
+	request.required.matrices.push_back(BaseEffect::WorldMatrix);
+	request.required.matrices.push_back(BaseEffect::ViewMatrix);
+	request.required.matrices.push_back(BaseEffect::WorldViewProjMatrix);
+	request.optional.textures.push_back(BaseEffect::DiffuseTexture);
+	request.required.vecs.push_back(BaseEffect::AmbientColor);
+	request.required.vecs.push_back(BaseEffect::DiffuseColor);
+	request.required.vecs.push_back(BaseEffect::SpecularColor);
+	request.lightCountRange.first = 0;
+	request.lightCountRange.second = MAX_LIGHTS;
+}
+
 struct Lambert::Impl
 {
 	void setupLights(Input const& input)

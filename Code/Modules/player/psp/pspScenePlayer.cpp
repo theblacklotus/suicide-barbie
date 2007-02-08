@@ -83,9 +83,9 @@ namespace {
 
 			dst.matrices[BaseEffect::WorldMatrix] = &world;
 			dst.matrices[BaseEffect::ViewMatrix] = &rc.viewMatrix;
-//			dst.matrices[BaseEffect::ProjMatrix] = &rc.projMatrix;
+			dst.matrices[BaseEffect::ProjMatrix] = &rc.projMatrix;
 			dst.matrices[BaseEffect::ViewProjMatrix] = &rc.viewProjMatrix;
-			dst.matrices[BaseEffect::WorldViewProjMatrix] = &rc.projMatrix;//&worldViewProj;
+			dst.matrices[BaseEffect::WorldViewProjMatrix] = &worldViewProj;
 			dst.matrices[BaseEffect::InvWorldMatrix] = &invWorld;
 		}
 
@@ -149,10 +149,11 @@ namespace {
 //		ScePspFVector3 flipZ = {1.0f, 1.0f, -1.0f};
 //		gumScale(&viewMatrix, &flipZ);
 
-		static bool overrideCamera = false;
+		static bool overrideCamera = true;
 		gumFastInverse(&viewMatrix, &viewMatrix);
-		rc.viewMatrix = viewMatrix;
-//		if(!overrideCamera)
+		if(overrideCamera)
+			rc.viewMatrix = viewMatrix;
+		else
 			gumMultMatrix(&rc.viewMatrix, &rc.viewMatrix, &viewMatrix);
 		gumMultMatrix(&rc.viewProjMatrix, &rc.projMatrix, &viewMatrix);
 

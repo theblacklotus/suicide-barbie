@@ -232,12 +232,13 @@ namespace {
 		D3DXMatrixScaling(&sm, 1.0f, 1.0f, -1.0f);
 		D3DXMatrixMultiply(&viewMatrix, &sm, &viewMatrix);
 
-		static bool overrideCamera = false;
+		static bool overrideCamera = true;
 		D3DXMatrixInverse(&viewMatrix, 0, &viewMatrix);
-		if(!overrideCamera)
+		if(overrideCamera)
+			rc.viewMatrix = viewMatrix;
+		else
 			D3DXMatrixMultiply(&rc.viewMatrix, &viewMatrix, &rc.viewMatrix);
-
-		D3DXMatrixMultiply(&rc.viewProjMatrix, &viewMatrix, &rc.projMatrix);
+		D3DXMatrixMultiply(&rc.viewProjMatrix, &rc.viewMatrix, &rc.projMatrix);
 	}
 
 	void setWorldMatrix(RenderContext& rc, ID3DXEffect& effect, D3DXMATRIX const& worldMatrix)
@@ -306,6 +307,7 @@ namespace {
 
 			dst.matrices[BaseEffect::WorldMatrix] = &world;
 			dst.matrices[BaseEffect::ViewMatrix] = &rc.viewMatrix;
+			dst.matrices[BaseEffect::ProjMatrix] = &rc.projMatrix;
 			dst.matrices[BaseEffect::ViewProjMatrix] = &rc.viewProjMatrix;
 			dst.matrices[BaseEffect::WorldViewProjMatrix] = &worldViewProj;
 			dst.matrices[BaseEffect::InvWorldMatrix] = &invWorld;
