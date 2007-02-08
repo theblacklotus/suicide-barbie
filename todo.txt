@@ -5,6 +5,8 @@ _RunTime_
   +	  diffuse path
   .	  specular path
  +	 effect framework
+  +	  dx9 effect framework support
+  +	  psp effect framework support
 ~	 cpu vertexshader framework
 ~	blur
  ~	 CPU blur (optimize)
