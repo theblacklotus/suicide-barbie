@@ -2,6 +2,7 @@
 #define MUTALISK_EXPORT_H_
 
 #include <fbxsdk.h>
+#include <shlwapi.h>
 
 #include <d3d9.h>
 #include "../dx9/Dx9NullDevice.h"
@@ -342,7 +343,12 @@ std::string meshName2FileName(std::string nodeName)
 
 std::string textureName2FileName(std::string textureName)
 {
-	return withoutExtension(textureName) + ".png";
+	if (gPlatform == Platform::DX9)
+		return withoutExtension(textureName) + ".png";
+	else if (gPlatform == Platform::PSP)
+		return withoutExtension(textureName) + ".mtx";
+	else
+		return textureName;
 }
 
 std::string sceneName2FileName(std::string sceneName)
@@ -373,6 +379,36 @@ void save(std::string dstName, mutant::anim_character_set& data)
 	mutant::mutant_writer mutWriter(mutant::writer_factory::createOutput(outputFileName(dstName)));
 	mutWriter.write(data);
 }
+
+
+inline void convertTexture(const std::string& dstName, const std::string& srcName)
+{
+	char exeDir[MAX_PATH];
+	GetModuleFileNameA(NULL, exeDir, MAX_PATH);
+	PathRemoveFileSpec(exeDir);
+	strcat_s(exeDir, sizeof(exeDir), "\\ImageConverter.exe");
+
+	PROCESS_INFORMATION procInfo;
+	STARTUPINFO startupInfo = { sizeof(startupInfo) };
+	DWORD result = 0;
+	std::string params = "\"" + std::string(exeDir) + "\" " + srcName + " " + outputFileName(dstName);
+	if (CreateProcessA(NULL, const_cast<char*>(params.c_str()), NULL, NULL, FALSE, CREATE_UNICODE_ENVIRONMENT, NULL, NULL, &startupInfo, &procInfo))
+	{
+		WaitForSingleObject(procInfo.hProcess, INFINITE);
+		CloseHandle(procInfo.hThread);
+		CloseHandle(procInfo.hProcess);
+		GetExitCodeProcess(procInfo.hProcess, &result);
+	}
+	else
+	{
+		warning("Failed to launch:\n\t" + params);
+	}
+	if (result != 0)
+	{
+		warning("ImageConverter failed with " + result);
+	}
+}
+
 
 template <>
 void save(std::string dstName, IDirect3DTexture9& texture)
@@ -1948,7 +1984,7 @@ void endScene()
 		}
 		else if(gPlatform == Platform::PSP)
 		{
-			warning("Not implemented");
+			convertTexture(textureName2FileName(i->second.name), i->first);
 		}
 	}
 
