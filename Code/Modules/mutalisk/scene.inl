@@ -11,8 +11,9 @@ inline template <typename In> In& operator>> (In& i, scene::Node& data)
 {
 	try
 	{
-		i.readString( data.nodeName );
-		i.readType( data.worldMatrix );
+		data.id = i.readDword();
+		i.readString(data.nodeName);
+		i.readType(data.worldMatrix);
 	} catch( EIoEof& ) {
 		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
 	} catch( EIoError& ) {
@@ -25,6 +26,7 @@ inline template <typename Out> Out& operator<< (Out& o, scene::Node const& data)
 {
 	try
 	{
+		o.writeDword(data.id);
 		o.writeString(data.nodeName);
 		o.writeType(data.worldMatrix);
 	} catch( EIoEof& ) {
@@ -52,20 +54,21 @@ inline template <typename In> In& operator>> (In& i, scene& data)
 		i.readArray(data.textureIds.begin(), data.textureIds.end());
 
 		// shaders
-		data.shaderIds.resize(i.readDword());
-		i.readArray(data.shaderIds.begin(), data.shaderIds.end());
+		// data.shaderInputs.resize(i.readDword());
+		// i.readArray(data.shaderInputs.begin(), data.shaderInputs.end());
+		data.shaderLibraryVersion = i.readDword();
 
 		// lights
 		data.lights.resize(i.readDword());
 		for(size_t q = 0; q < data.lights.size(); ++q)
 		{
-//			i.readString( data.lights[q].nodeName );
-//			i.readType( data.lights[q].worldMatrix );
 			i >> data.lights[q].base();
 			i.readType(data.lights[q].type);
 			i.readType(data.lights[q].ambient);
 			i.readType(data.lights[q].diffuse);
 			i.readType(data.lights[q].specular);
+			i.readType(data.lights[q].diffuseAux0);
+			i.readType(data.lights[q].diffuseAux1);
 			i.readType(data.lights[q].attenuation);
 			i.readType(data.lights[q].theta);
 			i.readType(data.lights[q].phi);
@@ -75,8 +78,6 @@ inline template <typename In> In& operator>> (In& i, scene& data)
 		data.cameras.resize(i.readDword());
 		for(size_t q = 0; q < data.cameras.size(); ++q)
 		{
-//			i.readString( data.cameras[q].nodeName );
-//			i.readType( data.cameras[q].worldMatrix );
 			i >> data.cameras[q].base();
 
 		}
@@ -86,18 +87,14 @@ inline template <typename In> In& operator>> (In& i, scene& data)
 		data.actors.resize(i.readDword());
 		for(size_t q = 0; q < data.actors.size(); ++q)
 		{
-//			i.readString( data.actors[q].nodeName );
-//			i.readType( data.actors[q].worldMatrix );
 			i >> data.actors[q].base();
 			data.actors[q].meshIndex = i.readDword();
 			data.actors[q].materials.resize(i.readDword());
 			for(size_t w = 0; w < data.actors[q].materials.size(); ++w)
 			{
-				i.readType(data.actors[q].materials[w].ambient);
-				i.readType(data.actors[q].materials[w].diffuse);
-				i.readType(data.actors[q].materials[w].specular);
-				data.actors[q].materials[w].textureIndex = i.readDword();
 				data.actors[q].materials[w].shaderIndex = i.readDword();
+				i >> data.actors[q].materials[w].shaderInput;
+				// data.actors[q].materials[w].inputIndex = i.readDword();
 			}
 		}
 
@@ -128,20 +125,21 @@ inline template <typename Out> Out& operator<< (Out& o, scene const& data)
 		o.writeData(data.textureIds.begin(), data.textureIds.end());
 		
 		// shaders
-		o.writeDword(data.shaderIds.size());
-		o.writeData(data.shaderIds.begin(), data.shaderIds.end());
-
+		// o.writeDword(data.shaderInputs.size());
+		// o.writeData(data.shaderInputs.begin(), data.shaderInputs.end());
+		o.writeDword(data.shaderLibraryVersion);
+		
 		// lights
 		o.writeDword(data.lights.size());
 		for( size_t q = 0; q < data.lights.size(); ++q )
 		{
-//			o.writeString(data.lights[q].nodeName);
-//			o.writeType(data.lights[q].worldMatrix);
 			o << data.lights[q].base();
 			o.writeType(data.lights[q].type);
 			o.writeType(data.lights[q].ambient);
 			o.writeType(data.lights[q].diffuse);
 			o.writeType(data.lights[q].specular);
+			o.writeType(data.lights[q].diffuseAux0);
+			o.writeType(data.lights[q].diffuseAux1);
 			o.writeType(data.lights[q].attenuation);
 			o.writeType(data.lights[q].theta);
 			o.writeType(data.lights[q].phi);
@@ -151,8 +149,6 @@ inline template <typename Out> Out& operator<< (Out& o, scene const& data)
 		o.writeDword(data.cameras.size());
 		for(size_t q = 0; q < data.cameras.size(); ++q)
 		{
-//			o.writeString(data.cameras[q].nodeName);
-//			o.writeType(data.cameras[q].worldMatrix);
 			o << data.cameras[q].base();
 		}
 		o.writeDword(data.defaultCameraIndex);
@@ -161,18 +157,14 @@ inline template <typename Out> Out& operator<< (Out& o, scene const& data)
 		o.writeDword(data.actors.size());
 		for(size_t q = 0; q < data.actors.size(); ++q)
 		{
-//			o.writeString(data.actors[q].nodeName);
-//			o.writeType(data.actors[q].worldMatrix);
 			o << data.actors[q].base();
 			o.writeDword(data.actors[q].meshIndex);
 			o.writeDword(data.actors[q].materials.size());
 			for(size_t w = 0; w < data.actors[q].materials.size(); ++w)
 			{
-				o.writeType(data.actors[q].materials[w].ambient);
-				o.writeType(data.actors[q].materials[w].diffuse);
-				o.writeType(data.actors[q].materials[w].specular);
-				o.writeDword(data.actors[q].materials[w].textureIndex);
 				o.writeDword(data.actors[q].materials[w].shaderIndex);
+				//o.writeDword(data.actors[q].materials[w].inputIndex);
+				o << data.actors[q].materials[w].shaderInput;
 			}
 		}
 

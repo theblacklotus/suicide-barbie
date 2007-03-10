@@ -52,6 +52,19 @@ xMat34 xMat34::operator*( xMat34 const& rhs ) const
 
 }
 
+xMat34::xMat34( xMat34 const& c )
+{
+	Rot = c.Rot;
+	Move = c.Move;
+}
+
+xMat34& xMat34::operator=( xMat34 const& rhs )
+{
+	Rot = rhs.Rot;
+	Move = rhs.Move;
+	return *this;
+}
+
 
 namespace {
 	float& mat34_ij( CTransform::t_matrix const& m, int i, int j )

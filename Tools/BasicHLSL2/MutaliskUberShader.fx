@@ -43,6 +43,7 @@ typedef int light_type;
 const light_type lightDIRECTIONAL = 0;
 const light_type lightPOINT = 1;
 const light_type lightSPOT = 2;
+const light_type lightDIRECTIONAL_EXT = 3;
 
 typedef int texture_proj_type;
 const texture_proj_type texture_projNONE = 0;
@@ -63,6 +64,8 @@ float  fLightSpotCutoff[MAX_LIGHTS];		// Light's spot cutoff
 float  fLightSpotExp[MAX_LIGHTS];			// Light's spot exponent
 float4 vLightDiffuse[MAX_LIGHTS];			// Light's diffuse color
 float4 vLightSpecular[MAX_LIGHTS];			// Light's specular color
+float4 vLightDiffuseAux0[MAX_LIGHTS];		// Light's diffuse auxilary color 0
+float4 vLightDiffuseAux1[MAX_LIGHTS];		// Light's diffuse auxilary color 1
 float4 vLightAmbient = float4(1,1,1,1);		// Light's ambient color
 int nLightType[MAX_LIGHTS];					// Light's type
 int iNumLights = 0;
@@ -105,8 +108,8 @@ sampler_state
 	MinFilter = LINEAR;
 	MagFilter = LINEAR;
 	
-	AddressU = <nAddressU>;
-	AddressV = <nAddressV>;
+	AddressU = BORDER;//CLAMP;//<nAddressU>;
+	AddressV = BORDER;//CLAMP;//<nAddressV>;
 };
 
 
@@ -135,6 +138,14 @@ struct DirectionalLight
 	float4 specular;
 	float3 dir;
 };
+struct DirectionalExtLight
+{
+	float4 diffuseFront;
+	float4 diffuseBack;
+	float4 equator;
+	float4 specular;
+	float3 dir;
+};
 struct PointLight
 {
 	float4 diffuse;
@@ -157,6 +168,16 @@ DirectionalLight fetchDirectionalLight(int lightIndex)
 {
 	DirectionalLight o;
 	o.diffuse = vLightDiffuse[lightIndex];
+	o.specular = vLightSpecular[lightIndex];
+	o.dir = vLightDir[lightIndex];
+	return o;
+}
+DirectionalExtLight fetchDirectionalExtLight(int lightIndex)
+{
+	DirectionalExtLight o;
+	o.diffuseFront = vLightDiffuse[lightIndex];
+	o.diffuseBack = vLightDiffuseAux0[lightIndex];
+	o.equator = vLightDiffuseAux1[lightIndex];
 	o.specular = vLightSpecular[lightIndex];
 	o.dir = vLightDir[lightIndex];
 	return o;
@@ -199,6 +220,16 @@ float3 diffuseLight(float3 pos, float3 normal, int lightIndex)
 		o = max(0, dot(normal, light.dir)) *
 			light.diffuse;
 	}
+	if(lightType == (float)lightDIRECTIONAL_EXT)
+	{
+		o = float3(1,0,0);
+		DirectionalExtLight light = fetchDirectionalExtLight(lightIndex);
+		float dotL = dot(normal, light.dir);
+		if(dotL >= 0)
+			o = lerp(light.equator, light.diffuseFront, dotL);
+		else
+			o = lerp(light.equator, light.diffuseBack, -dotL);
+	}
 	else if(lightType == (float)lightPOINT)
 	{
 		o = float3(0,1,0);
@@ -225,6 +256,10 @@ float3 specularLight(float3 pos, float3 normal, int lightIndex)
 {
 	float3 o = 0.0f;
 	if(nLightType[lightIndex] == lightDIRECTIONAL)
+	{
+		DirectionalLight light = fetchDirectionalLight(lightIndex);
+	}
+	if(nLightType[lightIndex] == lightDIRECTIONAL_EXT)
 	{
 		DirectionalLight light = fetchDirectionalLight(lightIndex);
 	}
@@ -278,11 +313,12 @@ VS_OUTPUT mainVS( VS_INPUT i )
 		}
 		else if(nTextureProjType == texture_projNORMAL)
 		{
-			texProjSrc.xyz = worldNormal;
+			texProjSrc = float4(worldNormal, 1.0f);
 		}
 		else if(nTextureProjType == texture_projEYE_REFLECT)
 		{
 			texProjSrc.xyz = normalize(reflect(normalize(eyeToPos), worldNormal));
+			texProjSrc.w = 1;
 		}
 		else if(nTextureProjType == texture_projTEX_COORD0)
 		{
@@ -310,7 +346,7 @@ float4 mainPS( VS_OUTPUT i ) : COLOR0
 	
 	o.rgb = diffuse * i.Diffuse;
 	o.a = diffuse.a;
-	
+
 	return o;
 }
 
@@ -320,7 +356,7 @@ technique Main
 	pass P0
 	{
 		VertexShader		= compile vs_3_0 mainVS();
-		PixelShader			= compile ps_2_0 mainPS();
+		PixelShader			= compile ps_3_0 mainPS();
 		CullMode			= <nCullMode>;
 
 		AlphaBlendEnable	= <bAlphaBlendEnable>;
@@ -328,4 +364,18 @@ technique Main
 		DestBlend			= <nDestBlend>;
 		SrcBlend			= <nSrcBlend>;
 	}
+	
+	pass P1
+	{
+		VertexShader		= compile vs_3_0 mainVS();
+		PixelShader			= compile ps_3_0 mainPS();
+		CullMode			= <nCullMode>;
+
+		AlphaBlendEnable	= <bAlphaBlendEnable>;
+		BlendOp				= <nBlendOp>;
+		DestBlend			= <nDestBlend>;
+		SrcBlend			= <nSrcBlend>;
+		
+		ZWriteEnable		= false;
+	}	
 }

@@ -3,8 +3,9 @@
 
 #include <memory>
 #include <d3d9types.h>
-#include <effects/BaseEffect.h>
 #include <effects/all.h>
+#include <effects/Library.h>
+#include <effects/BaseEffect.h>
 
 using namespace mutalisk;
 using namespace mutalisk::effects;
@@ -216,12 +217,41 @@ namespace {
 		worldMatrix = D3DXMATRIX(worldMatrixData);
 	}
 
-	void toNative(mutalisk::data::Color const& color, D3DXVECTOR4& vec)
+	void toNative(float const* worldMatrixData, CTransform::t_matrix& worldMatrix)
 	{
-		vec.x = color.r;
-		vec.y = color.g;
-		vec.z = color.b;
-		vec.w = color.a;
+		worldMatrix = CTransform::t_matrix(
+			worldMatrixData[8], worldMatrixData[4], worldMatrixData[0],
+			worldMatrixData[9], worldMatrixData[5], worldMatrixData[1],
+			worldMatrixData[10], worldMatrixData[6], worldMatrixData[2],
+			worldMatrixData[14], worldMatrixData[13], worldMatrixData[12]);
+	}
+
+
+	void toNative(mutalisk::data::Vec4 const& src, D3DXVECTOR4& dst)
+	{
+		dst.x = src[0]; dst.y = src[1]; dst.z = src[2]; dst.w = src[3];
+	}
+	void toNative(mutalisk::data::Color const& color, D3DXCOLOR& c)
+	{
+		c.r = color.r; c.g = color.g; c.b = color.b; c.a = color.a;
+	}
+
+	void toNative(Dx9RenderableScene const& scene, mutalisk::data::shader_fixed const& src, BaseEffect::Input::Surface& dst)
+	{
+		toNative(src.ambient, dst.ambient);
+		toNative(src.diffuse, dst.diffuse);
+		toNative(src.specular, dst.specular);
+		toNative(src.emissive, dst.emissive);
+
+		dst.diffuseTexture = (src.diffuseTexture != ~0U)? scene.mNativeResources.textures[src.diffuseTexture] : 0;
+		dst.envmapTexture = (src.envmapTexture != ~0U)? scene.mNativeResources.textures[src.envmapTexture] : 0;
+
+		dst.uOffset = src.uOffset;
+		dst.vOffset = src.vOffset;
+		dst.transparency = src.transparency;
+		dst.dummy = 0;
+
+		toNative(src.aux0, dst.aux0);
 	}
 
 	void setCameraMatrix(RenderContext& rc, D3DXMATRIX const& cameraMatrix)
@@ -232,16 +262,16 @@ namespace {
 		D3DXMatrixScaling(&sm, 1.0f, 1.0f, -1.0f);
 		D3DXMatrixMultiply(&viewMatrix, &sm, &viewMatrix);
 
-		static bool overrideCamera = true;
+		static int overrideCameraMethod = 1;
 		D3DXMatrixInverse(&viewMatrix, 0, &viewMatrix);
-		if(overrideCamera)
-			rc.viewMatrix = viewMatrix;
-		else
+		if(overrideCameraMethod == 0)
 			D3DXMatrixMultiply(&rc.viewMatrix, &viewMatrix, &rc.viewMatrix);
+		else if(overrideCameraMethod == 1)
+			rc.viewMatrix = viewMatrix;
 		D3DXMatrixMultiply(&rc.viewProjMatrix, &rc.viewMatrix, &rc.projMatrix);
 	}
 
-	void setWorldMatrix(RenderContext& rc, ID3DXEffect& effect, D3DXMATRIX const& worldMatrix)
+	/*void setWorldMatrix(RenderContext& rc, ID3DXEffect& effect, D3DXMATRIX const& worldMatrix)
 	{
 		D3DXMATRIX invWorld;
 		D3DXMatrixInverse(&invWorld, 0, &worldMatrix);
@@ -272,11 +302,11 @@ namespace {
 			effect.SetInt("nAddressV", addressV);
 		DX_MSG("set texture") = 
 			effect.SetTexture("tDiffuse", texture);
-	}
+	}*/
 
 	void render(RenderContext& rc, RenderableMesh const& mesh, unsigned subset = 0)
 	{
-		// $TBD: support for 'undefined' (~0) subset, whole mesh should be rendered
+		// @TBD: support for 'undefined' (~0) subset, whole mesh should be rendered
 		rc.device->SetFVF(mesh.mBlueprint.fvfVertexDecl);
 		DX_MSG("draw all subsets") =
 			mesh.mNative->DrawSubset(subset);
@@ -294,71 +324,364 @@ void process(Dx9RenderableScene& scene)
 	scene.process();
 }
 
-namespace {
 
-	struct MatrixState
+struct InstanceInput
+{
+	enum { MaxLights = 8 };
+	enum { RequiredMatrices = BaseEffect::MaxCount_nMatrix };
+
+//	LightT const*	lights[MaxLights];
+//	MatrixT const*	lightMatrices[MaxLights];
+//	unsigned		lightCount;
+	MatrixT			geometryMatrices[RequiredMatrices];
+};
+
+struct RenderBlock
+{
+	unsigned				instanceIndex;
+	unsigned				surfaceIndex;
+	BaseEffect*				fx;
+	RenderableMesh const*	mesh;
+	unsigned				subset;
+
+	float					cameraDistanceSq;
+};
+
+struct findVisibleActors
+{
+	RenderContext& rc;
+	findVisibleActors(RenderContext& rc_, int) : rc(rc_) {}
+
+	template <typename Container, typename Out>
+	void operator()(Container& c, Out& o) { operator()(c.begin(), c.end(), o); }
+
+	template <typename In, typename Out>
+	void operator()(In first, In last, Out& visibleActors)
 	{
-		void applyWorldMatrix(RenderContext const& rc, D3DXMATRIX const& inWorldMatrix, BaseEffect::Input& dst)
+		visibleActors.reserve(std::distance(first, last));
+		for(; first != last; ++first)
+			visibleActors.push_back(first);
+//		std::copy(first, last, visibleActors.begin());
+	}
+};
+
+struct blastInstanceInputs
+{
+	Dx9RenderableScene const& scene;
+	RenderContext const& rc;
+
+	blastInstanceInputs(Dx9RenderableScene const& scene_, RenderContext const& rc_) : rc(rc_), scene(scene_) {}
+
+	template <typename Container, typename Out>
+	void operator()(Container& c, Out& o) { operator()(c.begin(), c.end(), o); }
+
+	template <typename In, typename Out>
+	void operator()(In first, In last, Out& instanceInputs)
+	{
+		gatherSceneLights();
+
+		D3DXMATRIX nativeMatrix;
+		instanceInputs.resize(std::distance(first, last));
+		for(unsigned block = 0; first != last; ++first, ++block)
 		{
-			world = inWorldMatrix;
+			ASSERT(*first);
+			mutalisk::data::scene::Actor const& actor = **first;
 
-			D3DXMatrixInverse(&invWorld, 0, &world);
-			D3DXMatrixMultiply(&worldViewProj, &world, &rc.viewProjMatrix);
+			InstanceInput& instanceInput = instanceInputs[block];
+			gatherInstanceLights();
 
-			dst.matrices[BaseEffect::WorldMatrix] = &world;
-			dst.matrices[BaseEffect::ViewMatrix] = &rc.viewMatrix;
-			dst.matrices[BaseEffect::ProjMatrix] = &rc.projMatrix;
-			dst.matrices[BaseEffect::ViewProjMatrix] = &rc.viewProjMatrix;
-			dst.matrices[BaseEffect::WorldViewProjMatrix] = &worldViewProj;
-			dst.matrices[BaseEffect::InvWorldMatrix] = &invWorld;
+			ASSERT(actor.id >= 0 && actor.id < this->scene.mState.actor2XformIndex.size());
+			toNative(this->scene.mState.matrices[this->scene.mState.actor2XformIndex[actor.id]], nativeMatrix);
+
+			applyWorldMatrix(nativeMatrix, instanceInput.geometryMatrices);
+		}
+	}
+
+	void gatherSceneLights()
+	{
+		// @TBD:
+	}
+
+	void gatherInstanceLights()
+	{
+		// @TBD:
+	}
+
+	void applyWorldMatrix(D3DXMATRIX const& world, MatrixT* dst)
+	{
+		D3DXMATRIX invWorld;
+		D3DXMATRIX worldViewProj;
+
+		D3DXMatrixInverse(&invWorld, 0, &world);
+		D3DXMatrixMultiply(&worldViewProj, &world, &rc.viewProjMatrix);
+
+		dst[BaseEffect::WorldMatrix] = world;
+		dst[BaseEffect::ViewMatrix] = rc.viewMatrix;
+		dst[BaseEffect::ProjMatrix] = rc.projMatrix;
+		dst[BaseEffect::ViewProjMatrix] = rc.viewProjMatrix;
+		dst[BaseEffect::WorldViewProjMatrix] = worldViewProj;
+		dst[BaseEffect::InvWorldMatrix] = invWorld;
+	}
+};
+
+struct blastSurfaceInputs
+{
+	Dx9RenderableScene const& scene;
+	blastSurfaceInputs(Dx9RenderableScene const& scene_, int) : scene(scene_) {}
+
+	template <typename Container, typename Out>
+	void operator()(Container& c, Out& o) { operator()(c.begin(), c.end(), o); }
+
+	template <typename In, typename Out>
+	void operator()(In first, In last, Out& surfaceInputs)
+	{
+		surfaceInputs.reserve(std::distance(first, last));
+		
+		for(unsigned block = 0; first != last; ++first)
+		{
+			ASSERT(*first);
+			mutalisk::data::scene::Actor const& actor = **first;
+
+			ASSERT(!actor.materials.empty());
+			surfaceInputs.resize(surfaceInputs.size() + actor.materials.size());
+			for(unsigned q = 0; q < actor.materials.size(); ++q, ++block)
+			{
+				BaseEffect::Input::Surface& surfaceInput = surfaceInputs[block];
+				toNative(scene, actor.materials[q].shaderInput, surfaceInput);
+			}
+		}
+	}
+};
+
+struct blastRenderBlocks
+{
+	Dx9RenderableScene const& scene;
+	RenderContext& rc;
+
+	blastRenderBlocks(Dx9RenderableScene const& scene_, RenderContext& rc_) : rc(rc_), scene(scene_) {}
+
+	template <typename Container, typename Out>
+	void operator()(Container& c, Out& o) { operator()(c.begin(), c.end(), o); }
+
+	template <typename In, typename Out>
+	void operator()(In first, In last, Out& renderBlocks)
+	{
+		renderBlocks.reserve(std::distance(first, last));
+		
+		unsigned actorIt = 0;
+		unsigned blockIt = 0;
+		for(; first != last; ++first, ++actorIt)
+		{
+			ASSERT(*first);
+			mutalisk::data::scene::Actor const& actor = **first;
+
+			RenderableMesh const* mesh = scene.mResources.meshes[actor.meshIndex].renderable.get();
+			float cameraDistanceSq = 0.0f; // @TBD: calc distance to camera
+
+			ASSERT(!actor.materials.empty());
+			renderBlocks.resize(renderBlocks.size() + actor.materials.size());
+			for(unsigned q = 0; q < actor.materials.size(); ++q, ++blockIt)
+			{
+				RenderBlock& renderBlock = renderBlocks[blockIt];
+				renderBlock.instanceIndex = actorIt;
+				renderBlock.surfaceIndex = blockIt;
+				renderBlock.fx = mutalisk::effects::getByIndex(actor.materials[q].shaderIndex);
+				renderBlock.mesh = mesh;
+				renderBlock.subset = q;
+				renderBlock.cameraDistanceSq = cameraDistanceSq;
+			}
+		}
+	}
+};
+
+struct sortRenderBlocks
+{
+	template <typename Container, typename Out>
+	void operator()(Container& c, Out& o) { operator()(c.begin(), c.end(), o); }
+
+	template <typename In, typename Out>
+	void operator()(In first, In last, Out& sortedRenderBlocks)
+	{
+		// @TBD:
+	}
+};
+
+struct drawRenderBlocks
+{
+	RenderContext& rc;
+	Dx9RenderableScene const& scene;
+	InstanceInput const* instanceInputs; size_t instanceInputCount;
+	BaseEffect::Input::Surface const* surfaceInputs; size_t surfaceInputCount;
+
+	drawRenderBlocks(RenderContext& rc_, Dx9RenderableScene const& scene_, 
+		InstanceInput const* instanceInputs_, size_t instanceInputCount_,
+		BaseEffect::Input::Surface const* surfaceInputs_, size_t surfaceInputCount_)
+		: rc(rc_), scene(scene_)
+		, instanceInputs(instanceInputs_), instanceInputCount(instanceInputCount_)
+		, surfaceInputs(surfaceInputs_), surfaceInputCount(surfaceInputCount_) {}
+
+	template <typename Container>
+	void operator()(Container& c) { operator()(c.begin(), c.end()); }
+
+	template <typename In>
+	void operator()(In first, In last)
+	{
+		BaseEffect* currFx = 0;
+		BaseEffect::Input fxInput;
+		BaseEffect::clearInput(fxInput);
+
+		static std::vector<LightT> sceneLights; sceneLights.resize(0);
+		static std::vector<MatrixT> sceneLightMatrices; sceneLightMatrices.resize(0);
+		fxInput.lights = gatherSceneLights(sceneLights, sceneLightMatrices);
+
+		for(; first != last; ++first)
+		{
+			RenderBlock const& block = *first;
+
+			if(currFx != block.fx)
+			{
+				if(currFx)
+					currFx->end();
+				currFx = block.fx;
+
+				currFx->captureState();
+				currFx->begin();
+			}
+
+			fxInput.surface = &surfaceInputs[block.surfaceIndex];
+			fxInput.matrices = instanceInputs[block.instanceIndex].geometryMatrices;
+	
+			unsigned passCount = currFx->passCount(fxInput);
+			for(unsigned pass = 0; pass < passCount; ++pass)
+			{
+				//currFx->passInfo();
+				currFx->pass(fxInput, pass);
+
+				ASSERT(block.mesh);
+				render(rc, *block.mesh, block.subset);
+			}
 		}
 
-		D3DXMATRIX world;
-		D3DXMATRIX worldViewProj;
-		D3DXMATRIX invWorld;
-	};
-}
+		if(currFx)
+			currFx->end();
+	}
 
+	BaseEffect::Input::Lights gatherSceneLights(std::vector<LightT>& lights, std::vector<MatrixT>& lightMatrices)
+	{
+		BaseEffect::Input::Lights fxLights;
+		fxLights.count = 0;
+
+		if(scene.mBlueprint.lights.empty())
+			return fxLights;
+
+		lights.resize(scene.mBlueprint.lights.size());
+		lightMatrices.resize(scene.mBlueprint.lights.size());
+
+		MatrixT nativeMatrix;
+		for(size_t q = 0; q < scene.mBlueprint.lights.size(); ++q)
+		{
+			mutalisk::data::scene::Light const& light = scene.mBlueprint.lights[q];
+
+			ASSERT(q >= 0 && q < scene.mState.light2XformIndex.size());
+			toNative(scene.mState.matrices[scene.mState.light2XformIndex[q]], nativeMatrix);
+
+			lights[q] = light;
+			lightMatrices[q] = nativeMatrix;
+		}
+
+		fxLights.data = &lights[0];
+		fxLights.matrices = &lightMatrices[0];
+		fxLights.count = scene.mBlueprint.lights.size();
+		return fxLights;
+	}
+};
 
 void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedActors, bool animatedCamera, int maxActors)
 {
 	D3DXMATRIX nativeMatrix;
 	ASSERT(rc.defaultEffect);
 
-	if(scene.mBlueprint.defaultClipIndex == ~0U)
 	{
-		animatedActors = false;
-		animatedCamera = false;
-	}
-
-	if(scene.mBlueprint.defaultCameraIndex != ~0U)
-	{
-		unsigned int cameraIndex = scene.mBlueprint.defaultCameraIndex;
-		if(animatedCamera)
+		if(scene.mBlueprint.defaultClipIndex == ~0U)
 		{
-			ASSERT(cameraIndex >= 0 && cameraIndex < scene.mState.camera2XformIndex.size());
-			toNative(scene.mState.matrices[scene.mState.camera2XformIndex[cameraIndex]], nativeMatrix);
-		}
-		else
-		{
-			ASSERT(cameraIndex >= 0 && cameraIndex < scene.mBlueprint.cameras.size());
-			toNative(scene.mBlueprint.cameras[cameraIndex].worldMatrix.data, nativeMatrix);
+			animatedActors = false;
+			animatedCamera = false;
 		}
 
-		setCameraMatrix(rc, nativeMatrix);
+		if(!animatedActors)
+			for(size_t q = 0; q < scene.mBlueprint.actors.size(); ++q)
+			{
+				ASSERT(q >= 0 && q < scene.mState.actor2XformIndex.size());
+				toNative(scene.mBlueprint.actors[q].worldMatrix.data,
+					const_cast<Dx9RenderableScene&>(scene).mState.matrices[scene.mState.actor2XformIndex[q]]);
+			}
+
+		if(!animatedCamera)
+			for(size_t q = 0; q < scene.mBlueprint.cameras.size(); ++q)
+			{
+				ASSERT(q >= 0 && q < scene.mState.camera2XformIndex.size());
+				toNative(scene.mBlueprint.cameras[q].worldMatrix.data,
+					const_cast<Dx9RenderableScene&>(scene).mState.matrices[scene.mState.camera2XformIndex[q]]);
+			}
+
+		if(scene.mBlueprint.defaultCameraIndex != ~0U)
+		{
+			unsigned int cameraIndex = scene.mBlueprint.defaultCameraIndex;
+			if(animatedCamera)
+			{
+				ASSERT(cameraIndex >= 0 && cameraIndex < scene.mState.camera2XformIndex.size());
+				toNative(scene.mState.matrices[scene.mState.camera2XformIndex[cameraIndex]], nativeMatrix);
+			}
+			else
+			{
+				ASSERT(cameraIndex >= 0 && cameraIndex < scene.mBlueprint.cameras.size());
+				toNative(scene.mBlueprint.cameras[cameraIndex].worldMatrix.data, nativeMatrix);
+			}
+
+			setCameraMatrix(rc, nativeMatrix);
+		}
+
+		gContext.device = rc.device;
+		gContext.uberShader = rc.defaultEffect;
 	}
 
-	MatrixState matrixState;
 
-	gContext.device = rc.device;
-	gContext.uberShader = rc.defaultEffect;
+	static std::vector<InstanceInput> instanceInputs;
+	static std::vector<BaseEffect::Input::Surface> surfaceInputs;
+	static std::vector<RenderBlock> renderBlocks;
 
-	static Lambert fx;
-	BaseEffect::Input& fxInput = fx.allocInput();
+	instanceInputs.resize(0);
+	surfaceInputs.resize(0);
+	renderBlocks.resize(0);
+
+	static std::vector<mutalisk::data::scene::Actor const*> visibleActors;
+	visibleActors.resize(0);
+
+	RenderContext& camera = rc; // @TBD:
+	findVisibleActors(camera, 0) (scene.mBlueprint.actors, visibleActors);
+	blastInstanceInputs(scene, camera) (visibleActors, instanceInputs);
+	blastSurfaceInputs(scene, 0) (visibleActors, surfaceInputs);
+	blastRenderBlocks(scene, camera) (visibleActors, renderBlocks);
+	std::vector<RenderBlock>& sortedRenderBlocks = renderBlocks; //sortRenderBlocks()(renderBlocks, sortedRenderBlocks);
+	if(instanceInputs.empty() || surfaceInputs.empty())
+	{
+		ASSERT(visibleActors.empty());
+	}
+	else
+		drawRenderBlocks(rc, scene, 
+			&instanceInputs[0], instanceInputs.size(), &surfaceInputs[0], surfaceInputs.size()) (sortedRenderBlocks);
+
+
+
+
+/*
+
+//	static Lambert fx;
+//	static Shiny fx;
+//	BaseEffect::Input& fxInput = fx.allocInput();
 
 	fx.captureState();
 	unsigned passCount = fx.begin();
-
 
 	size_t nextLightIndex = 0;
 	for(size_t q = 0; q < scene.mBlueprint.lights.size(); ++q, ++nextLightIndex)
@@ -375,8 +698,9 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedAct
 	if(nextLightIndex < fxInput.lights.size())
 		fxInput.lights[nextLightIndex].first = 0;
 
-	for(unsigned pass = 0; pass < passCount; ++pass)
-	{
+//	for(unsigned pass = 0; pass < passCount; ++pass)
+//	{
+		unsigned shaderIndex = ~0;
 		for(size_t q = 0; q < ((maxActors>0)?maxActors: scene.mBlueprint.actors.size()); ++q)
 		{
 			mutalisk::data::scene::Actor const& actor = scene.mBlueprint.actors[q];
@@ -395,7 +719,7 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedAct
 			RenderableMesh const& mesh = *scene.mResources.meshes[actor.meshIndex].renderable;
 			if(actor.materials.empty())
 			{
-				fxInput.vecs[BaseEffect::AmbientColor] = D3DXVECTOR4(0,0,0,1);
+				fxInput.vecs[BaseEffect::AmbientColor] = D3DXVECTOR4(1,1,1,1);
 				fxInput.vecs[BaseEffect::DiffuseColor] = D3DXVECTOR4(1,1,1,1);
 				fxInput.vecs[BaseEffect::SpecularColor] = D3DXVECTOR4(1,1,1,1);
 
@@ -405,11 +729,16 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedAct
 			else
 			for(unsigned int materialIt = 0; materialIt < actor.materials.size(); ++materialIt)
 			{
-				unsigned int textureIndex = actor.materials[materialIt].textureIndex;
+				unsigned int colorTextureIndex = actor.materials[materialIt].colorTextureIndex;
 				fxInput.textures[BaseEffect::DiffuseTexture] = 
-					((textureIndex != ~0U)? scene.mNativeResources.textures[textureIndex]: 0);
+					((colorTextureIndex != ~0U)? scene.mNativeResources.textures[colorTextureIndex]: 0);
 
-				toNative(actor.materials[materialIt].ambient, fxInput.vecs[BaseEffect::AmbientColor]);
+				unsigned int envmapTextureIndex = actor.materials[materialIt].envmapTextureIndex;
+				fxInput.textures[BaseEffect::EnvmapTexture] = 
+					((envmapTextureIndex != ~0U)? scene.mNativeResources.textures[envmapTextureIndex]: 0);
+
+				fxInput.vecs[BaseEffect::AmbientColor] = D3DXVECTOR4(1,1,1,1);
+//				toNative(actor.materials[materialIt].ambient, fxInput.vecs[BaseEffect::AmbientColor]);
 				toNative(actor.materials[materialIt].diffuse, fxInput.vecs[BaseEffect::DiffuseColor]);
 				toNative(actor.materials[materialIt].specular, fxInput.vecs[BaseEffect::SpecularColor]);
 
@@ -419,6 +748,7 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedAct
 		}
 	}
 	fx.end();
+	*/
 }
 ////////////////////////////////////////////////
 

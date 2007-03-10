@@ -41,6 +41,15 @@ xMat34::xMat34(
 	Move.x = x3; Move.y = y3; Move.z = z3;
 }
 
+xMat34::xMat34( xMat34 const& c)
+{
+	Move = c.Move;
+}
+xMat34& xMat34::operator=( xMat34 const& rhs )
+{
+	return *this;
+}
+
 xMat34 xMat34::operator*( xMat34 const& rhs ) const
 {
 	xMat34 rM;

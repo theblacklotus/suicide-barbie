@@ -10,19 +10,21 @@ namespace mutalisk { namespace effects {
 
 class Lambert : public BaseEffect
 {
-protected:
-	enum { MAX_LIGHTS = 4 };
-	static void fillRequest(Request& request);
+//protected:
+//	static void fillRequest(Request& request);
 
 public:
 	Lambert();
 	virtual ~Lambert();
 
-	virtual unsigned begin();
-	virtual PassInfo const& passInfo(unsigned passIndex);
-	virtual void pass(unsigned passIndex);
+	virtual void begin();
+	//virtual PassInfo const& passInfo(unsigned passIndex);
+	//virtual void pass(unsigned passIndex);
+	virtual unsigned passCount(Input const& i);
+	virtual PassInfo const& passInfo(Input const& i, unsigned passIndex);
+	virtual void pass(Input const& i, unsigned passIndex);
 	virtual void end();
-
+	
 	virtual void captureState();
 
 private:

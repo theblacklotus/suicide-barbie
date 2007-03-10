@@ -16,7 +16,11 @@ namespace mutalisk { namespace data
 		float & operator[](unsigned int index) { return data[index]; }
 		float data[3];
 	};
-
+	struct Vec4 {
+		float const& operator[](unsigned int index) const { return data[index]; }
+		float & operator[](unsigned int index) { return data[index]; }
+		float data[4];
+	};
 	struct Mat16 {
 		float const& operator[](unsigned int index) const { return data[index]; }
 		float & operator[](unsigned int index) { return data[index]; }

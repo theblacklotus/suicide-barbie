@@ -2,6 +2,7 @@
 #define MUTALISK_DATA_SCENE_H_
 
 #include "common.h"
+#include "shader.h"
 #include <string>
 
 // scene
@@ -22,22 +23,26 @@ namespace mutalisk { namespace data
 
 	struct scene
 	{
-		enum { Version = 0x0110 };
+		enum { Version = 0x0117 };
 
 		typedef std::string Ref;
+		typedef unsigned Id;
 		struct Node {
+			Id id;
 			Ref nodeName;
 			Mat16 worldMatrix;
 		};
 		struct Light : parent<Node> {
-			enum Type {
-				Directional, Spot, Point
-//				DirectionalExt
+			enum nType {
+				Directional, Spot, Point,
+				DirectionalExt
 			};
-			Type type;
+			nType type;
 			Color ambient;
 			Color diffuse;
 			Color specular;
+			Color diffuseAux0;
+			Color diffuseAux1;
 			Vec3 attenuation;
 			float theta;
 			float phi;
@@ -46,39 +51,31 @@ namespace mutalisk { namespace data
 		};
 		struct Actor : parent<Node> {
 			struct Material {
-				Color ambient;
-				Color diffuse;
-				Color specular;
-				unsigned textureIndex;
 				unsigned shaderIndex;
+				//unsigned inputIndex;
+				shader_fixed shaderInput;
 			};
 			unsigned meshIndex;
 			array<Material> materials;
 		};
 
-//		size_t meshCount;
 		array<Ref> meshIds;
-
-//		size_t meshCount;
 		array<Ref> textureIds;
 
-		array<Ref> shaderIds;
+		unsigned shaderLibraryVersion;
+		// array<shader_fixed> shaderInputs;
 
-//		size_t lightCount;
 		array<Light> lights;
-
-//		size_t cameraCount;
 		array<Camera> cameras;
 		unsigned defaultCameraIndex;
 
-//		size_t actorCount;
 		array<Actor> actors;
 
 		Ref animCharId;
 		unsigned defaultClipIndex;
 
 		// memory management
-		scene(); ~scene();
+		scene();
 	};
 
 	// I/O
@@ -86,9 +83,6 @@ namespace mutalisk { namespace data
 	template <typename Out> Out& operator<< (Out& o, scene::Node const& data);
 	template <typename In> In& operator>> (In& i, scene& data);
 	template <typename Out> Out& operator<< (Out& o, scene const& data);
-
-	// memory management
-	void clear(scene& data);
 
 } // namespace data 
 } // namespace mutalisk

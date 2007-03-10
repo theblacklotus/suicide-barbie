@@ -101,18 +101,22 @@ int main(int argc, char** argv)
 	// [Mutalisk]
 	// usage:
 	// fbx2Mutalisk.exe [dx9|psp] fbx-file-name
+	bool targetAllPlatforms = false;
+	mutalisk::Platform targetPlatform = mutalisk::Platform::PSP;
 	if(argc > 2)
 	{
 		std::string target = argv[1];
 		if(target == "dx9")
-			mutalisk::setPlatform(mutalisk::Platform::DX9);
+			targetPlatform = mutalisk::Platform::DX9;
 		else if(target == "psp")
-			mutalisk::setPlatform(mutalisk::Platform::PSP);
+			targetPlatform = mutalisk::Platform::PSP;
+		else if(target == "all")
+			targetAllPlatforms = true;
 	}
 	if(argc > 1)
 	{
-		printf("\n\nPlatform: %s\n", mutalisk::gPlatform.name);
-		printf("Target dir: %s\n", mutalisk::gPlatform.targetDir);
+		printf("\n\nPlatform: %s\n", targetPlatform.name);
+		printf("Target dir: %s\n", targetPlatform.targetDir);
 		printf("File: %s\n\n", argv[argc-1]);
 		lResult = LoadScene(lSdkManager, lScene, argv[argc-1]);
 	}
@@ -172,6 +176,14 @@ int main(int argc, char** argv)
 		printf("\n\n---------\nGeneric Information\n---------\n\n");
 		DisplayGenericInfo(lScene);
 	}
+
+	if(targetAllPlatforms)
+	{
+		mutalisk::saveScene(mutalisk::Platform::PSP);
+		mutalisk::saveScene(mutalisk::Platform::DX9);
+	}
+	else
+		mutalisk::saveScene(targetPlatform);
 
 	mutalisk::endScene();
 

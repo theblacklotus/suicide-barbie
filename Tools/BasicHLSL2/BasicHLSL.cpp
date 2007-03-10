@@ -1015,7 +1015,13 @@ HRESULT CALLBACK OnCreateDevice( IDirect3DDevice9* pd3dDevice, const D3DSURFACE_
 
     // If this fails, there should be debug output as to 
     // why the .fx file failed to compile
-    V_RETURN( D3DXCreateEffectFromFile( pd3dDevice, str, NULL, NULL, dwShaderFlags, NULL, &g_pEffect, NULL ) );
+	com_ptr<ID3DXBuffer> errorBuffer;
+    HRESULT hr2 = D3DXCreateEffectFromFile( pd3dDevice, str, NULL, NULL, dwShaderFlags, NULL, &g_pEffect, &errorBuffer );
+	if(errorBuffer)
+	{
+		std::string errorStr = std::string((char*)errorBuffer->GetBufferPointer(), (char*)errorBuffer->GetBufferSize());
+	}
+	V_RETURN(hr2);
 
     // Create the mesh texture from a file
 /*    V_RETURN( DXUTFindDXSDKMediaFileCch( str, MAX_PATH, L"test.bmp" ) );

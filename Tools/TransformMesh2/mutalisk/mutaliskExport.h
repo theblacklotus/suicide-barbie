@@ -31,6 +31,7 @@ double const ANIM_SAMPLING_FREQ = 1.0f / 30.0;
 #include <limits>
 #include <memory>
 #include <string>
+#include <functional>
 
 #include <mutant/mutant.h>
 #include <mutant/writer.h>
@@ -41,6 +42,8 @@ double const ANIM_SAMPLING_FREQ = 1.0f / 30.0;
 #include <mutalisk/dx9/dx9.h>
 #include <mutalisk/psp/psp.h>
 #include <mutalisk/psp/pspXcompile.h>
+
+#include <effects/library.h>
 
 #include <d3d9.h>
 #include <d3dx9.h>
@@ -125,7 +128,8 @@ struct OutputScene
 	// definition
 	struct Material
 	{
-		OutputTexture*			texture;
+		OutputTexture*			colorTexture;
+		OutputTexture*			envmapTexture;
 		KFbxSurfaceMaterial*	parameters;
 		std::string				shader;
 		//Shader*				shader;
@@ -134,8 +138,27 @@ struct OutputScene
 
 	struct Properties
 	{
-		typedef std::map<std::string, std::string>			StringPropertyMapT;
-		typedef std::map<std::string, array<double> >		VectorPropertyMapT;
+		template <typename T>
+		struct CaseInsensitiveCompare : public std::binary_function<T, T, bool>
+		{
+			void tolowerArray(T& t) const
+			{
+				for(size_t q = 0; q < t.size(); ++q)
+					t[q] = static_cast<T::value_type>(tolower(t[q]));
+			}
+			
+			bool operator()(T const& l, T const& r) const
+			{
+				T tmpL = l; tolowerArray(tmpL);
+				T tmpR = r; tolowerArray(tmpR);
+				return (tmpL.compare(tmpR) < 0);
+			}
+		};
+
+		typedef std::map<std::string, std::string,
+			CaseInsensitiveCompare<std::string> >		StringPropertyMapT;
+		typedef std::map<std::string, array<double>,
+			CaseInsensitiveCompare<std::string> >		VectorPropertyMapT;
 
 		bool hasString(std::string const& byName) const { return (strings.find(byName) != strings.end()); }
 		bool hasVector(std::string const& byName) const { return (vectors.find(byName) != vectors.end()); }
@@ -203,6 +226,7 @@ void processMesh(KFbxNode* pNode);
 void processMaterials(KFbxMesh* pMesh, OutputScene::MaterialsT& materials, OutputSkinnedMesh::SubsetsT* subsets = 0);
 void processSubsets(KFbxMesh* pMesh, OutputSkinnedMesh::SubsetsT& subsets);
 void processProperties(KFbxObject const* pObject, OutputScene::Properties& properties);
+OutputTexture& processTextureResource(std::string resourceName);
 OutputTexture& processTextureResource(KFbxTexture* pTexture);
 std::string processShaderResource(KFbxSurfaceMaterial* pMaterial);
 OutputSkinnedMesh& processMeshResource(KFbxNode* pNode);
@@ -219,7 +243,7 @@ std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode
 CurveT processCurve(KFCurve *pCurve);
 float processDefaultCurve(KFCurve *pCurve);
 
-void applyProperties(OutputScene::Actor& actor, OutputScene::Properties const& properties);
+void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& properties);
 
 struct Platform
 {
@@ -775,12 +799,14 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 		data.textureIds[q] = textureName2FileName(i->second.name);
 	}
 
-	q = 0;
+	data.shaderLibraryVersion =	mutalisk::effects::version();
+
+/*	q = 0;
 	data.shaderIds.resize(scene.shaders.size());
 	for(OutputScene::ShadersT::const_iterator i = scene.shaders.begin(); i != scene.shaders.end(); ++i, ++q)
 	{
 		data.shaderIds[q] = *i;
-	}
+	}*/
 
 	// lights
 	q = 0;
@@ -791,9 +817,13 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 		assert((*i)->GetNode());
 		assert((*i)->GetAttributeType() == KFbxNodeAttribute::eLIGHT);
 		char const* name = (*i)->GetNode()->GetName();
+
+		// node
+		data.lights[q].id = q;
 		data.lights[q].nodeName = name;
 		processMatrix(data.lights[q].worldMatrix.data, (*i)->GetNode()->GetGlobalFromDefaultTake());
 
+		// properties
 		OutputScene::Properties properties;
 		processProperties((*i)->GetNode(), properties);
 
@@ -809,16 +839,42 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 			data.lights[q].type = mutalisk::data::scene::Light::Spot;
 			break;
 		}
-/*		if(properties.hasString("typeEx"))
+		if(properties.hasString("typeExt"))
 		{
-			if(properties.strings["typeEx"] == "DirectionalExt")
+			if(properties.strings["typeExt"] == "DirectionalExt")
 			{
-				assertWarning(properties.hasVector("backColor"), "DirectionalExt light type misses 'Back Color' property");
-				assertWarning(properties.hasVector("equatorColor"), "DirectionalExt light type misses 'Equator Color' property");
+				std::string const BackColor = "backColor";
+				std::string const EquatorColor = "equatorColor";
+				assertWarning(properties.hasVector(BackColor), "DirectionalExt light type misses 'Back Color' property");
+				assertWarning(properties.hasVector(EquatorColor), "DirectionalExt light type misses 'Equator Color' property");
+
+				assertWarning(properties.vectors[BackColor].size() >= 4, "'Back Color' property must be Vector3 or Vector4");
+				assertWarning(properties.vectors[EquatorColor].size() >= 4, "'Equator Color' property must be Vector3 or Vector4");
+
+				data.lights[q].type = mutalisk::data::scene::Light::DirectionalExt;
+
+				if(properties.vectors[EquatorColor].size() >= 4)
+				{
+					data.lights[q].ambient.r = static_cast<float>(properties.vectors[EquatorColor][0]);
+					data.lights[q].ambient.g = static_cast<float>(properties.vectors[EquatorColor][1]);
+					data.lights[q].ambient.b = static_cast<float>(properties.vectors[EquatorColor][2]);
+					data.lights[q].ambient.a = static_cast<float>(properties.vectors[EquatorColor][3]);
+				}
+
+				if(properties.vectors[BackColor].size() >= 4)
+				{
+					data.lights[q].diffuseAux0.r = static_cast<float>(properties.vectors[BackColor][0]);
+					data.lights[q].diffuseAux0.g = static_cast<float>(properties.vectors[BackColor][1]);
+					data.lights[q].diffuseAux0.b = static_cast<float>(properties.vectors[BackColor][2]);
+					data.lights[q].diffuseAux0.a = static_cast<float>(properties.vectors[BackColor][3]);
+				}
 			}
-		}*/
-		data.lights[q].ambient.r = data.lights[q].ambient.g = data.lights[q].ambient.b = 0.0f;
-		data.lights[q].ambient.a = 1.0f;
+		}
+		else
+		{
+			data.lights[q].ambient.r = data.lights[q].ambient.g = data.lights[q].ambient.b = 0.0f;
+			data.lights[q].ambient.a = 1.0f;
+		}
 
 		KFbxColor lColor; (*i)->GetDefaultColor(lColor);
 		float intensity = static_cast<float>((*i)->GetDefaultIntensity()) * 0.01f;
@@ -853,6 +909,7 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 		assert((*i)->GetAttributeType() == KFbxNodeAttribute::eCAMERA ||
 			(*i)->GetAttributeType() == KFbxNodeAttribute::eCAMERA_SWITCHER);
 		char const* name = (*i)->GetNode()->GetName();
+		data.cameras[q].id = q;
 		data.cameras[q].nodeName = name;
 		processMatrix(data.cameras[q].worldMatrix.data, (*i)->GetNode()->GetGlobalFromDefaultTake());
 	}
@@ -866,6 +923,7 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 		assert(i->mesh);
 
 		// node
+		data.actors[q].id = q;
 		data.actors[q].nodeName = scene.actors[q].node->GetName();
 
 		// mesh
@@ -878,31 +936,46 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 		data.actors[q].materials.resize(i->materials.size());
 		for(size_t w = 0; w < i->materials.size(); ++w)
 		{
-			{ // texture
+			{ // color texture
 				std::string textureName = "";
-				if(i->materials[w].texture)
-					textureName = i->materials[w].texture->source;
+				if(i->materials[w].colorTexture)
+					textureName = i->materials[w].colorTexture->source;
 
 				size_t textureIndex = std::distance(scene.textureResources.begin(), scene.textureResources.find(textureName));
 				if(textureIndex == scene.textureResources.size())
 					textureIndex = ~0U;
 
-				data.actors[q].materials[w].textureIndex = textureIndex;
+				data.actors[q].materials[w].shaderInput.diffuseTexture = textureIndex;
+			}
+
+			{ // envmap texture
+				std::string textureName = "";
+				if(i->materials[w].envmapTexture)
+					textureName = i->materials[w].envmapTexture->source;
+
+				size_t textureIndex = std::distance(scene.textureResources.begin(), scene.textureResources.find(textureName));
+				if(textureIndex == scene.textureResources.size())
+					textureIndex = ~0U;
+
+				data.actors[q].materials[w].shaderInput.envmapTexture = textureIndex;
 			}
 
 			{ // shader
 				std::string shaderName = i->materials[w].shader;
-				size_t shaderIndex = std::distance(scene.shaders.begin(), scene.shaders.find(shaderName));
+				/*size_t shaderIndex = std::distance(scene.shaders.begin(), scene.shaders.find(shaderName));
 				if(shaderIndex == scene.shaders.size())
-					shaderIndex = ~0U;
+					shaderIndex = ~0U;*/
 
+				mutalisk::effects::IndexT shaderIndex = mutalisk::effects::getIndexByName(shaderName);
+				if(shaderIndex == mutalisk::effects::NotFound)
+					shaderIndex = mutalisk::effects::Default;
 				data.actors[q].materials[w].shaderIndex = shaderIndex;
 			}
 
 			{ // surface properties
-				mutalisk::data::Color& ambient = data.actors[q].materials[w].ambient;
-				mutalisk::data::Color& diffuse = data.actors[q].materials[w].diffuse;
-				mutalisk::data::Color& specular = data.actors[q].materials[w].specular;
+				mutalisk::data::Color& ambient = data.actors[q].materials[w].shaderInput.ambient;
+				mutalisk::data::Color& diffuse = data.actors[q].materials[w].shaderInput.diffuse;
+				mutalisk::data::Color& specular = data.actors[q].materials[w].shaderInput.specular;
 
 				KFbxPropertyDouble3 lKFbxDouble3;
 				if(i->materials[w].parameters->GetNewFbxClassId().Is(KFbxSurfaceLambert::ClassId))
@@ -1077,7 +1150,8 @@ void processMaterials(KFbxMesh* pMesh, OutputScene::MaterialsT& materials, Outpu
 			int combIndex = combinationIndices[combKey];
 
 			{
-				materials[combIndex].texture = (lTexture)? &processTextureResource(lTexture): 0;
+				materials[combIndex].colorTexture = (lTexture)? &processTextureResource(lTexture): 0;
+				materials[combIndex].envmapTexture = 0;
 				materials[combIndex].parameters = lMaterial;
 				materials[combIndex].shader = (lMaterial)? processShaderResource(lMaterial): "";
 
@@ -1125,6 +1199,7 @@ void processMesh(KFbxNode* pNode)
 			processProperties(pNode, newActor.properties);
 			newActor.node = pNode;
 	
+			applyProperties(newActor, newActor.properties);
 			gOutputScene.actors.push_back(newActor);
 		}
 	}
@@ -1137,14 +1212,15 @@ void processMesh(KFbxNode* pNode)
 		processProperties(pNode, newActor.properties);
 		newActor.node = pNode;
 
+		applyProperties(newActor, newActor.properties);
 		gOutputScene.actors.push_back(newActor);
 	}
 }
 
 void processProperties(KFbxObject const* pObject, OutputScene::Properties& properties)
 {
-	OutputScene::Properties::VectorPropertyMapT vectorProps = properties.vectors;
-	OutputScene::Properties::StringPropertyMapT stringProps = properties.strings;
+	OutputScene::Properties::VectorPropertyMapT& vectorProps = properties.vectors;
+	OutputScene::Properties::StringPropertyMapT& stringProps = properties.strings;
 
 	int count = pObject->GetPropertyCount();
 	for (int i=0; i<count; i++)
@@ -1172,9 +1248,10 @@ void processProperties(KFbxObject const* pObject, OutputScene::Properties& prope
 			break;
 
 		case eDOUBLE3:
-			vectorProps[propName].resize(3);
+			vectorProps[propName].resize(4);
 			for(int q = 0; q < 3; ++q)
 				vectorProps[propName][q] = KFbxGet<fbxDouble3>(lProperty)[q];
+			vectorProps[propName][3] = 0.0f;
 			break;
 		case eDOUBLE4:
 			vectorProps[propName].resize(4);
@@ -1209,17 +1286,26 @@ void processProperties(KFbxObject const* pObject, OutputScene::Properties& prope
 	}
 }
 
-void applyProperties(OutputScene::Actor& actor, OutputScene::Properties const& properties)
+void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& properties)
 {
+	if(properties.hasString("envMap"))
+	{
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+		{
+			if(actor.materials[w].envmapTexture)
+				continue;
+
+			std::string const& textureName = properties.strings["envMap"];
+			actor.materials[w].envmapTexture = &processTextureResource(textureName);
+		}
+	}
+
 	// $TBD: props
 	// "shaderOverride"
 }
 
-OutputTexture& processTextureResource(KFbxTexture* pTexture)
+OutputTexture& processTextureResource(std::string resourceName)
 {
-	assert(pTexture);
-	std::string resourceName = pTexture->GetRelativeFileName();
-
 	if(gOutputScene.textureResources.find(resourceName) != gOutputScene.textureResources.end())
 		return gOutputScene.textureResources[resourceName];
 
@@ -1227,12 +1313,21 @@ OutputTexture& processTextureResource(KFbxTexture* pTexture)
 
 	result.source = resourceName;
 	result.name = fileName2TextureName(resourceName);
-	result.parameters = pTexture;
+	result.parameters = 0;
 
 	assert(gDxNullRefDevice);
 	HRESULT hr = D3DXCreateTextureFromFile(gDxNullRefDevice, resourceName.c_str(), &result.data);
 	assertWarning(SUCCEEDED(hr), std::string("Failed to load texture: ") + resourceName);
 
+	return result;
+}
+
+OutputTexture& processTextureResource(KFbxTexture* pTexture)
+{
+	assert(pTexture);
+	std::string resourceName = pTexture->GetRelativeFileName();
+	OutputTexture& result = processTextureResource(resourceName);
+	result.parameters = pTexture;
 	return result;
 }
 
@@ -1948,8 +2043,10 @@ void processAnimation(KFbxScene* pScene)
 	processAnimation(gOutputScene.animResource["scene"], pScene);
 }
 
-void endScene()
+void saveScene(Platform platform)
 {
+	setPlatform(platform);
+
 	mutalisk::data::scene sceneData;
 	blit(gOutputScene, sceneData);
 	save(sceneName2FileName(gOutputScene.name), sceneData);
@@ -1989,6 +2086,10 @@ void endScene()
 	}
 
 	save(sceneName2AnimFileName(gOutputScene.name), gOutputScene.animResource);
+}
+
+void endScene()
+{
 	gCurves.clear();
 }
 

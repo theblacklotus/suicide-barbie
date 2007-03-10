@@ -5,6 +5,7 @@
 #include <d3d9.h>
 #include <d3dx9.h>
 #include <mutalisk/dx9/dx9Platform.h>
+#include <mutalisk/scene.h>
 
 namespace mutalisk { namespace effects {
 
@@ -14,9 +15,11 @@ namespace mutalisk { namespace effects {
 	};
 	extern Context gContext;
 
-	typedef IDirect3DBaseTexture9	TextureT;
-	typedef D3DXMATRIX				MatrixT;
-	typedef D3DXVECTOR4				VecT;
+	typedef mutalisk::data::scene::Light	LightT;
+	typedef IDirect3DBaseTexture9			TextureT;
+	typedef D3DXMATRIX						MatrixT;
+	typedef D3DXVECTOR4						VecT;
+	typedef D3DXCOLOR						ColorT;
 
 } // namespace effects 
 } // namespace mutalisk

@@ -47,6 +47,9 @@ extern "C" {
 			float x2, float y2, float z2,
 			float x3, float y3, float z3 );
 		xMat34 operator*( xMat34 const& rhs ) const;
+
+		xMat34( xMat34 const& c );
+		xMat34& operator=( xMat34 const& rhs );
 	};
 #endif
 
