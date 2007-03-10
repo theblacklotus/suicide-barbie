@@ -1,0 +1,6 @@
+#ifndef MUTALISK_PLAYER__PSP_PLATFORM_H_
+#define MUTALISK_PLAYER__PSP_PLATFORM_H_
+
+#include "../cfg.h"
+
+#endif // MUTALISK_PLAYER__PSP_PLATFORM_H_
