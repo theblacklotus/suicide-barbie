@@ -64,7 +64,7 @@ struct ScenePlayerApp
 
 	void update(float deltaTime) { ::update(*scene.renderable, deltaTime); }
 	void process() { ::process(*scene.renderable); }
-	void render(int maxActors = -1) { ::render(renderContext, *scene.renderable, true, true, maxActors); }
+	void render(int maxActors = -1) { ::render(renderContext, *scene.renderable, maxActors); }
 
 	struct Scene
 	{
@@ -1347,7 +1347,7 @@ void CALLBACK OnFrameRender( IDirect3DDevice9* pd3dDevice, double fTime, float f
 
 		scenePlayerApp->setViewMatrix(mView);
 		scenePlayerApp->setProjMatrix(mProj);
-		scenePlayerApp->update(static_cast<float>(fTime) * 0.2f);
+		scenePlayerApp->update(static_cast<float>(fTime));
 		scenePlayerApp->process();
 		static int maxActors = -1;
 		scenePlayerApp->render(maxActors);

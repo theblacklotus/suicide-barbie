@@ -10,6 +10,24 @@
 using namespace mutalisk;
 using namespace mutalisk::effects;
 
+
+struct Settings
+{
+	int overrideCameraMethod;
+	bool forceIdentityActorsMatrix;
+	bool forceAnimatedActors;
+	bool forceAnimatedCamera;
+
+	Settings()
+		: overrideCameraMethod(1)
+		, forceIdentityActorsMatrix(false)
+		, forceAnimatedActors(true)
+		, forceAnimatedCamera(true)
+	{}
+};
+static Settings gSettings;
+
+
 namespace {
 	unsigned int indices2Faces(unsigned int indexCount, D3DPRIMITIVETYPE primitiveType)
 	{
@@ -172,7 +190,7 @@ std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh co
 }
 
 namespace {
-	void toNative(CTransform::t_matrix const& src, D3DXMATRIX& worldMatrix, bool swap = true)
+	void toNative(D3DXMATRIX& worldMatrix, CTransform::t_matrix const& src, bool swap = true)
 	{
 		static int method = 1;
 		if(method == 0)
@@ -212,12 +230,12 @@ namespace {
 		}
 	}
 
-	void toNative(float const* worldMatrixData, D3DXMATRIX& worldMatrix)	
+	/*void toNative(D3DXMATRIX& worldMatrix, float const* worldMatrixData)	
 	{
 		worldMatrix = D3DXMATRIX(worldMatrixData);
-	}
+	}*/
 
-	void toNative(float const* worldMatrixData, CTransform::t_matrix& worldMatrix)
+	void toNative(CTransform::t_matrix& worldMatrix, float const* worldMatrixData)
 	{
 		worldMatrix = CTransform::t_matrix(
 			worldMatrixData[8], worldMatrixData[4], worldMatrixData[0],
@@ -225,23 +243,30 @@ namespace {
 			worldMatrixData[10], worldMatrixData[6], worldMatrixData[2],
 			worldMatrixData[14], worldMatrixData[13], worldMatrixData[12]);
 	}
+	void toNative(D3DXMATRIX& worldMatrix, float const* worldMatrixData)
+	{
+		worldMatrix = D3DXMATRIX(
+			worldMatrixData[8], worldMatrixData[4], worldMatrixData[0], 0,
+			worldMatrixData[9], worldMatrixData[5], worldMatrixData[1], 0,
+			worldMatrixData[10], worldMatrixData[6], worldMatrixData[2], 0,
+			worldMatrixData[14], worldMatrixData[13], worldMatrixData[12], 1);
+	}
 
-
-	void toNative(mutalisk::data::Vec4 const& src, D3DXVECTOR4& dst)
+	void toNative(D3DXVECTOR4& dst, mutalisk::data::Vec4 const& src)
 	{
 		dst.x = src[0]; dst.y = src[1]; dst.z = src[2]; dst.w = src[3];
 	}
-	void toNative(mutalisk::data::Color const& color, D3DXCOLOR& c)
+	void toNative(D3DXCOLOR& c, mutalisk::data::Color const& color)
 	{
 		c.r = color.r; c.g = color.g; c.b = color.b; c.a = color.a;
 	}
 
-	void toNative(Dx9RenderableScene const& scene, mutalisk::data::shader_fixed const& src, BaseEffect::Input::Surface& dst)
+	void toNative(BaseEffect::Input::Surface& dst, Dx9RenderableScene const& scene, mutalisk::data::shader_fixed const& src)
 	{
-		toNative(src.ambient, dst.ambient);
-		toNative(src.diffuse, dst.diffuse);
-		toNative(src.specular, dst.specular);
-		toNative(src.emissive, dst.emissive);
+		toNative(dst.ambient, src.ambient);
+		toNative(dst.diffuse, src.diffuse);
+		toNative(dst.specular, src.specular);
+		toNative(dst.emissive, src.emissive);
 
 		dst.diffuseTexture = (src.diffuseTexture != ~0U)? scene.mNativeResources.textures[src.diffuseTexture] : 0;
 		dst.envmapTexture = (src.envmapTexture != ~0U)? scene.mNativeResources.textures[src.envmapTexture] : 0;
@@ -251,7 +276,7 @@ namespace {
 		dst.transparency = src.transparency;
 		dst.dummy = 0;
 
-		toNative(src.aux0, dst.aux0);
+		toNative(dst.aux0, src.aux0);
 	}
 
 	void setCameraMatrix(RenderContext& rc, D3DXMATRIX const& cameraMatrix)
@@ -262,11 +287,10 @@ namespace {
 		D3DXMatrixScaling(&sm, 1.0f, 1.0f, -1.0f);
 		D3DXMatrixMultiply(&viewMatrix, &sm, &viewMatrix);
 
-		static int overrideCameraMethod = 1;
 		D3DXMatrixInverse(&viewMatrix, 0, &viewMatrix);
-		if(overrideCameraMethod == 0)
+		if(gSettings.overrideCameraMethod == 0)
 			D3DXMatrixMultiply(&rc.viewMatrix, &viewMatrix, &rc.viewMatrix);
-		else if(overrideCameraMethod == 1)
+		else if(gSettings.overrideCameraMethod == 1)
 			rc.viewMatrix = viewMatrix;
 		D3DXMatrixMultiply(&rc.viewProjMatrix, &rc.viewMatrix, &rc.projMatrix);
 	}
@@ -391,9 +415,12 @@ struct blastInstanceInputs
 			gatherInstanceLights();
 
 			ASSERT(actor.id >= 0 && actor.id < this->scene.mState.actor2XformIndex.size());
-			toNative(this->scene.mState.matrices[this->scene.mState.actor2XformIndex[actor.id]], nativeMatrix);
+			toNative(nativeMatrix, this->scene.mState.matrices[this->scene.mState.actor2XformIndex[actor.id]]);
 
-			applyWorldMatrix(nativeMatrix, instanceInput.geometryMatrices);
+			if(gSettings.forceIdentityActorsMatrix)
+				D3DXMatrixIdentity(&nativeMatrix);
+
+			setWorldMatrix(nativeMatrix, instanceInput.geometryMatrices);
 		}
 	}
 
@@ -407,7 +434,7 @@ struct blastInstanceInputs
 		// @TBD:
 	}
 
-	void applyWorldMatrix(D3DXMATRIX const& world, MatrixT* dst)
+	void setWorldMatrix(D3DXMATRIX const& world, MatrixT* dst)
 	{
 		D3DXMATRIX invWorld;
 		D3DXMATRIX worldViewProj;
@@ -447,7 +474,7 @@ struct blastSurfaceInputs
 			for(unsigned q = 0; q < actor.materials.size(); ++q, ++block)
 			{
 				BaseEffect::Input::Surface& surfaceInput = surfaceInputs[block];
-				toNative(scene, actor.materials[q].shaderInput, surfaceInput);
+				toNative(surfaceInput, scene, actor.materials[q].shaderInput);
 			}
 		}
 	}
@@ -583,7 +610,7 @@ struct drawRenderBlocks
 			mutalisk::data::scene::Light const& light = scene.mBlueprint.lights[q];
 
 			ASSERT(q >= 0 && q < scene.mState.light2XformIndex.size());
-			toNative(scene.mState.matrices[scene.mState.light2XformIndex[q]], nativeMatrix);
+			toNative(nativeMatrix, scene.mState.matrices[scene.mState.light2XformIndex[q]]);
 
 			lights[q] = light;
 			lightMatrices[q] = nativeMatrix;
@@ -596,8 +623,11 @@ struct drawRenderBlocks
 	}
 };
 
-void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedActors, bool animatedCamera, int maxActors)
+void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors)
 {
+	bool animatedActors = gSettings.forceAnimatedActors;
+	bool animatedCamera = gSettings.forceAnimatedCamera;
+
 	D3DXMATRIX nativeMatrix;
 	ASSERT(rc.defaultEffect);
 
@@ -612,16 +642,18 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedAct
 			for(size_t q = 0; q < scene.mBlueprint.actors.size(); ++q)
 			{
 				ASSERT(q >= 0 && q < scene.mState.actor2XformIndex.size());
-				toNative(scene.mBlueprint.actors[q].worldMatrix.data,
-					const_cast<Dx9RenderableScene&>(scene).mState.matrices[scene.mState.actor2XformIndex[q]]);
+				toNative(
+					const_cast<Dx9RenderableScene&>(scene).mState.matrices[scene.mState.actor2XformIndex[q]],
+					scene.mBlueprint.actors[q].worldMatrix.data);
 			}
 
 		if(!animatedCamera)
 			for(size_t q = 0; q < scene.mBlueprint.cameras.size(); ++q)
 			{
 				ASSERT(q >= 0 && q < scene.mState.camera2XformIndex.size());
-				toNative(scene.mBlueprint.cameras[q].worldMatrix.data,
-					const_cast<Dx9RenderableScene&>(scene).mState.matrices[scene.mState.camera2XformIndex[q]]);
+				toNative(
+					const_cast<Dx9RenderableScene&>(scene).mState.matrices[scene.mState.camera2XformIndex[q]],
+					scene.mBlueprint.cameras[q].worldMatrix.data);
 			}
 
 		if(scene.mBlueprint.defaultCameraIndex != ~0U)
@@ -630,12 +662,12 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedAct
 			if(animatedCamera)
 			{
 				ASSERT(cameraIndex >= 0 && cameraIndex < scene.mState.camera2XformIndex.size());
-				toNative(scene.mState.matrices[scene.mState.camera2XformIndex[cameraIndex]], nativeMatrix);
+				toNative(nativeMatrix, scene.mState.matrices[scene.mState.camera2XformIndex[cameraIndex]]);
 			}
 			else
 			{
 				ASSERT(cameraIndex >= 0 && cameraIndex < scene.mBlueprint.cameras.size());
-				toNative(scene.mBlueprint.cameras[cameraIndex].worldMatrix.data, nativeMatrix);
+				toNative(nativeMatrix, scene.mBlueprint.cameras[cameraIndex].worldMatrix.data);
 			}
 
 			setCameraMatrix(rc, nativeMatrix);
@@ -644,7 +676,6 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedAct
 		gContext.device = rc.device;
 		gContext.uberShader = rc.defaultEffect;
 	}
-
 
 	static std::vector<InstanceInput> instanceInputs;
 	static std::vector<BaseEffect::Input::Surface> surfaceInputs;

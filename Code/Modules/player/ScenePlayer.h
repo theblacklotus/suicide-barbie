@@ -91,18 +91,48 @@ struct RenderableScene
 
 			this->time = 0.0f;
 		}
-
-		void updateDt(float deltaTime)
+		float sampleAnimation(std::string const& actorName, std::string const& channelName, float t, float defaultValue = 0.0f)
 		{
-			this->time += deltaTime;
-			update(this->time);
+			ASSERT(this->clip);
+			if(!this->clip->has(actorName))
+				return defaultValue;
+
+			if(!(*this->clip)[actorName].has_ff(channelName))
+				return defaultValue;
+
+			typedef knot_data<float,float> t_float_knots;
+			typedef linear_evaluator<float> t_float_eval;		
+			typedef interpolator1<t_float_knots, t_float_eval, time_algo_cycle> t_interpolator;
+			t_interpolator ipol((*this->clip)[actorName].floatFloat(channelName), t_float_eval());
+			return ipol.value(t);
 		}
 
-		void update(float time)
+		void updateDt(mutalisk::data::scene const& scene, float deltaTime)
+		{
+			this->time += deltaTime;
+			update(scene, this->time);
+		}
+
+		void update(mutalisk::data::scene const& scene, float time)
 		{
 			this->time = time;
 			this->xformArrayAnimator.updateTransforms(this->time,
 				this->transforms.begin(), this->transforms.end());
+
+			// update properties
+			for(size_t q = 0; q < scene.actors.size(); ++q)
+			{
+				mutalisk::data::scene::Actor& actor = const_cast<mutalisk::data::scene&>(scene).actors[q];
+
+				float v = sampleAnimation(actor.nodeName, "UVScroll", time, 0.5f);
+				float fadeOut = sampleAnimation(actor.nodeName, "Fadeout", time, 0.0f);
+				float fadeIn = sampleAnimation(actor.nodeName, "Fadein", time, 1.0f);
+				for(size_t w = 0; w < actor.materials.size(); ++w)
+				{
+					actor.materials[w].shaderInput.vOffset = 1.0f - v*2.0f;
+					actor.materials[w].shaderInput.transparency = (1.0f - fadeOut) * fadeIn;
+				}
+			}
 		}
 
 		void process(SharedResources& sharedResources)	
@@ -174,7 +204,7 @@ struct RenderableScene
 					&mResources.meshes[q].blueprint->skinInfo->bones[0], mResources.meshes[q].blueprint->skinInfo->bones.size(),
 					mState.bone2XformIndex[q]);
 	}
-	void update(float deltaTime) { mState.update(deltaTime); }
+	void update(float deltaTime) { mState.update(mBlueprint, deltaTime); }
 	void process() { mState.process(mResources); }
 };
 

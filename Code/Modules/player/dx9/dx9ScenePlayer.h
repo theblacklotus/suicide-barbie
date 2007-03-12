@@ -45,7 +45,7 @@ AP<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh const& data);
 //AP<RenderableTexture> prepare(RenderContext& rc, mutalisk::data::texture const& data);
 void update(Dx9RenderableScene& scene, float deltaTime);
 void process(Dx9RenderableScene& scene);
-void render(RenderContext& rc, Dx9RenderableScene const& scene, bool animatedActors = true, bool animatedCamera = true, int maxActors = -1);
+void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors = -1);
 
 
 #ifdef AP_DEFINED_LOCALY

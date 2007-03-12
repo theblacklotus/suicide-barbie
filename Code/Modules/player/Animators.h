@@ -202,4 +202,46 @@ private:
 	mutant::time_controller<>	mTimeController;
 };
 
+////////////////////////////////////////////////
+/*class CGenericAnimator
+{
+public:
+	CGenericAnimator();
+
+	mutant::time_controller<>& timeController() { return mTimeController; }
+	mutant::time_controller<> const& timeController() const { return mTimeController; }
+
+	//
+	unsigned createFromClip(
+		mutant::anim_clip const& clip,
+		bool create_looping_animators = true
+		);
+
+	// Updates matrices begining at supplied iterator 'dest'
+	// Number of updated matrices equals to minimum of animator count and supplied array size
+	template<typename ItT>
+	void value( float t, ItT dest, ItT destEnd )
+	{
+		t_animators::iterator aIt = mAnimators.begin();
+		t_animators::iterator aEnd = mAnimators.end();
+
+		mTimeController.set_time( t );
+
+		while( aIt != aEnd )
+		{
+			if( !(dest < destEnd) )
+				break;
+
+			*dest = aIt->value( mTimeController.processed_time() );
+
+			++dest;
+			++aIt;
+		}
+	}
+
+private:
+	t_animators					mAnimators;
+	mutant::time_controller<>	mTimeController;
+};*/
+
 #endif // NEWAGE_ANIMATORS_H_

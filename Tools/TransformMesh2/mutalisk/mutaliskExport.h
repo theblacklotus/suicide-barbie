@@ -159,12 +159,16 @@ struct OutputScene
 			CaseInsensitiveCompare<std::string> >		StringPropertyMapT;
 		typedef std::map<std::string, array<double>,
 			CaseInsensitiveCompare<std::string> >		VectorPropertyMapT;
+		typedef std::map<std::string, array<KFCurve*>,
+			CaseInsensitiveCompare<std::string> >		CurvePropertyMapT;
 
 		bool hasString(std::string const& byName) const { return (strings.find(byName) != strings.end()); }
 		bool hasVector(std::string const& byName) const { return (vectors.find(byName) != vectors.end()); }
+		bool hasCurve(std::string const& byName) const { return (curves.find(byName) != curves.end()); }
 
 		StringPropertyMapT	strings;
 		VectorPropertyMapT	vectors;
+		CurvePropertyMapT	curves;
 	};
 
 	struct Actor
@@ -226,6 +230,7 @@ void processMesh(KFbxNode* pNode);
 void processMaterials(KFbxMesh* pMesh, OutputScene::MaterialsT& materials, OutputSkinnedMesh::SubsetsT* subsets = 0);
 void processSubsets(KFbxMesh* pMesh, OutputSkinnedMesh::SubsetsT& subsets);
 void processProperties(KFbxObject const* pObject, OutputScene::Properties& properties);
+void processAnimatedProperties(KFbxNode* pNode, OutputScene::Properties& properties);
 OutputTexture& processTextureResource(std::string resourceName);
 OutputTexture& processTextureResource(KFbxTexture* pTexture);
 std::string processShaderResource(KFbxSurfaceMaterial* pMaterial);
@@ -237,10 +242,12 @@ void processLight(KFbxNode* pLight);
 int processHierarchy(mutant::anim_hierarchy& hierarchy, KFbxNode* pNode, int pDepth);
 //std::auto_ptr<mutant::anim_hierarchy> processHierarchy(KFbxScene* pScene);
 void processHierarchy(mutant::anim_character& anim_char, KFbxScene* pScene);
-void processAnimation(mutant::anim_clip& clip, KFbxNode* pNode);
+void processAnimation(mutant::anim_clip& clip, KFbxNode* pNode, KTimeSpan timeSpan);
 void processAnimation(mutant::anim_character& anim_char, KFbxScene* pScene);
-std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode* pTakeNode, KFbxTakeNode* pDefaultTakeNode);
+//std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode* pTakeNode, KFbxTakeNode* pDefaultTakeNode);
+std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode* pTakeNode, KFbxTakeNode* pDefaultTakeNode, KTime from, KTime last);
 CurveT processCurve(KFCurve *pCurve);
+CurveT::DataT sampleCurve(KFCurve *pCurve, float time, float defaultValue);
 float processDefaultCurve(KFCurve *pCurve);
 
 void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& properties);
@@ -1286,6 +1293,71 @@ void processProperties(KFbxObject const* pObject, OutputScene::Properties& prope
 	}
 }
 
+void processAnimatedProperties(KFbxNode* pNode, OutputScene::Properties& properties)
+{
+	OutputScene::Properties::CurvePropertyMapT& curveProps = properties.curves;
+    KFbxTakeNode* lCurrentTakeNode = pNode->GetCurrentTakeNode();
+	
+	// Do nothing if the current take node points to default values.
+    if(!lCurrentTakeNode) return;
+	if(lCurrentTakeNode == pNode->GetDefaultTakeNode()) return;
+
+	int count = pNode->GetPropertyCount();
+	for (int i=0; i<count; i++)
+	{
+		KFbxUserProperty lProperty = pNode->GetProperty(i);
+		if (!lProperty.GetFlag(KFbxUserProperty::eUSER))
+			continue; // process only user properties
+
+		std::string propName(lProperty.GetLabel().Buffer());
+		EFbxType propType = lProperty.GetPropertyDataType().GetType();
+
+		if (!lCurrentTakeNode->GetPropertyAnimation(&lProperty, 0))
+			continue;
+
+		switch(propType)
+		{
+		// scalars/vectors
+		case eBOOL1:
+		case eINTEGER1:
+		case eFLOAT1:
+		case eDOUBLE1:
+			curveProps[propName].resize(1);
+			curveProps[propName][0] = lCurrentTakeNode->GetPropertyAnimation(&lProperty, 0);
+			break;
+
+		case eDOUBLE3:
+			curveProps[propName].resize(3);
+			for(int q = 0; q < 3; ++q)
+				curveProps[propName][q] = lCurrentTakeNode->GetPropertyAnimation(&lProperty, q);
+			break;
+		case eDOUBLE4:
+			curveProps[propName].resize(4);
+			for(int q = 0; q < 4; ++q)
+				curveProps[propName][q] = lCurrentTakeNode->GetPropertyAnimation(&lProperty, q);
+			break;
+		case eDOUBLE44:
+			curveProps[propName].resize(16);
+			for(int i = 0, q = 0; q < 4; ++q)
+				for(int w = 0; w < 4; ++w, ++i)
+					curveProps[propName][i] = lCurrentTakeNode->GetPropertyAnimation(&lProperty, i);
+			break;
+
+		// not supported
+		case eENUM:
+		case eSTRING:
+		case eTIME:
+		case eREFERENCE:  // used as a port entry to reference object or properties
+		case eDATASTREAM:  // used as a port entry to reference object or properties
+			warning("Property type not supported");
+			break;
+		case eUNIDENTIFIED:
+			warning("Property type not unidentified");
+			break;
+		}
+	}
+}
+
 void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& properties)
 {
 	if(properties.hasString("envMap"))
@@ -1424,6 +1496,21 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 
 					case KFbxLayerElement::eBY_POLYGON_VERTEX:
 						{
+						kInt tmpTextureUVIndex = pMeshWithUv->GetTextureUVIndex(i, j);
+						switch (leUV->GetReferenceMode())
+						{
+						case KFbxLayerElement::eDIRECT:
+							uv = leUV->GetDirectArray().GetAt(tmpTextureUVIndex);
+							break;
+						case KFbxLayerElement::eINDEX_TO_DIRECT:
+//							tmpId = leUV->GetIndexArray().GetAt(tmpTextureUVIndex);
+//							uv = leUV->GetDirectArray().GetAt(tmpId);
+							uv = leUV->GetDirectArray().GetAt(tmpTextureUVIndex);
+							break;
+						default:
+							break; // other reference modes not shown here!
+						}
+/*
 //						kInt tmpTextureUVIndex = pMeshWithUv->GetTextureUVIndex(i, j);
 						switch (leUV->GetReferenceMode())
 						{
@@ -1432,13 +1519,12 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 							uv = leUV->GetDirectArray().GetAt(tmpId);
 							break;
 						case KFbxLayerElement::eINDEX_TO_DIRECT:
-//							tmpId = tmpTextureUVIndex;//leUV->GetIndexArray().GetAt(tmpTextureUVIndex);
 							tmpId = leUV->GetIndexArray().GetAt(lControlPointIndex);
 							uv = leUV->GetDirectArray().GetAt(tmpId);
 							break;
 						default:
 							break; // other reference modes not shown here!
-						}
+						}*/
 						}
 						break;
 
@@ -1700,25 +1786,28 @@ void processHierarchy(mutant::anim_character& anim_char, KFbxScene* pScene)
 //	return animHierarchy;
 }
 
-void processAnimation(mutant::anim_clip& clip, KFbxNode* pNode)
+void processAnimation(mutant::anim_clip& clip, KFbxNode* pNode, KTimeSpan timeSpan)
 {
     KFbxTakeNode* lCurrentTakeNode = pNode->GetCurrentTakeNode();
 	kInt lModelCount;
 
 	KTime animStart, animStop;
-	lCurrentTakeNode->GetAnimationInterval(animStart, animStop);
-	clip.set_length(static_cast<float>(animStop.GetSecondDouble() - animStart.GetSecondDouble()));
+//	lCurrentTakeNode->GetAnimationInterval(animStart, animStop);
+	animStart = timeSpan.GetStart();
+	animStop = timeSpan.GetStop();
+	float clipLength = static_cast<float>(animStop.GetSecondDouble() - animStart.GetSecondDouble());
+	clip.set_length(clipLength);
 
 	// Do nothing if the current take node points to default values.
     if(lCurrentTakeNode && lCurrentTakeNode != pNode->GetDefaultTakeNode())
     {
 		clip.insertBundle(pNode->GetName(), 
-			processChannels(pNode, lCurrentTakeNode, pNode->GetDefaultTakeNode()));
+			processChannels(pNode, lCurrentTakeNode, pNode->GetDefaultTakeNode(), animStart, animStop));
 	}
 
 	for(lModelCount = 0; lModelCount < pNode->GetChildCount(); lModelCount++)
     {
-        processAnimation(clip, pNode->GetChild(lModelCount));
+        processAnimation(clip, pNode->GetChild(lModelCount), timeSpan);
     }
 }
 
@@ -1737,8 +1826,12 @@ void processAnimation(mutant::anim_character& animChar, KFbxScene* pScene)
 		
 		pScene->SetCurrentTake(lTakeNameArray.GetAt(i)->Buffer());
 
+		assert(lTakeNameArray.GetAt(i));
+		KFbxTakeInfo const* takeInfo = pScene->GetTakeInfo(*lTakeNameArray.GetAt(i));
+		assert(takeInfo);
+
 		std::auto_ptr<mutant::anim_clip> clip(new mutant::anim_clip());
-		processAnimation(*clip, pScene->GetRootNode());
+		processAnimation(*clip, pScene->GetRootNode(), takeInfo->mLocalTimeSpan);
 		animChar.insertClip(pScene->GetCurrentTakeName(), clip);
 	}
 
@@ -1760,7 +1853,7 @@ float deg2rad(float deg)
 	float const deg2rad_ = 3.14f / 180.0f;
 	return deg * deg2rad_;
 }
-
+/*
 std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode* pTakeNode, KFbxTakeNode* pDefaultTakeNode)
 {
 	KFCurve* lCurve = NULL;
@@ -1807,62 +1900,58 @@ std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode
 
 	size_t const VQV_CURVE_ANIM_COMPONENTS = 3 + 4 + 3;
 
-/*	assert(tx.size() == ty.size());
-	assert(tx.size() == tz.size());
-	assert(tx.size() == rx.size());
-	assert(tx.size() == ry.size());
-	assert(tx.size() == rz.size());
-	assert(tx.size() == sx.size());
-	assert(tx.size() == sy.size());
-	assert(tx.size() == sz.size());*/
+//	assert(tx.size() == ty.size());
+//	assert(tx.size() == tz.size());
+//	assert(tx.size() == rx.size());
+//	assert(tx.size() == ry.size());
+//	assert(tx.size() == rz.size());
+//	assert(tx.size() == sx.size());
+//	assert(tx.size() == sy.size());
+//	assert(tx.size() == sz.size());
+
+	typedef mutant::comp_quaternion_from_euler<Quat,float,float,float> t_comp_3_floats_to_quaternion;
+
 	std::vector<float> keys;
 	std::vector<float> values;
-	keys.reserve(tx.size());
-	values.reserve(tx.size() * VQV_CURVE_ANIM_COMPONENTS);
-	if(rx.size() == 0)
-	{
-		keys.push_back(0.0f);
-		values.push_back(0.0f);
-		values.push_back(0.0f);
-		values.push_back(0.0f);
-		values.push_back(0.0f);
-		values.push_back(0.0f);
-		values.push_back(0.0f);
-		values.push_back(0.0f);
-		values.push_back(1.0f);
-		values.push_back(1.0f);
-		values.push_back(1.0f);
-	}
-	for(size_t q = 0; q < rx.size(); ++q)
+//	if(rx.size() == 0)
+//	{
+//		keys.push_back(0.0f);
+//		// position
+//		values.push_back(dtx);
+//		values.push_back(dty);
+//		values.push_back(dtz);
+//		 // rotation
+//		Quat quat = t_comp_3_floats_to_quaternion()(0,0,0);
+//		values.push_back(quat.x);
+//		values.push_back(quat.y);
+//		values.push_back(quat.z);
+//		values.push_back(quat.w);
+//		// scale
+//		values.push_back(1.0f);
+//		values.push_back(1.0f);
+//		values.push_back(1.0f);
+//	}
+	size_t maxKeyCount = max(max(max(max(max(max(max(max(max(0,
+			rx.size()),
+			ry.size()),
+			rz.size()),
+			tx.size()),
+			ty.size()),
+			tz.size()),
+			sx.size()),
+			sy.size()),
+			sz.size());
+	keys.reserve(maxKeyCount);
+	values.reserve(maxKeyCount * VQV_CURVE_ANIM_COMPONENTS);
+
+	for(size_t q = 0; q < maxKeyCount; ++q)
 	{
 		keys.push_back(rx.keys[q]);
-//		keys.push_back(q * 0.1f);
 		values.push_back(valueAt(tx.values, q, dtx));
 		values.push_back(valueAt(ty.values, q, dty));
 		values.push_back(valueAt(tz.values, q, dtz));
 	
-		typedef mutant::comp_quaternion_from_euler<Quat,float,float,float> t_comp_3_floats_to_quaternion;
-/*
-		Quat quat = t_comp_3_floats_to_quaternion()(
-			deg2rad(valueAt(ry.values, q) - dry),
-			deg2rad(valueAt(rx.values, q) - drx),
-			deg2rad(valueAt(rz.values, q) - drz));
-/*/
-		// xyz	*	.
-		// yzx	*	+
-		// zxy	*
-
-		// yxz	*	+
-		// xzy	*
-		// zyx	*	.
-/*		Quat quat = t_comp_3_floats_to_quaternion()(
-			deg2rad(-valueAt(ry.values, q, dry)),
-			deg2rad( valueAt(rz.values, q, drz)),
-			deg2rad(-valueAt(rx.values, q, drx)));
-*/
-		Quat quat;
-		
-		
+		Quat quat;		
 		if(gLWMode)
 		{
 			quat = t_comp_3_floats_to_quaternion()(
@@ -1921,7 +2010,6 @@ std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode
 		quat.z = static_cast<float>(quatRotation[2]);
 		quat.w = static_cast<float>(quatRotation[3]);
 
-//*/
 		values.push_back(quat.x);
 		values.push_back(quat.y);
 		values.push_back(quat.z);
@@ -1940,10 +2028,192 @@ std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode
 	animBundle->insertData(mutant::sTypeNames::VEC_QUAT_VEC, vqv);
 	return animBundle;
 }
-
+*/
 float processDefaultCurve(KFCurve *pCurve)
 {
 	return static_cast<float> (pCurve->GetValue());
+}
+
+struct CurveSequentialSampler
+{
+	KFCurve *curve;
+	float defaultValue;
+	kFCurveIndex keyIndex;
+
+	CurveSequentialSampler(KFCurve *c, float v) : curve(c), defaultValue(v), keyIndex(0) {}
+
+	float operator() (float time)
+	{
+		if(this->curve->KeyGetCountAll() == 0)
+			return this->defaultValue;
+
+		KTime sampleTime; sampleTime.SetSecondDouble(time);
+		return this->curve->Evaluate(sampleTime, &this->keyIndex);
+	}
+	float operator() (KTime time)
+	{
+		if(this->curve->KeyGetCountAll() == 0)
+			return this->defaultValue;
+		return this->curve->Evaluate(time, &this->keyIndex);
+	}
+};
+
+std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode* pTakeNode, KFbxTakeNode* pDefaultTakeNode, KTime from, KTime last)
+{
+	// process transform curves.
+	CurveSequentialSampler tx(pTakeNode->GetTranslationX(), processDefaultCurve(pDefaultTakeNode->GetTranslationX()));
+	CurveSequentialSampler ty(pTakeNode->GetTranslationY(), processDefaultCurve(pDefaultTakeNode->GetTranslationY()));
+	CurveSequentialSampler tz(pTakeNode->GetTranslationZ(), processDefaultCurve(pDefaultTakeNode->GetTranslationZ()));
+
+	CurveSequentialSampler rx(pTakeNode->GetEulerRotationX(), processDefaultCurve(pDefaultTakeNode->GetEulerRotationX()));
+	CurveSequentialSampler ry(pTakeNode->GetEulerRotationY(), processDefaultCurve(pDefaultTakeNode->GetEulerRotationY()));
+	CurveSequentialSampler rz(pTakeNode->GetEulerRotationZ(), processDefaultCurve(pDefaultTakeNode->GetEulerRotationZ()));
+
+	CurveSequentialSampler sx(pTakeNode->GetScaleX(), processDefaultCurve(pDefaultTakeNode->GetScaleX()));
+	CurveSequentialSampler sy(pTakeNode->GetScaleY(), processDefaultCurve(pDefaultTakeNode->GetScaleY()));
+	CurveSequentialSampler sz(pTakeNode->GetScaleZ(), processDefaultCurve(pDefaultTakeNode->GetScaleZ()));
+
+	size_t const VQV_CURVE_ANIM_COMPONENTS = 3 + 4 + 3;
+	typedef mutant::comp_quaternion_from_euler<Quat,float,float,float> t_comp_3_floats_to_quaternion;
+
+
+	std::vector<float> keys;
+	std::vector<float> values;
+
+	{
+//		KTime totalTime; totalTime.SetSecondDouble((clipLength > 0)? clipLength: 1.0/ANIM_SAMPLING_FREQ);
+//		KTime curTime; curTime.SetSecondDouble(0.0);
+
+		KTime deltaTime; deltaTime.SetSecondDouble(ANIM_SAMPLING_FREQ);
+		KTime curTime = from;
+		KTime totalTime = last;
+		if(curTime == totalTime) totalTime += deltaTime;
+
+		size_t keyCount = static_cast<size_t>(totalTime.GetSecondDouble()/ANIM_SAMPLING_FREQ+1);
+		keys.reserve(keyCount);
+		values.reserve(keyCount * VQV_CURVE_ANIM_COMPONENTS);
+
+		for(; curTime < totalTime; curTime += deltaTime)
+		{
+			keys.push_back(static_cast<float>(curTime.GetSecondDouble()));
+			
+			// position
+			values.push_back(tx(curTime));
+			values.push_back(ty(curTime));
+			values.push_back(tz(curTime));
+
+			Quat quat;		
+			if(gLWMode)
+			{
+				quat = t_comp_3_floats_to_quaternion()(
+					deg2rad(ry(curTime)),
+					deg2rad(rz(curTime)),
+					deg2rad(rx(curTime)));
+			}
+			else
+			{
+				quat = t_comp_3_floats_to_quaternion()(
+					deg2rad(rx(curTime)),
+					deg2rad(ry(curTime)),
+					deg2rad(rz(curTime)));
+			}
+
+			KFbxVector4 rotateAroundX(rx(curTime), 0, 0);
+			KFbxVector4 rotateAroundY(0, ry(curTime), 0);
+			KFbxVector4 rotateAroundZ(0, 0, rz(curTime));
+
+			KFbxXMatrix fbxRotationAroundAxis[3];
+			fbxRotationAroundAxis[0].SetR(rotateAroundX);
+			fbxRotationAroundAxis[1].SetR(rotateAroundY);
+			fbxRotationAroundAxis[2].SetR(rotateAroundZ);
+
+			KFbxXMatrix fbxRotationMatrix;
+			
+			// rotation order
+			ERotationOrder rotationOrder;
+			pNode->GetRotationOrder(KFbxNode::eSOURCE_SET, rotationOrder);
+			switch(rotationOrder)
+			{
+				case eSPHERIC_XYZ:
+				case eEULER_XYZ:
+					fbxRotationMatrix = fbxRotationAroundAxis[2] * fbxRotationAroundAxis[1] * fbxRotationAroundAxis[0];
+				break;
+				case eEULER_XZY:
+					fbxRotationMatrix = fbxRotationAroundAxis[1] * fbxRotationAroundAxis[2] * fbxRotationAroundAxis[0];
+				break;
+				case eEULER_YZX:
+					fbxRotationMatrix = fbxRotationAroundAxis[0] * fbxRotationAroundAxis[2] * fbxRotationAroundAxis[1];
+				break;
+				case eEULER_YXZ:
+					fbxRotationMatrix = fbxRotationAroundAxis[2] * fbxRotationAroundAxis[0] * fbxRotationAroundAxis[1];
+				break;
+				case eEULER_ZXY:
+					fbxRotationMatrix = fbxRotationAroundAxis[1] * fbxRotationAroundAxis[0] * fbxRotationAroundAxis[2];
+				break;
+				case eEULER_ZYX:
+					fbxRotationMatrix = fbxRotationAroundAxis[0] * fbxRotationAroundAxis[1] * fbxRotationAroundAxis[2];
+				break;
+			}
+
+			KFbxQuaternion quatRotation = fbxRotationMatrix.GetQ();
+			quat.x = static_cast<float>(quatRotation[0]);
+			quat.y = static_cast<float>(quatRotation[1]);
+			quat.z = static_cast<float>(quatRotation[2]);
+			quat.w = static_cast<float>(quatRotation[3]);
+
+			values.push_back(quat.x);
+			values.push_back(quat.y);
+			values.push_back(quat.z);
+			values.push_back(quat.w);
+
+			values.push_back(sx(curTime));
+			values.push_back(sy(curTime));
+			values.push_back(sz(curTime));	
+		}
+	}
+
+	gCurves.push_back(CurveT(keys, values, VQV_CURVE_ANIM_COMPONENTS));
+	mutant::knot_data<float,float>& vqv = gCurves.back().data;
+
+	std::auto_ptr<mutant::anim_bundle> animBundle(new mutant::anim_bundle());
+	animBundle->insertData(mutant::sTypeNames::VEC_QUAT_VEC, vqv);
+
+	// animated properties
+	OutputScene::Properties properties;
+	processAnimatedProperties(pNode, properties);
+	for(OutputScene::Properties::CurvePropertyMapT::iterator propAnimIt = properties.curves.begin();
+		propAnimIt != properties.curves.end(); ++propAnimIt)
+	{
+		// $TBD: support non-scalar properties
+		assert(propAnimIt->second[0]);
+		CurveSequentialSampler s(propAnimIt->second[0], 0.0f);
+
+		std::vector<float> keys;
+		std::vector<float> values;
+
+		{
+			KTime deltaTime; deltaTime.SetSecondDouble(ANIM_SAMPLING_FREQ);
+			KTime curTime = from;
+			KTime totalTime = last;
+			if(curTime == totalTime) totalTime += deltaTime;
+
+			size_t keyCount = static_cast<size_t>(totalTime.GetSecondDouble()/ANIM_SAMPLING_FREQ+1);
+			keys.reserve(keyCount);
+			values.reserve(keyCount);
+
+			for(; curTime < totalTime; curTime += deltaTime)
+			{
+				keys.push_back(static_cast<float>(curTime.GetSecondDouble()));		
+				values.push_back(s(curTime));
+			}
+		}
+
+		gCurves.push_back(CurveT(keys, values, 1));
+		mutant::knot_data<float,float>& vqv = gCurves.back().data;
+		animBundle->insertData(propAnimIt->first, vqv);
+	}
+
+	return animBundle;
 }
 
 CurveT processCurve(KFCurve *pCurve)

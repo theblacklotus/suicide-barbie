@@ -87,15 +87,20 @@ float4x4 mWorldViewProjection;				// World * View * Projection matrix
 
 float4x4 mTextureProjection;				// Texture projection matrix
 texture_proj_type nTextureProjType = 0;		// Texture projection type
+float2 vUvOffset = float2(0, 0);			// Texture offset, if nTextureProjType == texture_projNONE
 
 float fTime;								// App's time in seconds
 
 
-int nCullMode = D3DCULL_NONE;
-bool bAlphaBlendEnable = false;
+int nCullMode = D3DCULL_CW;//D3DCULL_NONE;
+bool bAlphaBlendEnable = true;//false;
 int nBlendOp = D3DBLENDOP_ADD;
-int nDestBlend = D3DBLEND_ONE;
-int nSrcBlend = D3DBLEND_ONE;
+//int nDestBlend = D3DBLEND_ONE;
+//int nSrcBlend = D3DBLEND_ONE;
+int nDestBlend = D3DBLEND_INVSRCALPHA;
+int nSrcBlend = D3DBLEND_SRCALPHA;
+float fOpacity;
+
 
 //--------------------------------------------------------------------------------------
 // Texture samplers
@@ -108,8 +113,8 @@ sampler_state
 	MinFilter = LINEAR;
 	MagFilter = LINEAR;
 	
-	AddressU = BORDER;//CLAMP;//<nAddressU>;
-	AddressV = BORDER;//CLAMP;//<nAddressV>;
+	AddressU = CLAMP;//<nAddressU>;
+	AddressV = CLAMP;//<nAddressV>;
 };
 
 
@@ -339,14 +344,14 @@ float4 mainPS( VS_OUTPUT i ) : COLOR0
 	if(bDiffuseTextureEnabled)
 	{	
 		if(nTextureProjType == texture_projNONE)
-			diffuse = tex2D(sDiffuse, i.TexCoord0.xy);
+			diffuse = tex2D(sDiffuse, i.TexCoord0.xy + vUvOffset);
 		else
 			diffuse = tex2Dproj(sDiffuse, i.TexCoord0);
 	}
 	
-	o.rgb = diffuse * i.Diffuse;
-	o.a = diffuse.a;
-
+	o.rgb = diffuse;// * i.Diffuse;
+	o.a = (1-fOpacity) * diffuse.a;
+	
 	return o;
 }
 
