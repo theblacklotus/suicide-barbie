@@ -45,6 +45,10 @@ double const ANIM_SAMPLING_FREQ = 1.0f / 30.0;
 
 #include <effects/library.h>
 
+#include <lua/lua_include.h>
+#include <lua/luaPlayer.h>
+#include <lua/Properties.h>
+
 #include <d3d9.h>
 #include <d3dx9.h>
 
@@ -133,6 +137,8 @@ struct OutputScene
 		KFbxSurfaceMaterial*	parameters;
 		std::string				shader;
 		//Shader*				shader;
+		std::string				frameBufferOp;
+		std::string				zBufferOp;
 	};
 	typedef std::vector<Material>						MaterialsT;
 
@@ -202,6 +208,7 @@ struct OutputScene
 
 };
 OutputScene gOutputScene;
+mutalisk::lua::PropertiesByNameT gProperties;
 
 struct Curve
 {
@@ -229,7 +236,8 @@ void processMatrix(float* dstMatrix, KFbxXMatrix const& srcMatrix);
 void processMesh(KFbxNode* pNode);
 void processMaterials(KFbxMesh* pMesh, OutputScene::MaterialsT& materials, OutputSkinnedMesh::SubsetsT* subsets = 0);
 void processSubsets(KFbxMesh* pMesh, OutputSkinnedMesh::SubsetsT& subsets);
-void processProperties(KFbxObject const* pObject, OutputScene::Properties& properties);
+void processProperties(KFbxNode const* pObject, OutputScene::Properties& properties);
+void processLuaProperties(mutalisk::lua::Properties const& src, OutputScene::Properties& dst);
 void processAnimatedProperties(KFbxNode* pNode, OutputScene::Properties& properties);
 OutputTexture& processTextureResource(std::string resourceName);
 OutputTexture& processTextureResource(KFbxTexture* pTexture);
@@ -789,6 +797,53 @@ void blit(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 	data.primitiveType = GU_TRIANGLES;
 }
 
+namespace
+{
+	template <typename ValueType, typename Comparator = OutputScene::Properties::CaseInsensitiveCompare<std::string> >
+	struct ValueByName
+	{
+		typedef ValueType									ValueT;
+		typedef std::map<std::string, ValueT, Comparator>	MapT;
+		MapT	m;
+		ValueT	defaultValue;
+
+		ValueType operator() (std::string const& str)
+		{
+			MapT::const_iterator it = m.find(str);
+			if(it == m.end())
+				return defaultValue;
+			return it->second;
+		}
+	};
+
+	struct FrameBufferOpByName : ValueByName<mutalisk::data::shader_fixed::FrameBufferOp>
+	{
+		FrameBufferOpByName()
+		{
+			defaultValue	= mutalisk::data::shader_fixed::fboReplace;
+			m["Replace"]	= mutalisk::data::shader_fixed::fboReplace;
+			m["Add"]		= mutalisk::data::shader_fixed::fboAdd;
+			m["Sub"]		= mutalisk::data::shader_fixed::fboSub;
+			m["Lerp"]		= mutalisk::data::shader_fixed::fboLerp;
+			m["Mul"]		= mutalisk::data::shader_fixed::fboMul;
+			m["Madd"]		= mutalisk::data::shader_fixed::fboMadd;
+			m["Reject"]		= mutalisk::data::shader_fixed::fboReject;
+		}
+	};
+	struct ZBufferOpByName : ValueByName<mutalisk::data::shader_fixed::ZBufferOp>
+	{
+		ZBufferOpByName()
+		{
+			defaultValue			= mutalisk::data::shader_fixed::zboReadWrite;
+			m["ReadWrite"]			= mutalisk::data::shader_fixed::zboReadWrite;
+			m["ReadOnly"]			= mutalisk::data::shader_fixed::zboRead;
+			m["WriteOnly"]			= mutalisk::data::shader_fixed::zboWrite;
+			m["None"]				= mutalisk::data::shader_fixed::zboNone;
+			m["TwoPassReadWrite"]	= mutalisk::data::shader_fixed::zboTwoPassReadWrite;
+		}
+	};
+}
+
 void blit(OutputScene const& scene, mutalisk::data::scene& data)
 {
 	// shared resources
@@ -977,6 +1032,17 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 				if(shaderIndex == mutalisk::effects::NotFound)
 					shaderIndex = mutalisk::effects::Default;
 				data.actors[q].materials[w].shaderIndex = shaderIndex;
+
+				if(i->materials[w].frameBufferOp != "")
+				{
+					static FrameBufferOpByName opByName;
+					data.actors[q].materials[w].shaderInput.frameBufferOp = opByName(i->materials[w].frameBufferOp);
+				}
+				if(i->materials[w].zBufferOp != "")
+				{
+					static ZBufferOpByName opByName;
+					data.actors[q].materials[w].shaderInput.zBufferOp = opByName(i->materials[w].zBufferOp);
+				}
 			}
 
 			{ // surface properties
@@ -1224,7 +1290,7 @@ void processMesh(KFbxNode* pNode)
 	}
 }
 
-void processProperties(KFbxObject const* pObject, OutputScene::Properties& properties)
+void processProperties(KFbxNode const* pObject, OutputScene::Properties& properties)
 {
 	OutputScene::Properties::VectorPropertyMapT& vectorProps = properties.vectors;
 	OutputScene::Properties::StringPropertyMapT& stringProps = properties.strings;
@@ -1291,6 +1357,30 @@ void processProperties(KFbxObject const* pObject, OutputScene::Properties& prope
 			break;
 		}
 	}
+
+	// process LUA properties for all parents and leaf node
+	// properties stored in nodes closer to leaf will override if names collide
+	static std::vector<KFbxNode*> nodes; nodes.resize(0);
+	for(KFbxNode* node = const_cast<KFbxNode*>(pObject); node != 0; node = node->GetParent())
+		nodes.push_back(node);
+
+	for(std::vector<KFbxNode*>::const_reverse_iterator nodeIt = nodes.rbegin(); nodeIt != nodes.rend(); ++nodeIt)
+	{
+		assert(*nodeIt);
+		std::string objectName = (*nodeIt)->GetName();
+		mutalisk::lua::PropertiesByNameT::const_iterator propsIt = gProperties.find(objectName);
+		if(propsIt != gProperties.end())
+			processLuaProperties(propsIt->second, properties);
+	}
+}
+
+void processLuaProperties(mutalisk::lua::Properties const& src, OutputScene::Properties& dst)
+{
+	for(mutalisk::lua::Properties::StringsT::const_iterator i = src.strings.begin(); i != src.strings.end(); ++i)
+		dst.strings[i->first] = i->second;
+
+	// $TBD: numbers
+	// $TBD: vectors
 }
 
 void processAnimatedProperties(KFbxNode* pNode, OutputScene::Properties& properties)
@@ -1364,16 +1454,38 @@ void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& propert
 	{
 		for(size_t w = 0; w < actor.materials.size(); ++w)
 		{
-			if(actor.materials[w].envmapTexture)
-				continue;
-
 			std::string const& textureName = properties.strings["envMap"];
 			actor.materials[w].envmapTexture = &processTextureResource(textureName);
 		}
 	}
 
-	// $TBD: props
-	// "shaderOverride"
+	if(properties.hasString("frameOp") || properties.hasString("blendOp"))
+	{
+		std::string value = 
+			properties.hasString("frameOp")? properties.strings["frameOp"]: properties.strings["blendOp"];
+
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+			actor.materials[w].frameBufferOp = value;
+	}
+
+	if(properties.hasString("zOp") || properties.hasString("depthOp"))
+	{
+		std::string value =
+			properties.hasString("zOp")? properties.strings["zOp"]: properties.strings["depthOp"];
+
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+			actor.materials[w].zBufferOp = value;
+	}
+
+	if(properties.hasString("shader"))
+	{
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+		{
+			std::string const& shaderName = properties.strings["shader"];
+			gOutputScene.shaders.insert(shaderName);
+			actor.materials[w].shader = shaderName;
+		}
+	}
 }
 
 OutputTexture& processTextureResource(std::string resourceName)
@@ -1799,7 +1911,7 @@ void processAnimation(mutant::anim_clip& clip, KFbxNode* pNode, KTimeSpan timeSp
 	clip.set_length(clipLength);
 
 	// Do nothing if the current take node points to default values.
-    if(lCurrentTakeNode && lCurrentTakeNode != pNode->GetDefaultTakeNode())
+    if(lCurrentTakeNode)// && lCurrentTakeNode != pNode->GetDefaultTakeNode())
     {
 		clip.insertBundle(pNode->GetName(), 
 			processChannels(pNode, lCurrentTakeNode, pNode->GetDefaultTakeNode(), animStart, animStop));
@@ -1853,182 +1965,7 @@ float deg2rad(float deg)
 	float const deg2rad_ = 3.14f / 180.0f;
 	return deg * deg2rad_;
 }
-/*
-std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode* pTakeNode, KFbxTakeNode* pDefaultTakeNode)
-{
-	KFCurve* lCurve = NULL;
 
-	// process transform curves.
-	lCurve = pTakeNode->GetTranslationX();
-	CurveT tx = processCurve(lCurve);
-	lCurve = pDefaultTakeNode->GetTranslationX();
-	float dtx = processDefaultCurve(lCurve);
-	
-	lCurve = pTakeNode->GetTranslationY();
-	CurveT ty = processCurve(lCurve);
-	lCurve = pDefaultTakeNode->GetTranslationY();
-	float dty = processDefaultCurve(lCurve);
-
-	lCurve = pTakeNode->GetTranslationZ();
-	CurveT tz = processCurve(lCurve);
-	lCurve = pDefaultTakeNode->GetTranslationZ();
-	float dtz = processDefaultCurve(lCurve);
-
-	lCurve = pTakeNode->GetEulerRotationX();
-	CurveT rx = processCurve(lCurve);
-	lCurve = pDefaultTakeNode->GetEulerRotationX();
-	float drx = processDefaultCurve(lCurve);
-
-	lCurve = pTakeNode->GetEulerRotationY();
-	CurveT ry = processCurve(lCurve);
-	lCurve = pDefaultTakeNode->GetEulerRotationY();
-	float dry = processDefaultCurve(lCurve);
-
-	lCurve = pTakeNode->GetEulerRotationZ();
-	CurveT rz = processCurve(lCurve);
-	lCurve = pDefaultTakeNode->GetEulerRotationZ();
-	float drz = processDefaultCurve(lCurve);
-
-	lCurve = pTakeNode->GetScaleX();
-	CurveT sx = processCurve(lCurve);
-        
-	lCurve = pTakeNode->GetScaleY();
-	CurveT sy = processCurve(lCurve);
-
-	lCurve = pTakeNode->GetScaleZ();
-	CurveT sz = processCurve(lCurve);
-
-	size_t const VQV_CURVE_ANIM_COMPONENTS = 3 + 4 + 3;
-
-//	assert(tx.size() == ty.size());
-//	assert(tx.size() == tz.size());
-//	assert(tx.size() == rx.size());
-//	assert(tx.size() == ry.size());
-//	assert(tx.size() == rz.size());
-//	assert(tx.size() == sx.size());
-//	assert(tx.size() == sy.size());
-//	assert(tx.size() == sz.size());
-
-	typedef mutant::comp_quaternion_from_euler<Quat,float,float,float> t_comp_3_floats_to_quaternion;
-
-	std::vector<float> keys;
-	std::vector<float> values;
-//	if(rx.size() == 0)
-//	{
-//		keys.push_back(0.0f);
-//		// position
-//		values.push_back(dtx);
-//		values.push_back(dty);
-//		values.push_back(dtz);
-//		 // rotation
-//		Quat quat = t_comp_3_floats_to_quaternion()(0,0,0);
-//		values.push_back(quat.x);
-//		values.push_back(quat.y);
-//		values.push_back(quat.z);
-//		values.push_back(quat.w);
-//		// scale
-//		values.push_back(1.0f);
-//		values.push_back(1.0f);
-//		values.push_back(1.0f);
-//	}
-	size_t maxKeyCount = max(max(max(max(max(max(max(max(max(0,
-			rx.size()),
-			ry.size()),
-			rz.size()),
-			tx.size()),
-			ty.size()),
-			tz.size()),
-			sx.size()),
-			sy.size()),
-			sz.size());
-	keys.reserve(maxKeyCount);
-	values.reserve(maxKeyCount * VQV_CURVE_ANIM_COMPONENTS);
-
-	for(size_t q = 0; q < maxKeyCount; ++q)
-	{
-		keys.push_back(rx.keys[q]);
-		values.push_back(valueAt(tx.values, q, dtx));
-		values.push_back(valueAt(ty.values, q, dty));
-		values.push_back(valueAt(tz.values, q, dtz));
-	
-		Quat quat;		
-		if(gLWMode)
-		{
-			quat = t_comp_3_floats_to_quaternion()(
-				deg2rad( valueAt(ry.values, q, dry)),
-				deg2rad( valueAt(rz.values, q, drz)),
-				deg2rad( valueAt(rx.values, q, drx)));
-		}
-		else
-		{
-			quat = t_comp_3_floats_to_quaternion()(
-				deg2rad( valueAt(rx.values, q, drx)),
-				deg2rad( valueAt(ry.values, q, dry)),
-				deg2rad( valueAt(rz.values, q, drz)));
-		}
-
-		KFbxVector4 rotateAroundX(valueAt(rx.values, q, drx), 0, 0);
-		KFbxVector4 rotateAroundY(0, valueAt(ry.values, q, dry), 0);
-		KFbxVector4 rotateAroundZ(0, 0, valueAt(rz.values, q, drz));
-
-		KFbxXMatrix fbxRotationAroundAxis[3];
-		fbxRotationAroundAxis[0].SetR(rotateAroundX);
-		fbxRotationAroundAxis[1].SetR(rotateAroundY);
-		fbxRotationAroundAxis[2].SetR(rotateAroundZ);
-
-		KFbxXMatrix fbxRotationMatrix;
-		
-		// rotation order
-		ERotationOrder rotationOrder;
-		pNode->GetRotationOrder(KFbxNode::eSOURCE_SET, rotationOrder);
-		switch(rotationOrder)
-		{
-			case eSPHERIC_XYZ:
-			case eEULER_XYZ:
-				fbxRotationMatrix = fbxRotationAroundAxis[2] * fbxRotationAroundAxis[1] * fbxRotationAroundAxis[0];
-			break;
-			case eEULER_XZY:
-				fbxRotationMatrix = fbxRotationAroundAxis[1] * fbxRotationAroundAxis[2] * fbxRotationAroundAxis[0];
-			break;
-			case eEULER_YZX:
-				fbxRotationMatrix = fbxRotationAroundAxis[0] * fbxRotationAroundAxis[2] * fbxRotationAroundAxis[1];
-			break;
-			case eEULER_YXZ:
-				fbxRotationMatrix = fbxRotationAroundAxis[2] * fbxRotationAroundAxis[0] * fbxRotationAroundAxis[1];
-			break;
-			case eEULER_ZXY:
-				fbxRotationMatrix = fbxRotationAroundAxis[1] * fbxRotationAroundAxis[0] * fbxRotationAroundAxis[2];
-			break;
-			case eEULER_ZYX:
-				fbxRotationMatrix = fbxRotationAroundAxis[0] * fbxRotationAroundAxis[1] * fbxRotationAroundAxis[2];
-			break;
-		}
-
-		KFbxQuaternion quatRotation = fbxRotationMatrix.GetQ();
-		quat.x = static_cast<float>(quatRotation[0]);
-		quat.y = static_cast<float>(quatRotation[1]);
-		quat.z = static_cast<float>(quatRotation[2]);
-		quat.w = static_cast<float>(quatRotation[3]);
-
-		values.push_back(quat.x);
-		values.push_back(quat.y);
-		values.push_back(quat.z);
-		values.push_back(quat.w);
-
-		values.push_back(valueAt(sx.values, q, 1.0f));
-		values.push_back(valueAt(sy.values, q, 1.0f));
-		values.push_back(valueAt(sz.values, q, 1.0f));
-	}
-
-	gCurves.push_back(CurveT(keys, values, VQV_CURVE_ANIM_COMPONENTS));
-	mutant::knot_data<float,float>& vqv = gCurves.back().data;
-
-	std::auto_ptr<mutant::anim_bundle> animBundle(
-		new mutant::anim_bundle() );
-	animBundle->insertData(mutant::sTypeNames::VEC_QUAT_VEC, vqv);
-	return animBundle;
-}
-*/
 float processDefaultCurve(KFCurve *pCurve)
 {
 	return static_cast<float> (pCurve->GetValue());
@@ -2081,9 +2018,6 @@ std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode
 	std::vector<float> values;
 
 	{
-//		KTime totalTime; totalTime.SetSecondDouble((clipLength > 0)? clipLength: 1.0/ANIM_SAMPLING_FREQ);
-//		KTime curTime; curTime.SetSecondDouble(0.0);
-
 		KTime deltaTime; deltaTime.SetSecondDouble(ANIM_SAMPLING_FREQ);
 		KTime curTime = from;
 		KTime totalTime = last;
@@ -2297,6 +2231,16 @@ void setPlatform(Platform platform)
 
 void beginScene(char const* sceneFileName)
 {
+	// LUA test
+	std::string sceneProperties = mutalisk::fileName2SceneName(std::string(sceneFileName)) + ".props";
+	mutalisk::lua::LuaPlayer::getInstance().exec(sceneProperties);
+	//mutalisk::lua::LuaPlayer::getInstance().exec("test.lua");
+
+	//mutalisk::lua::Properties prop;
+	//mutalisk::lua::PropertiesByNameT props;
+	mutalisk::lua::readFromResult(gProperties);
+	// \LUA test
+
 	gOutputScene.source = sceneFileName;
 	gOutputScene.name = mutalisk::fileName2SceneName(std::string(sceneFileName));
 	gOutputScene.animResource.insertCharacter("scene",

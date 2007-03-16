@@ -6,6 +6,8 @@ namespace mutalisk { namespace data
 // shader_fixed
 //
 shader_fixed::shader_fixed()
+:	frameBufferOp(fboReplace),
+	zBufferOp(zboReadWrite)
 {
 }
 // shader

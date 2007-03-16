@@ -62,7 +62,7 @@ struct ScenePlayerApp
 	}
 
 
-	void update(float deltaTime) { ::update(*scene.renderable, deltaTime); }
+	void update(float time) { ::update(*scene.renderable, time); }
 	void process() { ::process(*scene.renderable); }
 	void render(int maxActors = -1) { ::render(renderContext, *scene.renderable, maxActors); }
 
@@ -76,6 +76,9 @@ struct ScenePlayerApp
 	Scene			scene;
 };
 std::auto_ptr<ScenePlayerApp> scenePlayerApp;
+double scenePlayerTime;
+double scenePlayerKey[2] = {0.0, -1.0f};
+bool scenePlayerNoLoop = false;
 
 
 static bool gLoadSkin = true;
@@ -1041,6 +1044,7 @@ HRESULT CALLBACK OnCreateDevice( IDirect3DDevice9* pd3dDevice, const D3DSURFACE_
 //---
 
 	scenePlayerApp.reset(new ScenePlayerApp(gSceneFileName, *pd3dDevice, *g_pEffect));
+	scenePlayerTime = 0.0;
 
 //---
 /*
@@ -1206,7 +1210,8 @@ void CALLBACK OnFrameRender( IDirect3DDevice9* pd3dDevice, double fTime, float f
     D3DXMATRIXA16 mProj;
    
     // Clear the render target and the zbuffer 
-    V( pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DXCOLOR(0.0f,0.25f,0.25f,0.55f), 1.0f, 0) );
+//    V( pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DXCOLOR(0.0f,0.25f,0.25f,0.55f), 1.0f, 0) );
+    V( pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DXCOLOR(0.0f,0.0f,0.0f,0.0f), 1.0f, 0) );
 
     // Render the scene
     if( SUCCEEDED( pd3dDevice->BeginScene() ) )
@@ -1345,9 +1350,13 @@ void CALLBACK OnFrameRender( IDirect3DDevice9* pd3dDevice, double fTime, float f
 			V( g_pEffect->SetValue( "vLightAmbient", ambientColor, sizeof(ambientColor) ) );
 		}
 
+		scenePlayerTime += fElapsedTime;
+		if(scenePlayerTime - fElapsedTime < scenePlayerKey[1] && scenePlayerTime >= scenePlayerKey[1])
+			scenePlayerTime = scenePlayerKey[0];
+
 		scenePlayerApp->setViewMatrix(mView);
 		scenePlayerApp->setProjMatrix(mProj);
-		scenePlayerApp->update(static_cast<float>(fTime));
+		scenePlayerApp->update(static_cast<float>(scenePlayerTime));
 		scenePlayerApp->process();
 		static int maxActors = -1;
 		scenePlayerApp->render(maxActors);
@@ -1480,9 +1489,20 @@ void CALLBACK KeyboardProc( UINT nChar, bool_ bKeyDown, bool_ bAltDown, void* pU
 {
     if( bKeyDown )
     {
+		double speedModifier = 1.0;
+		if(bAltDown) speedModifier = 0.5;
         switch( nChar )
         {
             case VK_F1: g_bShowHelp = !g_bShowHelp; break;
+			case VK_UP: scenePlayerTime = 0.0; break;
+			case VK_LEFT: scenePlayerTime -= 0.5 * speedModifier; scenePlayerTime = max(scenePlayerTime, 0); break;
+			case VK_RIGHT: scenePlayerTime += 0.5 * speedModifier; break;
+			case VK_NUMPAD3: scenePlayerTime -= 5.0 * speedModifier; scenePlayerTime = max(scenePlayerTime, 0); break;
+			case VK_NUMPAD9: scenePlayerTime += 5.0 * speedModifier; break;
+			case 'Q': scenePlayerKey[0] = 0.0; scenePlayerKey[1] = -1.0; break;
+			case 'S': scenePlayerKey[0] = scenePlayerTime; break;
+			case 'D': scenePlayerKey[1] = scenePlayerTime; break;
+			case ' ': scenePlayerTime = scenePlayerKey[0]; break;
         }
     }
 }

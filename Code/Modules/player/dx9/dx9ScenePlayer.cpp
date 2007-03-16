@@ -229,12 +229,6 @@ namespace {
 			std::swap(worldMatrix._31, worldMatrix._33);
 		}
 	}
-
-	/*void toNative(D3DXMATRIX& worldMatrix, float const* worldMatrixData)	
-	{
-		worldMatrix = D3DXMATRIX(worldMatrixData);
-	}*/
-
 	void toNative(CTransform::t_matrix& worldMatrix, float const* worldMatrixData)
 	{
 		worldMatrix = CTransform::t_matrix(
@@ -251,6 +245,14 @@ namespace {
 			worldMatrixData[10], worldMatrixData[6], worldMatrixData[2], 0,
 			worldMatrixData[14], worldMatrixData[13], worldMatrixData[12], 1);
 	}
+	Vec3 const& getTranslation(Vec3& translation, D3DXMATRIX const& nativeMatrix)
+	{
+		translation.x = nativeMatrix._41;
+		translation.y = nativeMatrix._42;
+		translation.z = nativeMatrix._43;
+		return translation;
+	}
+
 
 	void toNative(D3DXVECTOR4& dst, mutalisk::data::Vec4 const& src)
 	{
@@ -276,6 +278,41 @@ namespace {
 		dst.transparency = src.transparency;
 		dst.dummy = 0;
 
+		typedef mutalisk::data::shader_fixed	Op;
+		switch(src.frameBufferOp)
+		{
+		case Op::fboReplace:
+			dst.srcBlend = D3DBLEND_ONE;
+			dst.dstBlend = D3DBLEND_ZERO;
+			break;
+		case Op::fboAdd:
+			dst.srcBlend = D3DBLEND_ONE;
+			dst.dstBlend = D3DBLEND_ONE;
+			break;
+		case Op::fboSub:
+			ASSERT("Not supported");
+			// not supported, do closest match instead (mul)
+			dst.srcBlend = D3DBLEND_DESTCOLOR;
+			dst.dstBlend = D3DBLEND_ZERO;
+			break;
+		case Op::fboLerp:
+			dst.srcBlend = D3DBLEND_SRCALPHA;
+			dst.dstBlend = D3DBLEND_INVSRCALPHA;
+			break;
+		case Op::fboMul:
+			dst.srcBlend = D3DBLEND_DESTCOLOR;
+			dst.dstBlend = D3DBLEND_ZERO;
+			break;
+		case Op::fboMadd:
+			dst.srcBlend = D3DBLEND_SRCALPHA;
+			dst.dstBlend = D3DBLEND_ONE;
+			break;
+		case Op::fboReject:
+			dst.srcBlend = D3DBLEND_ZERO;
+			dst.dstBlend = D3DBLEND_ONE;
+			break;
+		}
+
 		toNative(dst.aux0, src.aux0);
 	}
 
@@ -295,39 +332,6 @@ namespace {
 		D3DXMatrixMultiply(&rc.viewProjMatrix, &rc.viewMatrix, &rc.projMatrix);
 	}
 
-	/*void setWorldMatrix(RenderContext& rc, ID3DXEffect& effect, D3DXMATRIX const& worldMatrix)
-	{
-		D3DXMATRIX invWorld;
-		D3DXMatrixInverse(&invWorld, 0, &worldMatrix);
-
-		D3DXMATRIX worldViewProj;
-		D3DXMatrixMultiply(&worldViewProj, &worldMatrix, &rc.viewProjMatrix);
-
-		DX_MSG("set matrix") = 
-			effect.SetMatrix("mWorld", &worldMatrix);
-		DX_MSG("set matrix") = 
-			effect.SetMatrix("mInvWorld", &invWorld);
-		DX_MSG("set matrix") = 
-			effect.SetMatrix("mView", &rc.viewMatrix);
-		DX_MSG("set matrix") = 
-			effect.SetMatrix("mViewProjection", &rc.viewProjMatrix);
-		DX_MSG("set matrix") = 
-			effect.SetMatrix("mWorldViewProjection", &worldViewProj);
-	}
-
-	void setDiffuseTexture(RenderContext& rc, ID3DXEffect& effect, IDirect3DTexture9* texture,
-		D3DTEXTUREADDRESS addressU = D3DTADDRESS_WRAP, D3DTEXTUREADDRESS addressV = D3DTADDRESS_WRAP)
-	{
-		DX_MSG("set flag") = 
-			effect.SetBool("bDiffuseTextureEnabled", (texture != 0));
-		DX_MSG("set int") =
-			effect.SetInt("nAddressU", addressU);
-		DX_MSG("set int") =
-			effect.SetInt("nAddressV", addressV);
-		DX_MSG("set texture") = 
-			effect.SetTexture("tDiffuse", texture);
-	}*/
-
 	void render(RenderContext& rc, RenderableMesh const& mesh, unsigned subset = 0)
 	{
 		// @TBD: support for 'undefined' (~0) subset, whole mesh should be rendered
@@ -338,9 +342,9 @@ namespace {
 } // namespace
 
 
-void update(Dx9RenderableScene& scene, float deltaTime)
+void update(Dx9RenderableScene& scene, float time)
 {
-	scene.update(deltaTime);
+	scene.update(time);
 }
 
 void process(Dx9RenderableScene& scene)
@@ -353,10 +357,6 @@ struct InstanceInput
 {
 	enum { MaxLights = 8 };
 	enum { RequiredMatrices = BaseEffect::MaxCount_nMatrix };
-
-//	LightT const*	lights[MaxLights];
-//	MatrixT const*	lightMatrices[MaxLights];
-//	unsigned		lightCount;
 	MatrixT			geometryMatrices[RequiredMatrices];
 };
 
@@ -369,6 +369,7 @@ struct RenderBlock
 	unsigned				subset;
 
 	float					cameraDistanceSq;
+	bool					hasZPass;
 };
 
 struct findVisibleActors
@@ -384,7 +385,8 @@ struct findVisibleActors
 	{
 		visibleActors.reserve(std::distance(first, last));
 		for(; first != last; ++first)
-			visibleActors.push_back(first);
+			if(first->active)
+				visibleActors.push_back(first);
 //		std::copy(first, last, visibleActors.begin());
 	}
 };
@@ -424,15 +426,8 @@ struct blastInstanceInputs
 		}
 	}
 
-	void gatherSceneLights()
-	{
-		// @TBD:
-	}
-
-	void gatherInstanceLights()
-	{
-		// @TBD:
-	}
+	void gatherSceneLights() { /* @TBD:*/ }
+	void gatherInstanceLights() { /* @TBD:*/ }
 
 	void setWorldMatrix(D3DXMATRIX const& world, MatrixT* dst)
 	{
@@ -483,30 +478,33 @@ struct blastSurfaceInputs
 struct blastRenderBlocks
 {
 	Dx9RenderableScene const& scene;
-	RenderContext& rc;
+	Vec3 cameraPos;
 
-	blastRenderBlocks(Dx9RenderableScene const& scene_, RenderContext& rc_) : rc(rc_), scene(scene_) {}
+	blastRenderBlocks(Dx9RenderableScene const& scene_, Vec3 cameraPos_) : scene(scene_), cameraPos(cameraPos_) {}
 
 	template <typename Container, typename Out>
-	void operator()(Container& c, Out& o) { operator()(c.begin(), c.end(), o); }
+	void operator()(Container& c, Out& o1, Out& o2, Out& o3, Out& o4) { 
+		operator()(c.begin(), c.end(), o1, o2, o3, o4); }
 
 	template <typename In, typename Out>
-	void operator()(In first, In last, Out& renderBlocks)
+	void operator()(In first, In last, Out& backBlocks, Out& opaqueBlocks, Out& transparentBlocks, Out& foreBlocks)
 	{
-		renderBlocks.reserve(std::distance(first, last));
+		opaqueBlocks.reserve(std::distance(first, last));
+		transparentBlocks.reserve(std::distance(first, last));
 		
 		unsigned actorIt = 0;
-		unsigned blockIt = 0;
+		unsigned surfaceIt = 0;
 		for(; first != last; ++first, ++actorIt)
 		{
 			ASSERT(*first);
 			mutalisk::data::scene::Actor const& actor = **first;
 
-			RenderableMesh const* mesh = scene.mResources.meshes[actor.meshIndex].renderable.get();
-			float cameraDistanceSq = 0.0f; // @TBD: calc distance to camera
+			RenderableMesh const* mesh = this->scene.mResources.meshes[actor.meshIndex].renderable.get();
+			float cameraDistanceSq = calcCameraDistanceSq(
+				this->scene.mState.matrices[this->scene.mState.actor2XformIndex[actor.id]].Move);				
 
 			ASSERT(!actor.materials.empty());
-			renderBlocks.resize(renderBlocks.size() + actor.materials.size());
+			/*renderBlocks.resize(renderBlocks.size() + actor.materials.size());
 			for(unsigned q = 0; q < actor.materials.size(); ++q, ++blockIt)
 			{
 				RenderBlock& renderBlock = renderBlocks[blockIt];
@@ -516,20 +514,77 @@ struct blastRenderBlocks
 				renderBlock.mesh = mesh;
 				renderBlock.subset = q;
 				renderBlock.cameraDistanceSq = cameraDistanceSq;
+			}*/
+			for(unsigned q = 0; q < actor.materials.size(); ++q, ++surfaceIt)
+			{
+				typedef mutalisk::data::shader_fixed Shader;
+				Shader::ZBufferOp zBufferOp = actor.materials[q].shaderInput.zBufferOp;
+
+				RenderBlock renderBlock;
+				renderBlock.instanceIndex = actorIt;
+				renderBlock.surfaceIndex = surfaceIt;
+				renderBlock.fx = mutalisk::effects::getByIndex(actor.materials[q].shaderIndex);
+				renderBlock.mesh = mesh;
+				renderBlock.subset = q;
+				renderBlock.cameraDistanceSq = cameraDistanceSq;
+				renderBlock.hasZPass = (zBufferOp == Shader::zboTwoPassReadWrite);
+
+				if(zBufferOp == Shader::zboNone)
+				{
+					foreBlocks.push_back(renderBlock);
+				}
+				else
+				{
+					if((zBufferOp & Shader::zboWrite) || zBufferOp == Shader::zboTwoPassReadWrite)
+					{
+						opaqueBlocks.push_back(renderBlock);
+					}
+					if(!(zBufferOp & Shader::zboWrite) || zBufferOp == Shader::zboTwoPassReadWrite)
+					{
+						transparentBlocks.push_back(renderBlock);
+					}
+				}
 			}
 		}
+	}
+
+	float calcCameraDistanceSq(Vec3 const& pos) const
+	{
+		Vec3 d;
+		Vec3_sub(&d, const_cast<Vec3*>(&this->cameraPos), const_cast<Vec3*>(&pos));
+		return Vec3_dot(&d, &d);
 	}
 };
 
 struct sortRenderBlocks
 {
-	template <typename Container, typename Out>
-	void operator()(Container& c, Out& o) { operator()(c.begin(), c.end(), o); }
-
-	template <typename In, typename Out>
-	void operator()(In first, In last, Out& sortedRenderBlocks)
+	template <typename T>
+	struct BackToFront : public std::less<T>
 	{
-		// @TBD:
+		bool operator()(T const& l, T const& r) const
+		{
+			return (l.cameraDistanceSq > r.cameraDistanceSq);
+		}
+	};
+	template <typename T>
+	struct FrontToBack : public std::less<T>
+	{
+		bool operator()(T const& l, T const& r) const
+		{
+			return (l.cameraDistanceSq < r.cameraDistanceSq);
+		}
+	};
+
+	template <typename Container>
+	void operator()(Container& c, bool backToFront = true) { operator()(c.begin(), c.end(), backToFront); }
+
+	template <typename In>
+	void operator()(In first, In last, bool backToFront = true)
+	{
+		if(backToFront)
+			std::sort(first, last, BackToFront<In::value_type>());
+		else
+			std::sort(first, last, FrontToBack<In::value_type>());
 	}
 };
 
@@ -547,11 +602,13 @@ struct drawRenderBlocks
 		, instanceInputs(instanceInputs_), instanceInputCount(instanceInputCount_)
 		, surfaceInputs(surfaceInputs_), surfaceInputCount(surfaceInputCount_) {}
 
+	typedef BaseEffect::Input::BufferControl	ControlT;
+
 	template <typename Container>
-	void operator()(Container& c) { operator()(c.begin(), c.end()); }
+	void operator()(Container& c, ControlT const& normal, ControlT const& zpass) { operator()(c.begin(), c.end(), normal, zpass); }
 
 	template <typename In>
-	void operator()(In first, In last)
+	void operator()(In first, In last, ControlT const& normal, ControlT const& zpass)
 	{
 		BaseEffect* currFx = 0;
 		BaseEffect::Input fxInput;
@@ -577,6 +634,7 @@ struct drawRenderBlocks
 
 			fxInput.surface = &surfaceInputs[block.surfaceIndex];
 			fxInput.matrices = instanceInputs[block.instanceIndex].geometryMatrices;
+			fxInput.bufferControl = (block.hasZPass)? &zpass: &normal;
 	
 			unsigned passCount = currFx->passCount(fxInput);
 			for(unsigned pass = 0; pass < passCount; ++pass)
@@ -628,10 +686,11 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors)
 	bool animatedActors = gSettings.forceAnimatedActors;
 	bool animatedCamera = gSettings.forceAnimatedCamera;
 
-	D3DXMATRIX nativeMatrix;
 	ASSERT(rc.defaultEffect);
+	Vec3 cameraPos;
 
 	{
+		MatrixT nativeMatrix;
 		if(scene.mBlueprint.defaultClipIndex == ~0U)
 		{
 			animatedActors = false;
@@ -671,6 +730,7 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors)
 			}
 
 			setCameraMatrix(rc, nativeMatrix);
+			getTranslation(cameraPos, nativeMatrix);
 		}
 
 		gContext.device = rc.device;
@@ -679,11 +739,12 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors)
 
 	static std::vector<InstanceInput> instanceInputs;
 	static std::vector<BaseEffect::Input::Surface> surfaceInputs;
-	static std::vector<RenderBlock> renderBlocks;
+	static std::vector<RenderBlock> bgRenderBlocks, opaqueRenderBlocks, transparentRenderBlocks, fgRenderBlocks;
 
 	instanceInputs.resize(0);
-	surfaceInputs.resize(0);
-	renderBlocks.resize(0);
+	surfaceInputs.resize(0); 
+	bgRenderBlocks.resize(0); fgRenderBlocks.resize(0); 
+	opaqueRenderBlocks.resize(0); transparentRenderBlocks.resize(0); 
 
 	static std::vector<mutalisk::data::scene::Actor const*> visibleActors;
 	visibleActors.resize(0);
@@ -692,94 +753,53 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors)
 	findVisibleActors(camera, 0) (scene.mBlueprint.actors, visibleActors);
 	blastInstanceInputs(scene, camera) (visibleActors, instanceInputs);
 	blastSurfaceInputs(scene, 0) (visibleActors, surfaceInputs);
-	blastRenderBlocks(scene, camera) (visibleActors, renderBlocks);
-	std::vector<RenderBlock>& sortedRenderBlocks = renderBlocks; //sortRenderBlocks()(renderBlocks, sortedRenderBlocks);
+	blastRenderBlocks(scene, cameraPos) (visibleActors, bgRenderBlocks, opaqueRenderBlocks, transparentRenderBlocks, fgRenderBlocks);
+	sortRenderBlocks()(transparentRenderBlocks);
 	if(instanceInputs.empty() || surfaceInputs.empty())
 	{
 		ASSERT(visibleActors.empty());
 	}
 	else
-		drawRenderBlocks(rc, scene, 
-			&instanceInputs[0], instanceInputs.size(), &surfaceInputs[0], surfaceInputs.size()) (sortedRenderBlocks);
-
-
-
-
-/*
-
-//	static Lambert fx;
-//	static Shiny fx;
-//	BaseEffect::Input& fxInput = fx.allocInput();
-
-	fx.captureState();
-	unsigned passCount = fx.begin();
-
-	size_t nextLightIndex = 0;
-	for(size_t q = 0; q < scene.mBlueprint.lights.size(); ++q, ++nextLightIndex)
 	{
-		mutalisk::data::scene::Light const& light = scene.mBlueprint.lights[q];
+		BaseEffect::Input::BufferControl background;
+		background.colorWriteEnable = true;
+		background.zWriteEnable = false;
+		background.zReadEnable = true;
+		background.zEqual = false;
 
-		ASSERT(q >= 0 && q < scene.mState.light2XformIndex.size());
-		toNative(scene.mState.matrices[scene.mState.light2XformIndex[q]], nativeMatrix);
+		BaseEffect::Input::BufferControl opaque[2];
+		opaque[0].colorWriteEnable = true;
+		opaque[0].zWriteEnable = true;
+		opaque[0].zReadEnable = true;
+		opaque[0].zEqual = false;
+		// zpass
+		opaque[1] = opaque[0];
+		opaque[1].colorWriteEnable = false;
 
-		ASSERT(q < fxInput.lights.size());
-		fxInput.lights[q].first = &light;
-		fxInput.lights[q].second = nativeMatrix;
+		BaseEffect::Input::BufferControl transparent[2];
+		transparent[0].colorWriteEnable = true;
+		transparent[0].zWriteEnable = false;
+		transparent[0].zReadEnable = true;
+		transparent[0].zEqual = false;
+		// zpass
+		transparent[1] = transparent[0];
+		transparent[1].zEqual = true;
+
+		BaseEffect::Input::BufferControl foreground;
+		foreground.colorWriteEnable = true;
+		foreground.zWriteEnable = false;
+		foreground.zReadEnable = false;
+		foreground.zEqual = false;
+
+		drawRenderBlocks draw(rc, scene, 
+			&instanceInputs[0], instanceInputs.size(), &surfaceInputs[0], surfaceInputs.size());
+		
+		draw(opaqueRenderBlocks,		opaque[0], opaque[1]);
+		draw(bgRenderBlocks,			background, background);
+		draw(transparentRenderBlocks,	transparent[0], transparent[1]);
+		draw(fgRenderBlocks,			foreground, foreground);
 	}
-	if(nextLightIndex < fxInput.lights.size())
-		fxInput.lights[nextLightIndex].first = 0;
 
-//	for(unsigned pass = 0; pass < passCount; ++pass)
-//	{
-		unsigned shaderIndex = ~0;
-		for(size_t q = 0; q < ((maxActors>0)?maxActors: scene.mBlueprint.actors.size()); ++q)
-		{
-			mutalisk::data::scene::Actor const& actor = scene.mBlueprint.actors[q];
-
-			if(animatedActors)
-			{
-				ASSERT(q >= 0 && q < scene.mState.actor2XformIndex.size());
-				toNative(scene.mState.matrices[scene.mState.actor2XformIndex[q]], nativeMatrix);
-			}
-			else
-				toNative(actor.worldMatrix.data, nativeMatrix);
-
-//			if(!scene.mResources.meshes[actor.meshIndex].blueprint->skinInfo)
-				matrixState.applyWorldMatrix(rc, nativeMatrix, fxInput);
-
-			RenderableMesh const& mesh = *scene.mResources.meshes[actor.meshIndex].renderable;
-			if(actor.materials.empty())
-			{
-				fxInput.vecs[BaseEffect::AmbientColor] = D3DXVECTOR4(1,1,1,1);
-				fxInput.vecs[BaseEffect::DiffuseColor] = D3DXVECTOR4(1,1,1,1);
-				fxInput.vecs[BaseEffect::SpecularColor] = D3DXVECTOR4(1,1,1,1);
-
-				fx.pass(pass);
-				render(rc, mesh);
-			}
-			else
-			for(unsigned int materialIt = 0; materialIt < actor.materials.size(); ++materialIt)
-			{
-				unsigned int colorTextureIndex = actor.materials[materialIt].colorTextureIndex;
-				fxInput.textures[BaseEffect::DiffuseTexture] = 
-					((colorTextureIndex != ~0U)? scene.mNativeResources.textures[colorTextureIndex]: 0);
-
-				unsigned int envmapTextureIndex = actor.materials[materialIt].envmapTextureIndex;
-				fxInput.textures[BaseEffect::EnvmapTexture] = 
-					((envmapTextureIndex != ~0U)? scene.mNativeResources.textures[envmapTextureIndex]: 0);
-
-				fxInput.vecs[BaseEffect::AmbientColor] = D3DXVECTOR4(1,1,1,1);
-//				toNative(actor.materials[materialIt].ambient, fxInput.vecs[BaseEffect::AmbientColor]);
-				toNative(actor.materials[materialIt].diffuse, fxInput.vecs[BaseEffect::DiffuseColor]);
-				toNative(actor.materials[materialIt].specular, fxInput.vecs[BaseEffect::SpecularColor]);
-
-				fx.pass(pass);
-				render(rc, mesh, materialIt);
-			}
-		}
-	}
-	fx.end();
-	*/
 }
 ////////////////////////////////////////////////
 

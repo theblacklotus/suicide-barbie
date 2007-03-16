@@ -78,11 +78,7 @@ void Lambert::pass(Input const& i, unsigned passIndex)
 	mImpl->setupLights(mImpl->processLights(i.lights)[passIndex]);
 	mImpl->setupSurface(i);
 	mImpl->setupGeometry(i);
-
-
-	ASSERT(i.surface);
-	mImpl->fx().SetFloat("fOpacity", 1.0f - i.surface->transparency);
-	mImpl->fx().SetValue("vUvOffset", &D3DXVECTOR2(i.surface->uOffset, i.surface->vOffset), sizeof(D3DXVECTOR2));
+	mImpl->setupBuffers(i);
 	
 	mImpl->commit();
 }

@@ -6,7 +6,7 @@ namespace mutalisk { namespace data
 {
 
 // helper functions
-// $TBD: move to utility file
+// @TBD: move to utility file
 inline template <typename In, typename T> In& operator>> (In& i, mutalisk::array<T>& c)
 {
 	c.resize(i.readDword());
@@ -40,6 +40,9 @@ inline template <typename In> In& operator>> (In& i, shader_fixed& data)
 		i.readType(data.vOffset);
 		i.readType(data.transparency);
 
+		i.readType(data.frameBufferOp);
+		i.readType(data.zBufferOp);
+
 		i.readType(data.aux0);
 	} catch( EIoEof& ) {
 		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
@@ -67,6 +70,9 @@ inline template <typename Out> Out& operator<< (Out& o, shader_fixed const& data
 		o.writeType(data.uOffset);
 		o.writeType(data.vOffset);
 		o.writeType(data.transparency);
+
+		o.writeDword(data.frameBufferOp);
+		o.writeDword(data.zBufferOp);
 
 		o.writeType(data.aux0);
 	} catch( EIoEof& ) {

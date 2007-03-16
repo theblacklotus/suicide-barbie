@@ -14,6 +14,7 @@ inline template <typename In> In& operator>> (In& i, scene::Node& data)
 		data.id = i.readDword();
 		i.readString(data.nodeName);
 		i.readType(data.worldMatrix);
+		i.readType(data.active);
 	} catch( EIoEof& ) {
 		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
 	} catch( EIoError& ) {
@@ -29,6 +30,7 @@ inline template <typename Out> Out& operator<< (Out& o, scene::Node const& data)
 		o.writeDword(data.id);
 		o.writeString(data.nodeName);
 		o.writeType(data.worldMatrix);
+		o.writeType(data.active);
 	} catch( EIoEof& ) {
 		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
 	} catch( EIoError& ) {

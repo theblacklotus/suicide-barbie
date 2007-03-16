@@ -168,7 +168,7 @@
 				IgnoreImportLibrary="false"
 				LinkLibraryDependencies="true"
 				UseLibraryDependencyInputs="false"
-				AdditionalDependencies="d3d9.lib d3dx9.lib fbxsdk_md2005.lib zlib_md.lib shlwapi.lib"
+				AdditionalDependencies="d3d9.lib d3dx9.lib fbxsdk_md2005.lib zlib_md.lib shlwapi.lib lua5.1.lib"
 				OutputFile="..\..\bin\ImportScene.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"

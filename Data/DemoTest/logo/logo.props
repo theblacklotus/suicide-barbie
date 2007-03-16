@@ -1,0 +1,58 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'unlit'
+
+scene.OUTSIDE = {}
+scene.OUTSIDE.zOp = 'ReadOnly'
+scene.OUTSIDE.blendOp = 'Madd'
+
+scene.LOGO_inside = {}
+scene.LOGO_inside.blendOp = 'Lerp'
+
+scene.group1 = {}
+scene.group1.blendOp = 'Lerp'
+
+
+return scene
+
+
+
+--[[
+local a = {}
+a.zOp = "ReadOnly";
+a.blendOp = "Madd";
+
+local b = {}
+b.zOp = "ReadWrite";
+b.blendOp = "Lerp";
+
+return
+{
+["OUTSIDE"] = a,
+["LOGO_inside"] = b
+};
+]]--
+
+--[[
+return 
+{
+["I01s"] = a,
+["I02u"] = a,
+["I03i"] = a,
+["I04c"] = a,
+["I05i"] = a,
+["I06d"] = a,
+["I07e"] = a
+,
+
+["L01s"] = b,
+["L02u"] = b,
+["L03i"] = b,
+["L04c"] = b,
+["L05i"] = b,
+["L06d"] = b,
+["L07e"] = b
+};
+]]--

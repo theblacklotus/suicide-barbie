@@ -23,7 +23,7 @@ namespace mutalisk { namespace data
 
 	struct scene
 	{
-		enum { Version = 0x0117 };
+		enum { Version = 0x0119 };
 
 		typedef std::string Ref;
 		typedef unsigned Id;
@@ -31,6 +31,7 @@ namespace mutalisk { namespace data
 			Id id;
 			Ref nodeName;
 			Mat16 worldMatrix;
+			int active;
 		};
 		struct Light : parent<Node> {
 			enum nType {

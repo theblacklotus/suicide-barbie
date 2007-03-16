@@ -130,8 +130,9 @@ struct RenderableScene
 				for(size_t w = 0; w < actor.materials.size(); ++w)
 				{
 					actor.materials[w].shaderInput.vOffset = 1.0f - v*2.0f;
-					actor.materials[w].shaderInput.transparency = (1.0f - fadeOut) * fadeIn;
+					actor.materials[w].shaderInput.transparency = 1.0f - ((1.0f - fadeOut) * fadeIn);
 				}
+				actor.active = (sampleAnimation(actor.nodeName, "Fadein", time+1.0f, 1.0f) > 0.0f);
 			}
 		}
 
@@ -204,7 +205,7 @@ struct RenderableScene
 					&mResources.meshes[q].blueprint->skinInfo->bones[0], mResources.meshes[q].blueprint->skinInfo->bones.size(),
 					mState.bone2XformIndex[q]);
 	}
-	void update(float deltaTime) { mState.update(mBlueprint, deltaTime); }
+	void update(float time) { mState.update(mBlueprint, time); }
 	void process() { mState.process(mResources); }
 };
 

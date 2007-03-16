@@ -102,12 +102,24 @@ public:
 			float			transparency;
 			float			dummy;
 
+			int				srcBlend;
+			int				dstBlend;
+
 			VecT			aux0;
+		};
+		struct BufferControl
+		{
+			bool			colorWriteEnable;
+			//bool			blendEnable;
+			bool			zWriteEnable;
+			bool			zReadEnable;
+			bool			zEqual;
 		};
 
 		Lights lights;
 		Surface const* surface;
 		MatrixT const* matrices;
+		BufferControl const* bufferControl;
 		//mutalisk::array<MatrixT> const* matrices;
 	};
 
@@ -140,7 +152,7 @@ public:
 
 protected:
 	//Request	mRequest;
-	//arena	mInputArena;	// $TBD: shared
+	//arena	mInputArena;	// @TBD: shared
 	//Input	mInputTemplate;
 };
 

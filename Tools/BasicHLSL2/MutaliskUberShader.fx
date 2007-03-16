@@ -34,6 +34,8 @@
 #define D3DCULL_CW 2
 #define D3DCULL_CCW 3
 
+#define D3DCMP_EQUAL 3
+
 
 //--------------------------------------------------------------------------------------
 // Enum
@@ -95,12 +97,11 @@ float fTime;								// App's time in seconds
 int nCullMode = D3DCULL_CW;//D3DCULL_NONE;
 bool bAlphaBlendEnable = true;//false;
 int nBlendOp = D3DBLENDOP_ADD;
-//int nDestBlend = D3DBLEND_ONE;
-//int nSrcBlend = D3DBLEND_ONE;
-int nDestBlend = D3DBLEND_INVSRCALPHA;
-int nSrcBlend = D3DBLEND_SRCALPHA;
+int nDestBlend = D3DBLEND_ONE;
+int nSrcBlend = D3DBLEND_ONE;
+//int nDestBlend = D3DBLEND_INVSRCALPHA;
+//int nSrcBlend = D3DBLEND_SRCALPHA;
 float fOpacity;
-
 
 //--------------------------------------------------------------------------------------
 // Texture samplers
@@ -307,7 +308,7 @@ VS_OUTPUT mainVS( VS_INPUT i )
 	o.TexCoord0 = 0;
 	if(nTextureProjType == texture_projNONE)
 	{
-		o.TexCoord0.xy = i.TexCoord0.xy;
+		o.TexCoord0.xy = i.TexCoord0.xy + vUvOffset;
 	}
 	else 
 	{
@@ -344,14 +345,14 @@ float4 mainPS( VS_OUTPUT i ) : COLOR0
 	if(bDiffuseTextureEnabled)
 	{	
 		if(nTextureProjType == texture_projNONE)
-			diffuse = tex2D(sDiffuse, i.TexCoord0.xy + vUvOffset);
+			diffuse = tex2D(sDiffuse, i.TexCoord0.xy);
 		else
 			diffuse = tex2Dproj(sDiffuse, i.TexCoord0);
 	}
 	
-	o.rgb = diffuse;// * i.Diffuse;
-	o.a = (1-fOpacity) * diffuse.a;
-	
+	o.rgb = diffuse * i.Diffuse;
+	o.a = fOpacity * diffuse.a;
+
 	return o;
 }
 
@@ -381,6 +382,7 @@ technique Main
 		DestBlend			= <nDestBlend>;
 		SrcBlend			= <nSrcBlend>;
 		
-		ZWriteEnable		= false;
+		ZWriteEnable		= False;
+		ZFunc				= Equal;
 	}	
 }
