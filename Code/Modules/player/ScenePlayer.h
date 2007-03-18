@@ -132,7 +132,7 @@ struct RenderableScene
 					actor.materials[w].shaderInput.vOffset = 1.0f - v*2.0f;
 					actor.materials[w].shaderInput.transparency = 1.0f - ((1.0f - fadeOut) * fadeIn);
 				}
-				actor.active = (sampleAnimation(actor.nodeName, "Fadein", time+1.0f, 1.0f) > 0.0f);
+				//actor.active = (sampleAnimation(actor.nodeName, "Fadein", time+1.0f, 1.0f) > 0.0f);
 			}
 		}
 

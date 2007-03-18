@@ -179,11 +179,14 @@ struct OutputScene
 
 	struct Actor
 	{
+		Actor() : mesh(0), node(0), active(true) {}
 		OutputSkinnedMesh*	mesh;
 		MaterialsT			materials;
 		Properties			properties;
 
 		KFbxNode*			node;
+
+		int					active;
 	};
 
 	typedef std::map<std::string, OutputSkinnedMesh>	OutputMeshesT;
@@ -209,6 +212,7 @@ struct OutputScene
 };
 OutputScene gOutputScene;
 mutalisk::lua::PropertiesByNameT gProperties;
+float gGlobalScale = 0.01f;
 
 struct Curve
 {
@@ -987,6 +991,7 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 		// node
 		data.actors[q].id = q;
 		data.actors[q].nodeName = scene.actors[q].node->GetName();
+		data.actors[q].active = scene.actors[q].active;
 
 		// mesh
 		processMatrix(data.actors[q].worldMatrix.data, i->node->GetGlobalFromDefaultTake());
@@ -1049,6 +1054,13 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 				mutalisk::data::Color& ambient = data.actors[q].materials[w].shaderInput.ambient;
 				mutalisk::data::Color& diffuse = data.actors[q].materials[w].shaderInput.diffuse;
 				mutalisk::data::Color& specular = data.actors[q].materials[w].shaderInput.specular;
+				mutalisk::data::Color& emissive = data.actors[q].materials[w].shaderInput.emissive;
+
+				// @TBD: emissive
+				emissive.r = 0.0f;
+				emissive.g = 0.0f;
+				emissive.b = 0.0f;
+				emissive.a = 0.0f;
 
 				KFbxPropertyDouble3 lKFbxDouble3;
 				if(i->materials[w].parameters->GetNewFbxClassId().Is(KFbxSurfaceLambert::ClassId))
@@ -1120,6 +1132,10 @@ void processMatrix(float* dstMatrix, KFbxXMatrix const& srcMatrix_)
 	for(int q = 0; q < 4; ++q)
 		for(int w = 0; w < 4; ++w)
 			dstMatrix[q*4+w] = static_cast<float>(srcMatrix.Get(q, w));
+
+	dstMatrix[12] *= gGlobalScale;
+	dstMatrix[13] *= gGlobalScale;
+	dstMatrix[14] *= gGlobalScale;
 }
 
 void processSubsets(KFbxMesh* pMesh, OutputSkinnedMesh::SubsetsT& subsets)
@@ -1379,6 +1395,12 @@ void processLuaProperties(mutalisk::lua::Properties const& src, OutputScene::Pro
 	for(mutalisk::lua::Properties::StringsT::const_iterator i = src.strings.begin(); i != src.strings.end(); ++i)
 		dst.strings[i->first] = i->second;
 
+	for(mutalisk::lua::Properties::VectorsT::const_iterator i = src.vectors.begin(); i != src.vectors.end(); ++i)
+	{
+		dst.vectors[i->first].resize(i->second.size());
+		std::copy(i->second.begin(), i->second.end(), dst.vectors[i->first].begin());
+	}
+
 	// $TBD: numbers
 	// $TBD: vectors
 }
@@ -1448,6 +1470,22 @@ void processAnimatedProperties(KFbxNode* pNode, OutputScene::Properties& propert
 	}
 }
 
+namespace
+{
+fbxDouble3 readColorFromProperties(OutputScene::Properties& properties, std::string const& propName)
+{
+	fbxDouble3 color;
+	if(properties.hasVector(propName))
+	{
+		assert(properties.vectors[propName].size() >= 3);
+		color[0] = properties.vectors[propName][0];
+		color[1] = properties.vectors[propName][1];
+		color[2] = properties.vectors[propName][2];
+	}
+	return color;
+}
+}
+
 void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& properties)
 {
 	if(properties.hasString("envMap"))
@@ -1484,6 +1522,39 @@ void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& propert
 			std::string const& shaderName = properties.strings["shader"];
 			gOutputScene.shaders.insert(shaderName);
 			actor.materials[w].shader = shaderName;
+		}
+	}
+
+	if(properties.hasString("active"))
+	{
+		if(properties.strings["active"] == "false")
+			actor.active = false;
+	}
+
+	if(properties.hasVector("ambient") || properties.hasVector("diffuse") || properties.hasVector("specular"))
+	{
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+		{
+			KFbxPropertyDouble3 lKFbxDouble3;
+
+			if(actor.materials[w].parameters->GetNewFbxClassId().Is(KFbxSurfaceLambert::ClassId))
+			{
+				KFbxSurfaceLambert* surface = static_cast<KFbxSurfaceLambert*>(actor.materials[w].parameters);
+				if(properties.hasVector("ambient"))
+					surface->GetAmbientColor().Set(readColorFromProperties(properties, "ambient"));
+				if(properties.hasVector("diffuse"))
+					surface->GetDiffuseColor().Set(readColorFromProperties(properties, "diffuse"));
+			}
+			else if(actor.materials[w].parameters->GetNewFbxClassId().Is(KFbxSurfacePhong::ClassId))
+			{
+				KFbxSurfacePhong* surface = static_cast<KFbxSurfacePhong*>(actor.materials[w].parameters);
+				if(properties.hasVector("ambient"))
+					surface->GetAmbientColor().Set(readColorFromProperties(properties, "ambient"));
+				if(properties.hasVector("diffuse"))
+					surface->GetDiffuseColor().Set(readColorFromProperties(properties, "diffuse"));
+				if(properties.hasVector("specular"))
+					surface->GetSpecularColor().Set(readColorFromProperties(properties, "specular"));
+			}
 		}
 	}
 }
@@ -1562,7 +1633,7 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 			for(int w = 0; w < 3; ++w)
 			{
 				assert(i < (kInt)result.vertices.size());
-				result.vertices[i].pos[w] = static_cast<float>(lControlPoints[i][w]);
+				result.vertices[i].pos[w] = static_cast<float>(lControlPoints[i][w]) * gGlobalScale;
 				result.vertices[i].normal[w] = static_cast<float>(lNormals[i][w]);
 			}
 		}
@@ -1766,7 +1837,7 @@ OutputSkinnedMesh& processMeshResource(lwLayer* subset, std::string resourceName
 			for(size_t w = 0; w < 3; ++w)
 			{
 				assert(q < result.vertices.size());
-				result.vertices[q].pos[w] = points[q].pos[w];
+				result.vertices[q].pos[w] = points[q].pos[w] * gGlobalScale;
 				result.vertices[q].normal[w] = 0.0f;
 
 				for(int e = 0; e < points[q].npols; ++e)
@@ -2032,9 +2103,9 @@ std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode
 			keys.push_back(static_cast<float>(curTime.GetSecondDouble()));
 			
 			// position
-			values.push_back(tx(curTime));
-			values.push_back(ty(curTime));
-			values.push_back(tz(curTime));
+			values.push_back(tx(curTime) * gGlobalScale);
+			values.push_back(ty(curTime) * gGlobalScale);
+			values.push_back(tz(curTime) * gGlobalScale);
 
 			Quat quat;		
 			if(gLWMode)

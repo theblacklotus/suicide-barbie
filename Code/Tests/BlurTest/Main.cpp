@@ -128,7 +128,8 @@ struct ScenePlayerApp
 	void update(float deltaTime) { scene.renderable->update(deltaTime); }
 	void process() { scene.renderable->process(); }
 	void render(int maxActors = -1, int maxLights = -1) { 
-		::render(renderContext, *scene.renderable, true, true, maxActors, maxLights); }
+//		::render(renderContext, *scene.renderable, true, true, maxActors, maxLights); }
+		::render(renderContext, *scene.renderable, maxActors); }
 
 	struct Scene
 	{

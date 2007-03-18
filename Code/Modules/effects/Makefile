@@ -9,5 +9,6 @@ CC_FLAGS=\
 
 SRCS = $(wildcard *.c)
 SRCS+= $(wildcard *.cpp)
+SRCS+= $(wildcard psp/*.cpp)
 
 include ../../build.mak

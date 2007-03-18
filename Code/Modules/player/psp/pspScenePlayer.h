@@ -47,8 +47,8 @@ struct RenderableScene;
 AP<RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene const& data, std::string const& pathPrefix = "");
 AP<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh const& data);
 
-void render(RenderContext& rc, RenderableScene const& scene,
-	bool animatedActors = true, bool animatedLights = true, int maxActors = -1, int maxLights = -1);
+void render(RenderContext& rc, RenderableScene const& scene, int maxActors = -1);
+//	bool animatedActors = true, bool animatedLights = true, int maxActors = -1, int maxLights = -1);
 
 #ifdef AP_DEFINED_LOCALY
 #undef AP

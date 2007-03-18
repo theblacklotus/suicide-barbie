@@ -1,10 +1,11 @@
 #include "../library/Lambert.h"
 
 #include "pspPlatform.h"
+#include "pspCommonEffectImpl.h"
 
 using namespace mutalisk;
 using namespace mutalisk::effects;
-
+/*
 void Lambert::fillRequest(Request& request)
 {
 	request.required.matrices.push_back(BaseEffect::WorldMatrix);
@@ -16,9 +17,32 @@ void Lambert::fillRequest(Request& request)
 	request.required.vecs.push_back(BaseEffect::SpecularColor);
 	request.lightCountRange.first = 0;
 	request.lightCountRange.second = MAX_LIGHTS;
-}
+}*/
 
-struct Lambert::Impl
+struct Lambert::Impl : public CommonEffectImpl
+{
+	PassInfo							passInfo;
+	LightsInPassesT						lightsInPasses;
+	BaseEffect::Input::Lights const*	prevLights;
+
+	Impl()
+	{
+		lightsInPasses.resize(4);
+	}
+
+	LightsInPassesT& processLights(BaseEffect::Input::Lights const& lights)
+	{
+		if(this->prevLights == &lights)
+			return this->lightsInPasses;
+
+		this->lightsInPasses.resize(0);
+		organizeLightsInPasses(lights, this->lightsInPasses);
+
+		this->prevLights = &lights;
+		return this->lightsInPasses;
+	}
+};
+/*
 {
 	void toNative(mutalisk::data::Color const& color, ScePspFVector4& vec)
 	{
@@ -122,55 +146,53 @@ struct Lambert::Impl
 	unsigned						passIndex;
 	bool							hasActivePass;
 };
-
+*/
 Lambert::Lambert()
 :	mImpl(new Impl())
 {
-	fillRequest(mRequest);
-	allocInput(mInput, mRequest);
 }
 
 Lambert::~Lambert()
 {
 }
 
-unsigned Lambert::begin()
+void Lambert::begin()
 {
-	mImpl->passIndex = ~0;
-//	mImpl->begin("Main");
-	return Impl::MAX_PASSES;
+	mImpl->begin();	// @NOTE: only difference in dx9/psp impl of Lambert
 }
 
-BaseEffect::PassInfo const& Lambert::passInfo(unsigned passIndex)
+unsigned Lambert::passCount(Input const& i)
 {
-	return mImpl->passInfo[passIndex];
+	unsigned lightPasses = static_cast<unsigned>(mImpl->processLights(i.lights).size());
+	return std::max(1U, lightPasses);
 }
 
-void Lambert::pass(unsigned passIndex)
+BaseEffect::PassInfo const& Lambert::passInfo(Input const& i, unsigned passIndex)
 {
-	ASSERT(validateInput(mInput, mRequest));
-	bool resetPass = (mImpl->passIndex != passIndex);
-	switch(passIndex)
-	{
-	case 0:
-		if(resetPass)
-			mImpl->pass(0);
-		mImpl->setupLights(mInput);
-		mImpl->setupSurface(mInput);
-		mImpl->setupGeometry(mInput);
-		break;
-	default:
-		ASSERT("Invalid pass index");
-	}
-	mImpl->passIndex = passIndex;
+	return mImpl->passInfo;
+}
+
+void Lambert::pass(Input const& i, unsigned passIndex)
+{
+	unsigned fxPass = std::min(1U, passIndex); 
+	if(mImpl->passIndex != fxPass)
+		mImpl->pass(fxPass);
+
+	mImpl->setupLights(mImpl->processLights(i.lights)[passIndex]);
+	mImpl->setupSurface(i);
+	mImpl->setupGeometry(i);
+	mImpl->setupBuffers(i);
+	
+	mImpl->commit();
 }
 
 void Lambert::captureState()
 {
+	mImpl->captureState();
 }
 
 void Lambert::end()
 {
-	std::make_pair(10, 10);
+	mImpl->end();
 	mImpl->restoreState();
 }

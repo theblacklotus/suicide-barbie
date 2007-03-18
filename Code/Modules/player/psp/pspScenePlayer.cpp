@@ -2,8 +2,9 @@
 #include "../ScenePlayer.h"
 
 #include <memory>
-#include <effects/BaseEffect.h>
 #include <effects/all.h>
+#include <effects/Library.h>
+#include <effects/BaseEffect.h>
 
 using namespace mutalisk;
 using namespace mutalisk::effects;
@@ -72,7 +73,7 @@ std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh co
 }
 
 namespace {
-	struct MatrixState
+	/*struct MatrixState
 	{
 		void applyWorldMatrix(RenderContext const& rc, ScePspFMatrix4 const& inWorldMatrix, BaseEffect::Input& dst)
 		{
@@ -92,9 +93,9 @@ namespace {
 		ScePspFMatrix4 world;
 		ScePspFMatrix4 worldViewProj;
 		ScePspFMatrix4 invWorld;
-	};
+	};*/
 
-	void toNative(CTransform::t_matrix const& src, ScePspFMatrix4& dst)
+	void toNative(ScePspFMatrix4& dst, CTransform::t_matrix const& src)
 	{
 		float static scale = 1.0f;
 		dst.x.x = src.Rot.Row[0].x * scale;
@@ -114,61 +115,131 @@ namespace {
 		dst.w.z = src.Move.z;
 		dst.w.w = 1.0f;
 	}
-
-	void toNative(float const* srcMatrixData, ScePspFMatrix4& dst)	
+	void toNative(CTransform::t_matrix& worldMatrix, float const* worldMatrixData)
+	{
+		worldMatrix = CTransform::t_matrix(
+			worldMatrixData[8], worldMatrixData[4], worldMatrixData[0],
+			worldMatrixData[9], worldMatrixData[5], worldMatrixData[1],
+			worldMatrixData[10], worldMatrixData[6], worldMatrixData[2],
+			worldMatrixData[14], worldMatrixData[13], worldMatrixData[12]);
+	}
+	void toNative(ScePspFMatrix4& dst, float const* srcMatrixData)	
 	{
 		memcpy(&dst, srcMatrixData, sizeof(float)*16);
 	}
-
-	unsigned int toNative(mutalisk::data::Color const& srcColor)
+	Vec3 const& getTranslation(Vec3& translation, ScePspFMatrix4 const& nativeMatrix)
 	{
-		unsigned int 
-		dstColor = (unsigned int)(srcColor.r * 255.0f);
-		dstColor |= (unsigned int)(srcColor.g * 255.0f) << 8;
-		dstColor |= (unsigned int)(srcColor.b * 255.0f) << 16;
-		dstColor |= (unsigned int)(srcColor.a * 255.0f) << 24;
-		return dstColor;
+		translation.z = nativeMatrix.w.x;
+		translation.y = nativeMatrix.w.y;
+		translation.z = nativeMatrix.w.z;
+		return translation;
 	}
 
-	void toNative(mutalisk::data::Color const& color, ScePspFVector4& vec)
+	void toNative(ScePspFVector4& dst, mutalisk::data::Vec4 const& src)
 	{
-		vec.x = color.r;
-		vec.y = color.g;
-		vec.z = color.b;
-		vec.w = color.a;
+		dst.x = src[0]; dst.y = src[1]; dst.z = src[2]; dst.w = src[3];
+	}
+	void toNative(unsigned int& dst, mutalisk::data::Color const& src)
+	{
+//;;printf("$toNative(%f, %f, %f, %f)\n", src.r, src.g, src.b, src.a);
+		dst = (unsigned int)(src.r * 255.0f);
+//;;printf(" toNative -- 1\n");
+		dst |= (unsigned int)(src.g * 255.0f) << 8;
+//;;printf(" toNative -- 2\n");
+		dst |= (unsigned int)(src.b * 255.0f) << 16;
+//;;printf(" toNative -- 3\n");
+		dst |= (unsigned int)(src.a * 255.0f) << 24;
+//;;printf("!toNative\n");
 	}
 
-	void setCameraMatrix(RenderContext& rc, ScePspFMatrix4 const& cameraMatrix)
+	void toNative(BaseEffect::Input::Surface& dst, RenderableScene const& scene, mutalisk::data::shader_fixed const& src)
 	{
-		ScePspFMatrix4 viewMatrix = cameraMatrix;
+//;;printf("$blastSurfaceInputs -- toNative(%d, %d, %d)\n", (int)&dst, (int)&scene, (int)&src);
 
-/*		D3DXMATRIX sm;
-		D3DXMatrixScaling(&sm, 1.0f, 1.0f, -1.0f);
-		D3DXMatrixMultiply(&viewMatrix, &sm, &viewMatrix);*/
+		toNative(dst.ambient, src.ambient);
+		toNative(dst.diffuse, src.diffuse);
+		toNative(dst.specular, src.specular);
+		toNative(dst.emissive, src.emissive);
 
-//		ScePspFVector3 flipZ = {1.0f, 1.0f, -1.0f};
-//		gumScale(&viewMatrix, &flipZ);
+//;;printf(" blastSurfaceInputs -- toNativeColors\n");
+
+		dst.diffuseTexture = 0;//(src.diffuseTexture != ~0U)? scene.mNativeResources.textures[src.diffuseTexture] : 0;
+		dst.envmapTexture = 0;//(src.envmapTexture != ~0U)? scene.mNativeResources.textures[src.envmapTexture] : 0;
+
+		dst.uOffset = src.uOffset;
+		dst.vOffset = src.vOffset;
+		dst.transparency = src.transparency;
+		dst.dummy = 0;
+
+		typedef mutalisk::data::shader_fixed	Op;
+		switch(src.frameBufferOp)
+		{
+		case Op::fboReplace:
+			dst.srcBlend = GU_FIX; dst.srcFix = ~0U;
+			dst.dstBlend = GU_FIX; dst.dstFix =  0U;
+			break;
+		case Op::fboAdd:
+			dst.srcBlend = GU_FIX; dst.srcFix = ~0U;
+			dst.dstBlend = GU_FIX; dst.dstFix = ~0U;
+			break;
+		case Op::fboSub:
+			ASSERT("Not supported");
+			// not supported, do closest match instead (mul)
+			dst.srcBlend = GU_DST_COLOR;
+			dst.dstBlend = GU_FIX; dst.dstFix = 0U;
+			break;
+		case Op::fboLerp:
+			dst.srcBlend = GU_SRC_ALPHA;
+			dst.dstBlend = GU_ONE_MINUS_SRC_ALPHA;
+			break;
+		case Op::fboMul:
+			dst.srcBlend = GU_DST_COLOR;
+			dst.dstBlend = GU_FIX; dst.dstFix = 0U;
+			break;
+		case Op::fboMadd:
+			dst.srcBlend = GU_SRC_ALPHA;
+			dst.dstBlend = GU_FIX; dst.dstFix = ~0U;
+			break;
+		case Op::fboReject:
+			dst.srcBlend = GU_FIX; dst.srcFix =  0U;
+			dst.dstBlend = GU_FIX; dst.dstFix = ~0U;
+			break;
+		}
+
+		toNative(dst.aux0, src.aux0);
+//;;printf("!blastSurfaceInputs -- toNative\n");
+	}
+
+	void setCameraMatrix(RenderContext& rc, ScePspFMatrix4 const& camera)
+	{
+		ScePspFMatrix4 view = camera;
 
 		static bool overrideCamera = true;
-		gumFastInverse(&viewMatrix, &viewMatrix);
+		gumFastInverse(&view, &view);
 		if(overrideCamera)
-			rc.viewMatrix = viewMatrix;
+			rc.viewMatrix = view;
 		else
-			gumMultMatrix(&rc.viewMatrix, &rc.viewMatrix, &viewMatrix);
-		gumMultMatrix(&rc.viewProjMatrix, &rc.projMatrix, &viewMatrix);
+			gumMultMatrix(&rc.viewMatrix, &rc.viewMatrix, &view);
+		gumMultMatrix(&rc.viewProjMatrix, &rc.projMatrix, &view);
+	}
+	
+	void setWorldMatrix(ScePspFMatrix4* dst, RenderContext const& rc, ScePspFMatrix4 const& world)
+	{
+		ScePspFMatrix4	invWorld;
+		ScePspFMatrix4	worldViewProj;
 
-/*		sceGumMatrixMode(GU_VIEW);
+		gumFastInverse(&invWorld, &world);
+		gumMultMatrix(&worldViewProj, &rc.viewProjMatrix, &world);
 
-		ScePspFMatrix4 viewMatrix;
-		gumFastInverse(&viewMatrix, &cameraMatrix);
-
-		static bool overrideCamera = false;
-		if(overrideCamera)
-			sceGumLoadMatrix(&viewMatrix);
-		else
-			sceGumMultMatrix(&viewMatrix);*/
+		dst[BaseEffect::WorldMatrix] = world;
+		dst[BaseEffect::ViewMatrix] = rc.viewMatrix;
+		dst[BaseEffect::ProjMatrix] = rc.projMatrix;
+		dst[BaseEffect::ViewProjMatrix] = rc.viewProjMatrix;
+		dst[BaseEffect::WorldViewProjMatrix] = worldViewProj;
+		dst[BaseEffect::InvWorldMatrix] = invWorld;
 	}
 
+/*
 	void setWorldMatrix(RenderContext& rc, ScePspFMatrix4 const& worldMatrix)
 	{
 		sceGumMatrixMode(GU_MODEL);
@@ -241,7 +312,7 @@ namespace {
 		ScePspFMatrix4 identityMatrix;
 		gumLoadIdentity(&identityMatrix);
 		setDefaultLight(state, identityMatrix);
-	}
+	}*/
 
 	void render(RenderContext& rc, RenderableMesh const& mesh, unsigned subset = 0)
 	{
@@ -336,7 +407,7 @@ void render(RenderContext& rc, RenderableScene const& scene, bool animatedActors
 //	DX_MSG("end effect") = rc.defaultEffect->End();
 
 }*/
-
+/*
 void render(RenderContext& rc, RenderableScene const& scene, bool animatedActors, bool animatedCamera, int maxActors, int maxLights)
 {
 	ScePspFMatrix4 nativeMatrix;
@@ -435,6 +506,140 @@ void render(RenderContext& rc, RenderableScene const& scene, bool animatedActors
 		}
 	}
 	fx.end();
+}*/
+
+
+typedef RenderableScene	RenderableSceneT;
+typedef RenderContext		RenderContextT;
+#include "../Renderer.h"
+
+void render(RenderContext& rc, RenderableScene const& scene, int maxActors)
+{
+	static bool animatedActors = true;//gSettings.forceAnimatedActors;
+	static bool animatedCamera = true;//gSettings.forceAnimatedCamera;
+
+//;;printf("$render\n");
+
+	Vec3 cameraPos;
+	{
+		MatrixT nativeMatrix;
+		if(scene.mBlueprint.defaultClipIndex == ~0U)
+		{
+			animatedActors = false;
+			animatedCamera = false;
+		}
+
+		if(!animatedActors)
+			for(size_t q = 0; q < scene.mBlueprint.actors.size(); ++q)
+			{
+				ASSERT(q >= 0 && q < scene.mState.actor2XformIndex.size());
+				toNative(
+					const_cast<RenderableScene&>(scene).mState.matrices[scene.mState.actor2XformIndex[q]],
+					scene.mBlueprint.actors[q].worldMatrix.data);
+			}
+
+		if(!animatedCamera)
+			for(size_t q = 0; q < scene.mBlueprint.cameras.size(); ++q)
+			{
+				ASSERT(q >= 0 && q < scene.mState.camera2XformIndex.size());
+				toNative(
+					const_cast<RenderableScene&>(scene).mState.matrices[scene.mState.camera2XformIndex[q]],
+					scene.mBlueprint.cameras[q].worldMatrix.data);
+			}
+
+		if(scene.mBlueprint.defaultCameraIndex != ~0U)
+		{
+			unsigned int cameraIndex = scene.mBlueprint.defaultCameraIndex;
+			if(animatedCamera)
+			{
+				ASSERT(cameraIndex >= 0 && cameraIndex < scene.mState.camera2XformIndex.size());
+				toNative(nativeMatrix, scene.mState.matrices[scene.mState.camera2XformIndex[cameraIndex]]);
+			}
+			else
+			{
+				ASSERT(cameraIndex >= 0 && cameraIndex < scene.mBlueprint.cameras.size());
+				toNative(nativeMatrix, scene.mBlueprint.cameras[cameraIndex].worldMatrix.data);
+			}
+
+			setCameraMatrix(rc, nativeMatrix);
+			getTranslation(cameraPos, nativeMatrix);
+		}
+	}
+//;;printf(" render -- 1\n");
+
+	static std::vector<InstanceInput> instanceInputs;
+	static std::vector<BaseEffect::Input::Surface> surfaceInputs;
+	static std::vector<RenderBlock> bgRenderBlocks, opaqueRenderBlocks, transparentRenderBlocks, fgRenderBlocks;
+
+	instanceInputs.resize(0);
+	surfaceInputs.resize(0); 
+	bgRenderBlocks.resize(0); fgRenderBlocks.resize(0); 
+	opaqueRenderBlocks.resize(0); transparentRenderBlocks.resize(0); 
+
+	static std::vector<mutalisk::data::scene::Actor const*> visibleActors;
+	visibleActors.resize(0);
+
+	RenderContext& camera = rc; // @TBD:
+	findVisibleActors(camera, 0) (scene.mBlueprint.actors, visibleActors);
+//;;printf(" render -- findVisibleActors\n");
+	blastInstanceInputs(scene, camera) (visibleActors, instanceInputs);
+//;;printf(" render -- blastInstanceInputs\n");
+	blastSurfaceInputs(scene, 0) (visibleActors, surfaceInputs);
+//;;printf(" render -- blastSurfaceInputs\n");
+	blastRenderBlocks(scene, cameraPos) (visibleActors, bgRenderBlocks, opaqueRenderBlocks, transparentRenderBlocks, fgRenderBlocks);
+//;;printf(" render -- blastRenderBlocks\n");
+	sortRenderBlocks()(transparentRenderBlocks);
+//;;printf(" render -- sortRenderBlocks\n");
+	if(instanceInputs.empty() || surfaceInputs.empty())
+	{
+		ASSERT(visibleActors.empty());
+	}
+	else
+	{
+		BaseEffect::Input::BufferControl background;
+		background.colorWriteEnable = true;
+		background.zWriteEnable = false;
+		background.zReadEnable = true;
+		background.zEqual = false;
+
+		BaseEffect::Input::BufferControl opaque[2];
+		opaque[0].colorWriteEnable = true;
+		opaque[0].zWriteEnable = true;
+		opaque[0].zReadEnable = true;
+		opaque[0].zEqual = false;
+		// zpass
+		opaque[1] = opaque[0];
+		opaque[1].colorWriteEnable = false;
+
+		BaseEffect::Input::BufferControl transparent[2];
+		transparent[0].colorWriteEnable = true;
+		transparent[0].zWriteEnable = false;
+		transparent[0].zReadEnable = true;
+		transparent[0].zEqual = false;
+		// zpass
+		transparent[1] = transparent[0];
+		transparent[1].zEqual = true;
+
+		BaseEffect::Input::BufferControl foreground;
+		foreground.colorWriteEnable = true;
+		foreground.zWriteEnable = false;
+		foreground.zReadEnable = false;
+		foreground.zEqual = false;
+
+		drawRenderBlocks draw(rc, scene, 
+			&instanceInputs[0], instanceInputs.size(), &surfaceInputs[0], surfaceInputs.size());
+		
+//;;printf(" render -- drawRenderBlocks\n");
+		draw(opaqueRenderBlocks,		opaque[0], opaque[1]);
+//;;printf(" render -- draw 1\n");
+		draw(bgRenderBlocks,			background, background);
+//;;printf(" render -- draw 2\n");
+		draw(transparentRenderBlocks,	transparent[0], transparent[1]);
+//;;printf(" render -- draw 3\n");
+//		draw(fgRenderBlocks,			foreground, foreground);
+//;;printf(" render -- draw 4\n");
+	}
+//;;printf("!render\n");
 }
 
 ////////////////////////////////////////////////

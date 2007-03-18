@@ -1,7 +1,7 @@
 #include "../library/Unlit.h"
 
-#include "dx9Platform.h"
-#include "dx9CommonEffectImpl.h"
+#include "pspPlatform.h"
+#include "pspCommonEffectImpl.h"
 
 using namespace mutalisk;
 using namespace mutalisk::effects;
@@ -12,10 +12,14 @@ struct Unlit::Impl : public CommonEffectImpl
 
 	void setupAmbientOnly()
 	{
-		D3DXVECTOR4 ambient = D3DXVECTOR4(1,1,1,1);
-		fx().SetValue("vLightAmbient", &ambient, sizeof(D3DXVECTOR4));
-		fx().SetValue("vMaterialAmbient", &ambient, sizeof(D3DXVECTOR4));
-		fx().SetInt("iNumLights", 0);
+//		D3DXVECTOR4 ambient = D3DXVECTOR4(1,1,1,1);
+//		fx().SetValue("vLightAmbient", &ambient, sizeof(D3DXVECTOR4));
+//		fx().SetValue("vMaterialAmbient", &ambient, sizeof(D3DXVECTOR4));
+//		fx().SetInt("iNumLights", 0);
+
+		sceGuAmbient(~0U);
+		sceGuAmbientColor(~0U);
+		sceGuDisable(GU_LIGHTING);
 	}
 };
 
@@ -30,8 +34,7 @@ Unlit::~Unlit()
 
 void Unlit::begin()
 {
-	mImpl->passIndex = ~0;
-	mImpl->begin("Main");
+	mImpl->begin();
 }
 
 unsigned Unlit::passCount(Input const& i)
@@ -46,7 +49,7 @@ BaseEffect::PassInfo const& Unlit::passInfo(Input const& i, unsigned passIndex)
 
 void Unlit::pass(Input const& i, unsigned passIndex)
 {
-	unsigned fxPass = min(1, passIndex); 
+	unsigned fxPass = std::min(1U, passIndex); 
 	if(mImpl->passIndex != fxPass)
 		mImpl->pass(fxPass);
 
@@ -55,8 +58,10 @@ void Unlit::pass(Input const& i, unsigned passIndex)
 	mImpl->setupBuffers(i);
 	mImpl->setupAmbientOnly();
 
-	// @TEMP:
-	// mImpl->fx().SetValue("vLightAmbient", &i.surface->ambient, sizeof(D3DXVECTOR4));
+	sceGuAmbient(0x00ffffff);
+	sceGuColor(mulAlpha(i.surface->ambient, (unsigned int)(i.surface->transparency * 255.0f)));
+//	sceGuEnable(GU_DEPTH_TEST);
+//	sceGuDepthFunc(GU_LEQUAL);
 
 	mImpl->commit();
 }

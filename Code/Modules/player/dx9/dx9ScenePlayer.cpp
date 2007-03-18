@@ -316,20 +316,39 @@ namespace {
 		toNative(dst.aux0, src.aux0);
 	}
 
-	void setCameraMatrix(RenderContext& rc, D3DXMATRIX const& cameraMatrix)
+	void setCameraMatrix(RenderContext& rc, D3DXMATRIX const& camera)
 	{
-		D3DXMATRIX viewMatrix = cameraMatrix;
+		D3DXMATRIX view = camera;
 
 		D3DXMATRIX sm;
 		D3DXMatrixScaling(&sm, 1.0f, 1.0f, -1.0f);
-		D3DXMatrixMultiply(&viewMatrix, &sm, &viewMatrix);
+		D3DXMatrixMultiply(&view, &sm, &view);
 
-		D3DXMatrixInverse(&viewMatrix, 0, &viewMatrix);
+		D3DXMatrixInverse(&view, 0, &view);
 		if(gSettings.overrideCameraMethod == 0)
-			D3DXMatrixMultiply(&rc.viewMatrix, &viewMatrix, &rc.viewMatrix);
+			D3DXMatrixMultiply(&rc.viewMatrix, &view, &rc.viewMatrix);
 		else if(gSettings.overrideCameraMethod == 1)
-			rc.viewMatrix = viewMatrix;
+			rc.viewMatrix = view;
 		D3DXMatrixMultiply(&rc.viewProjMatrix, &rc.viewMatrix, &rc.projMatrix);
+	}
+
+	void setWorldMatrix(MatrixT* dst, RenderContext const& rc, D3DXMATRIX world)
+	{
+		if(gSettings.forceIdentityActorsMatrix)
+			D3DXMatrixIdentity(&world);
+
+		D3DXMATRIX invWorld;
+		D3DXMATRIX worldViewProj;
+
+		D3DXMatrixInverse(&invWorld, 0, &world);
+		D3DXMatrixMultiply(&worldViewProj, &world, &rc.viewProjMatrix);
+
+		dst[BaseEffect::WorldMatrix] = world;
+		dst[BaseEffect::ViewMatrix] = rc.viewMatrix;
+		dst[BaseEffect::ProjMatrix] = rc.projMatrix;
+		dst[BaseEffect::ViewProjMatrix] = rc.viewProjMatrix;
+		dst[BaseEffect::WorldViewProjMatrix] = worldViewProj;
+		dst[BaseEffect::InvWorldMatrix] = invWorld;
 	}
 
 	void render(RenderContext& rc, RenderableMesh const& mesh, unsigned subset = 0)
@@ -352,7 +371,11 @@ void process(Dx9RenderableScene& scene)
 	scene.process();
 }
 
+typedef Dx9RenderableScene	RenderableSceneT;
+typedef RenderContext		RenderContextT;
+#include "../Renderer.h"
 
+/*
 struct InstanceInput
 {
 	enum { MaxLights = 8 };
@@ -426,8 +449,8 @@ struct blastInstanceInputs
 		}
 	}
 
-	void gatherSceneLights() { /* @TBD:*/ }
-	void gatherInstanceLights() { /* @TBD:*/ }
+	void gatherSceneLights() { }
+	void gatherInstanceLights() { }
 
 	void setWorldMatrix(D3DXMATRIX const& world, MatrixT* dst)
 	{
@@ -504,17 +527,6 @@ struct blastRenderBlocks
 				this->scene.mState.matrices[this->scene.mState.actor2XformIndex[actor.id]].Move);				
 
 			ASSERT(!actor.materials.empty());
-			/*renderBlocks.resize(renderBlocks.size() + actor.materials.size());
-			for(unsigned q = 0; q < actor.materials.size(); ++q, ++blockIt)
-			{
-				RenderBlock& renderBlock = renderBlocks[blockIt];
-				renderBlock.instanceIndex = actorIt;
-				renderBlock.surfaceIndex = blockIt;
-				renderBlock.fx = mutalisk::effects::getByIndex(actor.materials[q].shaderIndex);
-				renderBlock.mesh = mesh;
-				renderBlock.subset = q;
-				renderBlock.cameraDistanceSq = cameraDistanceSq;
-			}*/
 			for(unsigned q = 0; q < actor.materials.size(); ++q, ++surfaceIt)
 			{
 				typedef mutalisk::data::shader_fixed Shader;
@@ -680,7 +692,7 @@ struct drawRenderBlocks
 		return fxLights;
 	}
 };
-
+*/
 void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors)
 {
 	bool animatedActors = gSettings.forceAnimatedActors;

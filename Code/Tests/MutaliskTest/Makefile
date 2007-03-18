@@ -28,6 +28,7 @@ LIBS=\
 	$(PSPDEV)/psp/sdk/lib/libpspdebug.a\
 	$(OUTDIR)/zlib.lib\
 	$(OUTDIR)/Base.lib\
+	$(OUTDIR)/effects.lib\
 	$(OUTDIR)/player.lib\
 	$(OUTDIR)/mutalisk.lib\
 	$(OUTDIR)/mutant.lib\

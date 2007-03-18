@@ -11,8 +11,10 @@ _RunTime_
 ~	blur
  ~	 CPU blur (optimize)
  ~	 GPU
++	transparent objects support
 .	directional 3-color lighting (2 polar colors and 1 equator color)
 .	textcoordgen
+ +	 scroll
  .	 envmap
   . 	  diffuse envmap (normal)							[psp: 2 envmaps required for full surrounding]
   . 	  specular envmap (reflected eye)						[psp: cpu only]
@@ -44,8 +46,8 @@ _Mutalisk_
   .	  instance specific mesh subsets
  ~	 custom properties
   +	 extract properties (string/vector types)
-  !	 store properties in scene file
-  .	 script (lua?) based property filter
+  +	 store properties in scene file
+  +	 script (lua?) based properties
  +	 port exporter to fbx2006_11
 
 .	Resource loader
@@ -54,7 +56,7 @@ _Mutalisk_
  +	 d3d texture loader
  +	 psp mesh loader
   .	  psp mesh subset support
- .	 psp texture loader
+ +	 psp texture loader
 
 .	record frustum cull events
 .	record irradiance with dt step

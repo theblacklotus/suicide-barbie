@@ -3,17 +3,16 @@
 
 #include "cfg.h"
 #include <map>
+#include <vector>
 #include <string>
-#include <mutalisk/array.h>
-
 
 namespace mutalisk { namespace lua
 {
 	struct Properties
 	{
-		typedef std::map<std::string, double>					NumbersT;
-		typedef std::map<std::string, mutalisk::array<double> >	VectorsT;
-		typedef std::map<std::string, std::string>				StringsT;
+		typedef std::map<std::string, double>				NumbersT;
+		typedef std::map<std::string, std::vector<double> >	VectorsT;
+		typedef std::map<std::string, std::string>			StringsT;
 
 		NumbersT	numbers;
 		VectorsT	vectors;

@@ -125,10 +125,11 @@ struct ScenePlayerApp
 	}
 
 
-	void update(float deltaTime) { scene.renderable->update(deltaTime); }
+	void update(float time) { scene.renderable->update(time); }
 	void process() { scene.renderable->process(); }
 	void render(int maxActors = -1, int maxLights = -1) { 
-		::render(renderContext, *scene.renderable, true, true, maxActors, maxLights); }
+//		::render(renderContext, *scene.renderable, true, true, maxActors, maxLights); }
+		::render(renderContext, *scene.renderable, maxActors); }
 
 	struct Scene
 	{
@@ -140,8 +141,8 @@ struct ScenePlayerApp
 	Scene			scene;
 };
 std::auto_ptr<ScenePlayerApp> scenePlayerApp;
-std::string gSceneFileName = "doll.msk";
-std::string gPathPrefix = "host1:DemoTest/doll/psp/";//"ms0:PSP/TESTDATA/";
+std::string gSceneFileName = "logo.msk";
+std::string gPathPrefix = "host1:DemoTest/logo/psp/";//"ms0:PSP/TESTDATA/";
 
 
 struct Texture
@@ -297,17 +298,21 @@ int main(int argc, char* argv[])
 	sceGuDepthBuffer(zbp,BUF_WIDTH);
 	sceGuOffset(2048 - (mainRenderTarget.width/2),2048 - (mainRenderTarget.height/2));
 	sceGuViewport(2048,2048,mainRenderTarget.width,mainRenderTarget.height);
-	sceGuDepthRange(65535,0);
+//	sceGuDepthRange(65535,0);
+	sceGuDepthRange(0, 0xffff);
 	sceGuScissor(0,0,mainRenderTarget.width,mainRenderTarget.height);
 	sceGuEnable(GU_SCISSOR_TEST);
-	sceGuDepthFunc(GU_GEQUAL);
+//	sceGuDepthFunc(GU_GEQUAL);
 	sceGuEnable(GU_DEPTH_TEST);
+	sceGuDepthFunc(GU_EQUAL);
+//	sceGuFrontFace(GU_CW);
 	sceGuFrontFace(GU_CCW);
 	sceGuShadeModel(GU_SMOOTH);
-//	sceGuEnable(GU_CULL_FACE);
-	sceGuDisable(GU_CULL_FACE);
-	sceGuEnable(GU_TEXTURE_2D);
-	sceGuEnable(GU_CLIP_PLANES);
+	sceGuEnable(GU_CULL_FACE);
+//	sceGuDisable(GU_CULL_FACE);
+//	sceGuEnable(GU_TEXTURE_2D);
+	sceGuDisable(GU_TEXTURE_2D);
+//	sceGuEnable(GU_CLIP_PLANES);
 
 //	sceGuEnable(GU_LIGHTING);
 //	sceGuEnable(GU_LIGHT0);
@@ -381,8 +386,9 @@ int main(int argc, char* argv[])
 
 			// clear screen
 
-			sceGuClearColor(0xff550033);
-			sceGuClearDepth(0);
+//			sceGuClearColor(0xff550033);
+			sceGuClearColor(0xff00ff00);
+			sceGuClearDepth(0xffff);
 			sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
 
 			sceGuAmbient(0x00101010);
@@ -392,12 +398,36 @@ int main(int argc, char* argv[])
 
 			ScePspFMatrix4 projMatrix;
 			gumLoadIdentity(&projMatrix);
-			gumPerspective(&projMatrix, 45.0f, 16.0f/9.0f,0.5f,1000.0f);
+//			gumPerspective(&projMatrix, 45.0f, 16.0f/9.0f,1.0f,100.0f);
+//			gumPerspective(&projMatrix, 45.0f, 16.0f/9.0f,0.1f,2500.0f);
+//			gumPerspective(&projMatrix, 45.0f, 16.0f/9.0f,1000.0f,5000.0f);
+
+			float fovy = 45.0f;
+			float aspect = 16.0f/9.0f;
+			float zn = 1.0f;
+			float zf = 50.0f;
+			{
+				ScePspFMatrix4 t;
+				float angle = (fovy / 2) * (GU_PI/180.0f);
+				float cotangent = cosf(angle) / sinf(angle);
+
+				gumLoadIdentity(&t);
+
+				t.x.x = cotangent / aspect;
+				t.y.y = cotangent;
+				t.z.z = zf/(zn-zf);// (far + near) / delta_z; // -(far + near) / delta_z
+				t.w.z = zn*zf/(zn-zf);//2.0f * (far * near) / delta_z; // -2 * (far * near) / delta_z
+				t.z.w = -1.0f;
+				t.w.w = 0.0f;
+
+				gumMultMatrix(&projMatrix,&projMatrix,&t);
+			}
+
 			scenePlayerApp->setProjMatrix(projMatrix);
-			scenePlayerApp->update(val * 0.005f);
+			scenePlayerApp->update(val * 0.05f);
+//			scenePlayerApp->update(scenePlayerTime);
 			scenePlayerApp->process();
 			scenePlayerApp->render();
-
 		}
 
 

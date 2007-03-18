@@ -1159,6 +1159,8 @@ HRESULT CALLBACK OnResetDevice( IDirect3DDevice9* pd3dDevice,
     // Setup the camera's projection parameters
     float fAspectRatio = pBackBufferSurfaceDesc->Width / (FLOAT)pBackBufferSurfaceDesc->Height;
     g_Camera.SetProjParams( D3DX_PI/4, fAspectRatio, 2.0f, 40000.0f );
+//	g_Camera.SetProjParams( D3DX_PI/4, fAspectRatio, 1000.0f, 5000.0f );
+//	g_Camera.SetProjParams( D3DX_PI/4, fAspectRatio, 10.0f, 50.0f );
     g_Camera.SetWindow( pBackBufferSurfaceDesc->Width, pBackBufferSurfaceDesc->Height );
     g_Camera.SetButtonMasks( MOUSE_LEFT_BUTTON, MOUSE_WHEEL, MOUSE_MIDDLE_BUTTON );
 

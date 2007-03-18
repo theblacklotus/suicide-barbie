@@ -36,6 +36,37 @@ bool readFromLuaStack(lua_State* L, int luaIndex, std::string& name)
 	return false;
 }
 
+void readFromLuaStack(lua_State* L, int luaIndex, std::vector<double>& vec)
+{
+	// table is in the stack at index 'luaIndex'
+	while(lua_next(L, luaIndex) != 0)
+	{
+		lua_Integer index = 0;
+		// 'key' is at index -2 and 'value' at index -1
+		if(lua_isnumber(L, KeyLuaIndex))
+		{
+			index = lua_tointeger(L, KeyLuaIndex) - 1;	// lua table indices starts from 1
+			vec.resize(max(vec.size(), static_cast<size_t>(index + 1)));
+		}
+		else
+		{
+			THROW_ERROR("key expects [number]");
+		}
+
+		if(lua_isnumber(L, ValueLuaIndex))
+		{
+			vec[index] = lua_tonumber(L, ValueLuaIndex);
+		}
+		else 
+		{
+			THROW_ERROR("value expects [number]");
+		}
+
+		lua_pop(L, 1);  // removes 'value'; keeps 'key' for next iteration
+	}
+}
+
+
 void readFromLuaStack(lua_State* L, int luaIndex, Properties& prop)
 {
 	std::string name;
@@ -50,8 +81,8 @@ void readFromLuaStack(lua_State* L, int luaIndex, Properties& prop)
 
 		if(lua_istable(L, ValueLuaIndex))
 		{
-			// @TBD: vector
-			// prop.vectors[name] = value;
+			lua_pushnil(L);  // first key
+			readFromLuaStack(L, ResultLuaIndex - 1, prop.vectors[name]);
 		}
 		else if(lua_isnumber(L, ValueLuaIndex))
 		{
@@ -87,13 +118,10 @@ void readFromLuaStack(lua_State* L, int luaIndex, PropertiesByNameT& props)
 
 		if(lua_istable(L, ValueLuaIndex))
 		{
-			//lua_gettable(L, ValueLuaIndex);
-
 			props.insert(make_pair(name, Properties()));
 
 			lua_pushnil(L);  // first key
 			readFromLuaStack(L, ResultLuaIndex - 1, props[name]);
-			//lua_pop(L, 1);	// removes table
 		}
 		else
 		{

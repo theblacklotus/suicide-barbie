@@ -7,13 +7,17 @@ scene.RootNode.shader = 'unlit'
 scene.OUTSIDE = {}
 scene.OUTSIDE.zOp = 'ReadOnly'
 scene.OUTSIDE.blendOp = 'Madd'
+scene.OUTSIDE.ambient = {1, 0, 0}
+--scene.OUTSIDE.active = 'false'
 
 scene.LOGO_inside = {}
 scene.LOGO_inside.blendOp = 'Lerp'
+scene.LOGO_inside.ambient = {1, 1, 1}
 
 scene.group1 = {}
 scene.group1.blendOp = 'Lerp'
-
+scene.group1.ambient = {0, 0, 1}
+--scene.group1.active = 'false'
 
 return scene
 
