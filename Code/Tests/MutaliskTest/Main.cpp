@@ -311,7 +311,7 @@ int main(int argc, char* argv[])
 	sceGuEnable(GU_CULL_FACE);
 //	sceGuDisable(GU_CULL_FACE);
 //	sceGuEnable(GU_TEXTURE_2D);
-	sceGuDisable(GU_TEXTURE_2D);
+	sceGuEnable(GU_TEXTURE_2D);
 //	sceGuEnable(GU_CLIP_PLANES);
 
 //	sceGuEnable(GU_LIGHTING);
