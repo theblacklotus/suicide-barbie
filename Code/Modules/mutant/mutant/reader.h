@@ -107,6 +107,11 @@ namespace mutant
 			mInput->read( &d, sizeof(d), 0 );
 		}
 
+		void readData( void* ptr, int size)
+		{
+			mInput->read( ptr, size, 0 );
+		}
+
 /*_		template<>
 		void readType<std::string>( std::string& d )*/
 		void readType( std::string& d )
