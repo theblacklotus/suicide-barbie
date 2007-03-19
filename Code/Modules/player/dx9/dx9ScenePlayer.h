@@ -13,6 +13,8 @@
 #include "animator/Animators.h"
 #include "animator/AnimatorAlgos.h"
 
+#include "../ScenePlayer.h"
+
 #ifndef AP
 #define AP_DEFINED_LOCALY
 #define AP std::auto_ptr
@@ -39,7 +41,32 @@ private:
 	RenderableMesh& operator= (RenderableMesh const& c);
 };
 
-struct Dx9RenderableScene;
+struct RenderableTexture
+{
+	RenderableTexture(mutalisk::data::texture const& blueprint)
+	: mBlueprint(blueprint)
+	{
+	}
+
+	mutalisk::data::texture const& mBlueprint;
+
+private:
+	RenderableTexture(RenderableTexture const& c);
+	RenderableTexture& operator= (RenderableTexture const& c);
+};
+
+////////////////////////////////////////////////
+struct Dx9RenderableScene : public RenderableScene
+{
+	Dx9RenderableScene(mutalisk::data::scene const& blueprint) : RenderableScene(blueprint) {}
+
+	struct NativeSharedResources {
+		mutalisk::array<com_ptr<IDirect3DTexture9> >	textures;
+	};
+
+	NativeSharedResources	mNativeResources;
+};
+
 AP<Dx9RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene const& data);
 AP<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh const& data);
 //AP<RenderableTexture> prepare(RenderContext& rc, mutalisk::data::texture const& data);

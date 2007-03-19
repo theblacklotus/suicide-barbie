@@ -1,5 +1,4 @@
 #include "dx9ScenePlayer.h"
-#include "../ScenePlayer.h"
 
 #include <memory>
 #include <d3d9types.h>
@@ -82,17 +81,6 @@ static com_ptr<IDirect3DTexture9> prepare(RenderContext& rc, std::string fileNam
 	return resource;
 }
 
-////////////////////////////////////////////////
-struct Dx9RenderableScene : public RenderableScene
-{
-	Dx9RenderableScene(mutalisk::data::scene const& blueprint) : RenderableScene(blueprint) {}
-
-	struct NativeSharedResources {
-		mutalisk::array<com_ptr<IDirect3DTexture9> >	textures;
-	};
-
-	NativeSharedResources	mNativeResources;
-};
 ////////////////////////////////////////////////
 std::auto_ptr<Dx9RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene const& data)
 {
