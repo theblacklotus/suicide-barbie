@@ -362,7 +362,7 @@ technique Main
 	pass P0
 	{
 		VertexShader		= compile vs_3_0 mainVS();
-		PixelShader			= compile ps_3_0 mainPS();
+		PixelShader			= compile ps_2_0 mainPS();
 		CullMode			= <nCullMode>;
 
 		AlphaBlendEnable	= <bAlphaBlendEnable>;
@@ -374,7 +374,7 @@ technique Main
 	pass P1
 	{
 		VertexShader		= compile vs_3_0 mainVS();
-		PixelShader			= compile ps_3_0 mainPS();
+		PixelShader			= compile ps_2_0 mainPS();
 		CullMode			= <nCullMode>;
 
 		AlphaBlendEnable	= <bAlphaBlendEnable>;
@@ -384,5 +384,5 @@ technique Main
 		
 		ZWriteEnable		= False;
 		ZFunc				= Equal;
-	}	
+	}
 }
