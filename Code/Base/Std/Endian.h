@@ -9,6 +9,11 @@
 #error Platform not defined
 #endif
 
+// warning C4505: : unreferenced local function has been removed
+#if defined WIN32
+	#pragma warning(disable:4505)
+#endif
+
 static inline u16 swap16(u16 i)
 {
 	return (u16)(((((unsigned int) i) & 0xff00) >> 8)
@@ -360,6 +365,5 @@ static inline void endianWriteDoubleBig(double* mem, double data)
 {
 	endianWriteFloat64Big(mem, data);
 }
-
 
 #endif
