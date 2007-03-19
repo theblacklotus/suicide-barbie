@@ -38,11 +38,12 @@ struct RenderableScene
 			AP<mutalisk::data::mesh>	blueprint;
 			AP<RenderableMesh>			renderable;
 		};
-/*		struct Texture {
+		struct Texture {
 			AP<mutalisk::data::texture>	blueprint;
 			AP<RenderableTexture>		renderable;
-		};*/
+		};
 		mutalisk::array<Mesh>			meshes;
+		mutalisk::array<Texture>		textures;
 		AP<mutant::anim_character_set>	animCharSet;
 	};
 	struct State {
@@ -237,6 +238,20 @@ static AP<mutant::anim_character_set> loadResource(std::string fileName)
 	;;printf("loadResource<anim_character_set>: $ %s\n", fileName.c_str());
 	reader->read(*resource);
 	;;printf("loadResource<anim_character_set>: ! %s\n", fileName.c_str());
+	return resource;
+}
+
+template <>
+static AP<mutalisk::data::texture> loadResource(std::string fileName)
+{
+	AP<mutant::binary_input> input = AP<mutant::binary_input>(new file_input(fileName));
+	AP<mutant::mutant_reader> reader(new mutant::mutant_reader(input));
+	reader->enableLog(false);
+
+	AP<mutalisk::data::texture> resource(new mutalisk::data::texture);
+	;;printf("loadResource<mutalisk::data::texture>: $ %s\n", fileName.c_str());
+	*reader >> *resource;
+	;;printf("loadResource<mutalisk::data::texture>: ! %s\n", fileName.c_str());
 	return resource;
 }
 

@@ -11,6 +11,7 @@ namespace mutalisk { namespace data
 
 	// types
 	typedef psp_mesh	mesh;
+	typedef psp_texture	texture;
 
 } // namespace data 
 } // namespace mutalisk

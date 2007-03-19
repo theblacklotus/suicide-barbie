@@ -43,9 +43,24 @@ private:
 	RenderableMesh& operator= (RenderableMesh const& c);
 };
 
+struct RenderableTexture
+{
+	RenderableTexture(mutalisk::data::texture const& blueprint)
+	: mBlueprint(blueprint)
+	{
+	}
+
+	mutalisk::data::texture const& mBlueprint;
+
+private:
+	RenderableTexture(RenderableTexture const& c);
+	RenderableTexture& operator= (RenderableTexture const& c);
+};
+
 struct RenderableScene;
 AP<RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene const& data, std::string const& pathPrefix = "");
 AP<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh const& data);
+AP<RenderableTexture> prepare(RenderContext& rc, mutalisk::data::texture const& data);
 
 void render(RenderContext& rc, RenderableScene const& scene, int maxActors = -1);
 //	bool animatedActors = true, bool animatedLights = true, int maxActors = -1, int maxLights = -1);

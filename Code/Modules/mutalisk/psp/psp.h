@@ -3,5 +3,6 @@
 
 #include "pspTypes.h"
 #include "pspMesh.h"
+#include "pspTexture.h"
 
 #endif // MUTALISK_DATA_PSP_H_

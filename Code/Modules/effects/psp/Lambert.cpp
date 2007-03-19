@@ -118,6 +118,21 @@ struct Lambert::Impl : public CommonEffectImpl
 //		toNative(input.vecs[AmbientColor]);
 //		toNative(input.vecs[DiffuseColor]);
 //		toNative(input.vecs[SpecularColor]);
+		if (!input.textures.empty())
+		{
+			mutalisk::data::psp_texture const* diffuse = input.textures.front();
+			if (diffuse)
+			{
+				mutalisk::data::psp_texture const& texture = *diffuse;
+				if(texture.clutEntries)
+				{
+					sceGuClutMode(texture.clutFormat,0,0xff,0);
+					sceGuClutLoad(texture.clutEntries,texture.clut);
+				}
+				sceGuTexMode(texture.format,0,0,0);
+				sceGuTexImage(texture.mipmap,texture.width,texture.height,texture.stride,texture.data);
+			}
+		}
 	}
 
 	void setupGeometry(Input const& input)

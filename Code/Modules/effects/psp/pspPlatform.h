@@ -11,7 +11,7 @@
 namespace mutalisk { namespace effects {
 
 	typedef mutalisk::data::scene::Light	LightT;
-	typedef data::Texture					TextureT;
+	typedef data::texture					TextureT;
 	typedef ScePspFMatrix4					MatrixT;
 	typedef ScePspFVector4					VecT;
 	typedef unsigned						ColorT;

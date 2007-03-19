@@ -232,11 +232,46 @@ void CommonEffectImpl::setupSurface(BaseEffect::Input const& input)
 	bool alphaBlendEnable = !(
 		surface.srcBlend == GU_FIX && surface.srcFix == ~0U &&
 		surface.dstBlend == GU_FIX && surface.dstFix == 0U);
-//	if(alphaBlendEnable)
-//		sceGuEnable(GU_BLEND);
-//	else
-//		sceGuDisable(GU_BLEND);
-	sceGuDisable(GU_BLEND);
+	if(alphaBlendEnable)
+		sceGuEnable(GU_BLEND);
+	else
+		sceGuDisable(GU_BLEND);
+//	sceGuDisable(GU_BLEND);
+	if (input.surface)
+	{
+		sceGuTexOffset(input.surface->uOffset, input.surface->vOffset);
+		mutalisk::data::psp_texture const* diffuse = input.surface->diffuseTexture;
+//		printf("い psp_texture = %x\n", diffuse);
+		if (diffuse)
+		{
+			mutalisk::data::psp_texture const& texture = *diffuse;
+//		printf("い width = %i\n", texture.width);
+//		printf("い height = %i\n", texture.height);
+//		printf("い format = %i\n", texture.format);
+//		printf("い stride = %i\n", texture.stride);
+
+//		printf("い alloc = %x\n", texture.data);
+
+//		printf("い clut? = %i\n", texture.clutFormat);
+//		printf("い clut# = %i\n", texture.clutEntries);
+//		printf("い clut@ = %x\n", texture.clut);
+			if(texture.clutEntries)
+			{
+				sceGuClutMode(texture.clutFormat,0,0xff,0);
+				sceGuClutLoad(texture.clutEntries,texture.clut);
+			}
+			sceGuTexMode(texture.format,0,0,0);
+			sceGuTexImage(texture.mipmap,texture.width,texture.height,texture.stride,texture.data);
+		}
+		else
+		{
+			printf("い no diffuse\n");
+		}
+	}
+	else
+	{
+		printf("い no surface\n");
+	}
 }
 
 void CommonEffectImpl::setupGeometry(BaseEffect::Input const& input)

@@ -10,6 +10,12 @@ using namespace mutalisk;
 using namespace mutalisk::effects;
 
 ////////////////////////////////////////////////
+std::auto_ptr<RenderableTexture> prepare(RenderContext& rc, mutalisk::data::texture const& data)
+{
+	std::auto_ptr<RenderableTexture> texture(new RenderableTexture(data));
+	return texture;
+}
+////////////////////////////////////////////////
 std::auto_ptr<RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene const& data, std::string const& pathPrefix)
 {
 	std::auto_ptr<RenderableScene> scene(new RenderableScene(data));
@@ -20,6 +26,16 @@ std::auto_ptr<RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene 
 	{
 		scene->mResources.meshes[q].blueprint = loadResource<mutalisk::data::mesh>(pathPrefix + data.meshIds[q]);
 		scene->mResources.meshes[q].renderable = prepare(rc, *scene->mResources.meshes[q].blueprint);
+	}
+	scene->mResources.textures.resize(data.textureIds.size());
+	for(size_t q = 0; q < data.textureIds.size(); ++q)
+	{
+		scene->mResources.textures[q].blueprint = loadResource<mutalisk::data::texture>(pathPrefix + data.textureIds[q]);
+		scene->mResources.textures[q].renderable = prepare(rc, *scene->mResources.textures[q].blueprint);
+	}
+	for(size_t q = 0; q < data.textureIds.size(); ++q)
+	{
+		printf("¤¤ texture = %x\n", scene->mResources.textures[q].blueprint.get());
 	}
 	scene->mResources.animCharSet = loadResource<mutant::anim_character_set>(pathPrefix + data.animCharId);
 
@@ -163,7 +179,12 @@ namespace {
 
 //;;printf(" blastSurfaceInputs -- toNativeColors\n");
 
-		dst.diffuseTexture = 0;//(src.diffuseTexture != ~0U)? scene.mNativeResources.textures[src.diffuseTexture] : 0;
+//		printf("¤¤ src.diffuseTexture = %x\n", src.diffuseTexture);
+
+		dst.diffuseTexture = (src.diffuseTexture != ~0U) ? scene.mResources.textures[src.diffuseTexture].blueprint.get() : 0;
+//		printf("¤¤ dst.diffuseTexture = %x\n", dst.diffuseTexture);
+
+//		dst.diffuseTexture = (src.diffuseTexture != ~0U)? scene.mResources.textures[src.diffuseTexture] : 0;
 		dst.envmapTexture = 0;//(src.envmapTexture != ~0U)? scene.mNativeResources.textures[src.envmapTexture] : 0;
 
 		dst.uOffset = src.uOffset;
@@ -476,7 +497,7 @@ void render(RenderContext& rc, RenderableScene const& scene, bool animatedActors
 				matrixState.applyWorldMatrix(rc, nativeMatrix, fxInput);
 
 			RenderableMesh const& mesh = *scene.mResources.meshes[actor.meshIndex].renderable;
-			if(true) //actor.materials.empty())
+			if(actor.materials.empty())
 			{
 				ScePspFVector4 const black = {0,0,0,1};
 				ScePspFVector4 const white = {0,0,0,1};
@@ -492,9 +513,8 @@ void render(RenderContext& rc, RenderableScene const& scene, bool animatedActors
 			for(unsigned int materialIt = 0; materialIt < actor.materials.size(); ++materialIt)
 			{
 				unsigned int textureIndex = actor.materials[materialIt].textureIndex;
-				// $TBD: texture support
-				//fxInput.textures[BaseEffect::DiffuseTexture] = 
-				//	((textureIndex != ~0U)? scene.mNativeResources.textures[textureIndex]: 0);
+
+				fxInput.textures[BaseEffect::DiffuseTexture] = (textureIndex != ~0U) ? scene.mResources.textures[textureIndex].blueprint.get() : 0;
 
 				toNative(actor.materials[materialIt].ambient, fxInput.vecs[BaseEffect::AmbientColor]);
 				toNative(actor.materials[materialIt].diffuse, fxInput.vecs[BaseEffect::DiffuseColor]);
