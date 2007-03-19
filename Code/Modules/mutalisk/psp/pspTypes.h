@@ -7,15 +7,6 @@ namespace mutalisk { namespace data
 {
 	typedef unsigned int size_t;
 
-	struct Texture
-	{
-		int format;
-		int mipmap;
-		int width, height, stride;
-		void* data;
-		void* vramAddr;
-	};
-
 } // namespace data
 } // namespace mutalisk
 
