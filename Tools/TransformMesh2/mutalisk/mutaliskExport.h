@@ -243,8 +243,8 @@ void processSubsets(KFbxMesh* pMesh, OutputSkinnedMesh::SubsetsT& subsets);
 void processProperties(KFbxNode const* pObject, OutputScene::Properties& properties);
 void processLuaProperties(mutalisk::lua::Properties const& src, OutputScene::Properties& dst);
 void processAnimatedProperties(KFbxNode* pNode, OutputScene::Properties& properties);
-OutputTexture& processTextureResource(std::string resourceName);
-OutputTexture& processTextureResource(KFbxTexture* pTexture);
+OutputTexture* processTextureResource(std::string resourceName);
+OutputTexture* processTextureResource(KFbxTexture* pTexture);
 std::string processShaderResource(KFbxSurfaceMaterial* pMaterial);
 OutputSkinnedMesh& processMeshResource(KFbxNode* pNode);
 OutputSkinnedMesh& processMeshResource(lwLayer* subset, std::string resourceName);
@@ -434,7 +434,7 @@ inline void convertTexture(const std::string& dstName, const std::string& srcNam
 	PROCESS_INFORMATION procInfo;
 	STARTUPINFO startupInfo = { sizeof(startupInfo) };
 	DWORD result = 0;
-	std::string params = "\"" + std::string(exeDir) + "\" " + srcName + " " + outputFileName(dstName);
+	std::string params = "\"" + std::string(exeDir) + "\" -8 " + srcName + " " + outputFileName(dstName);
 	if (CreateProcessA(NULL, const_cast<char*>(params.c_str()), NULL, NULL, FALSE, CREATE_UNICODE_ENVIRONMENT, NULL, NULL, &startupInfo, &procInfo))
 	{
 		WaitForSingleObject(procInfo.hProcess, INFINITE);
@@ -1239,7 +1239,7 @@ void processMaterials(KFbxMesh* pMesh, OutputScene::MaterialsT& materials, Outpu
 			int combIndex = combinationIndices[combKey];
 
 			{
-				materials[combIndex].colorTexture = (lTexture)? &processTextureResource(lTexture): 0;
+				materials[combIndex].colorTexture = (lTexture)? processTextureResource(lTexture): 0;
 				materials[combIndex].envmapTexture = 0;
 				materials[combIndex].parameters = lMaterial;
 				materials[combIndex].shader = (lMaterial)? processShaderResource(lMaterial): "";
@@ -1493,7 +1493,7 @@ void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& propert
 		for(size_t w = 0; w < actor.materials.size(); ++w)
 		{
 			std::string const& textureName = properties.strings["envMap"];
-			actor.materials[w].envmapTexture = &processTextureResource(textureName);
+			actor.materials[w].envmapTexture = processTextureResource(textureName);
 		}
 	}
 
@@ -1559,30 +1559,35 @@ void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& propert
 	}
 }
 
-OutputTexture& processTextureResource(std::string resourceName)
+OutputTexture* processTextureResource(std::string resourceName)
 {
 	if(gOutputScene.textureResources.find(resourceName) != gOutputScene.textureResources.end())
-		return gOutputScene.textureResources[resourceName];
+		return &gOutputScene.textureResources[resourceName];
+
+	com_ptr<IDirect3DTexture9> textureData;
+	assert(gDxNullRefDevice);
+	HRESULT hr = D3DXCreateTextureFromFile(gDxNullRefDevice, resourceName.c_str(), &textureData);
+	assertWarning(SUCCEEDED(hr), std::string("Failed to load texture: ") + resourceName);
+
+	if(FAILED(hr))
+		return 0;
 
 	OutputTexture& result = gOutputScene.textureResources[resourceName];
 
 	result.source = resourceName;
 	result.name = fileName2TextureName(resourceName);
 	result.parameters = 0;
+	result.data = textureData;
 
-	assert(gDxNullRefDevice);
-	HRESULT hr = D3DXCreateTextureFromFile(gDxNullRefDevice, resourceName.c_str(), &result.data);
-	assertWarning(SUCCEEDED(hr), std::string("Failed to load texture: ") + resourceName);
-
-	return result;
+	return &result;
 }
 
-OutputTexture& processTextureResource(KFbxTexture* pTexture)
+OutputTexture* processTextureResource(KFbxTexture* pTexture)
 {
 	assert(pTexture);
 	std::string resourceName = pTexture->GetRelativeFileName();
-	OutputTexture& result = processTextureResource(resourceName);
-	result.parameters = pTexture;
+	OutputTexture* result = processTextureResource(resourceName);
+	result->parameters = pTexture;
 	return result;
 }
 
