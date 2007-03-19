@@ -12,6 +12,7 @@ namespace mutalisk { namespace data
 
 	// types
 	typedef dx9_mesh	mesh;
+	typedef dx9_texture	texture;
 
 } // namespace data 
 } // namespace mutalisk
