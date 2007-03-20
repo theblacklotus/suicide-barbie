@@ -23,7 +23,7 @@ namespace mutalisk { namespace data
 
 	struct scene
 	{
-		enum { Version = 0x0119 };
+		enum { Version = 0x0120 };
 
 		typedef std::string Ref;
 		typedef unsigned Id;
@@ -49,6 +49,9 @@ namespace mutalisk { namespace data
 			float phi;
 		};
 		struct Camera : parent<Node> {
+			Color background;
+			float fov;
+			float aspect;
 		};
 		struct Actor : parent<Node> {
 			struct Material {

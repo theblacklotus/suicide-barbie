@@ -59,9 +59,8 @@ void Unlit::pass(Input const& i, unsigned passIndex)
 	mImpl->setupAmbientOnly();
 
 	sceGuAmbient(0x00ffffff);
-	sceGuColor(mulAlpha(i.surface->ambient, (unsigned int)(i.surface->transparency * 255.0f)));
-//	sceGuEnable(GU_DEPTH_TEST);
-//	sceGuDepthFunc(GU_LEQUAL);
+	sceGuColor(i.surface->ambient);
+	sceGuSendCommandi(88, (unsigned int)((1.0f-i.surface->transparency) * 255.0f));
 
 	mImpl->commit();
 }

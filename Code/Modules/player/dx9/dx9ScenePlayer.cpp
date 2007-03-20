@@ -304,6 +304,12 @@ namespace {
 		toNative(dst.aux0, src.aux0);
 	}
 
+	void setProjection(RenderContext& rc, float fovy, float aspect)
+	{
+		if(gSettings.overrideCameraMethod == 1)
+			D3DXMatrixPerspectiveFovLH(&rc.projMatrix, fovy * (D3DX_PI/180.0f), aspect, 2.0f, 40000.0f);
+	}
+
 	void setCameraMatrix(RenderContext& rc, D3DXMATRIX const& camera)
 	{
 		D3DXMATRIX view = camera;
@@ -728,7 +734,8 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors)
 				ASSERT(cameraIndex >= 0 && cameraIndex < scene.mBlueprint.cameras.size());
 				toNative(nativeMatrix, scene.mBlueprint.cameras[cameraIndex].worldMatrix.data);
 			}
-
+			
+			setProjection(rc, scene.mBlueprint.cameras[cameraIndex].fov, scene.mBlueprint.cameras[cameraIndex].aspect);
 			setCameraMatrix(rc, nativeMatrix);
 			getTranslation(cameraPos, nativeMatrix);
 		}

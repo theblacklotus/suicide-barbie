@@ -1,23 +1,12 @@
 #include "pspCommonEffectImpl.h"
 
+#include <mutalisk/utility.h>
+
 using namespace mutalisk;
 using namespace mutalisk::effects;
 
 BaseEffect::Input::BufferControl gBufferControl;
 bool gBufferControlInitialized = false;
-
-namespace 
-{
-#define CHANNEL(v, shift) ((unsigned int)((v) * 255.0f) << (shift))
-unsigned color4(mutalisk::data::Color const& srcColor)
-{
-	return CHANNEL(srcColor.r, 0) | CHANNEL(srcColor.g, 8) | CHANNEL(srcColor.b, 16) | CHANNEL(srcColor.a, 24);
-}
-unsigned color3(mutalisk::data::Color const& srcColor)
-{
-	return CHANNEL(srcColor.r, 0) | CHANNEL(srcColor.g, 8) | CHANNEL(srcColor.b, 16);
-}
-}
 
 ColorT mutalisk::effects::replaceAlpha(ColorT src, unsigned int alpha)
 {
@@ -32,11 +21,11 @@ ColorT mutalisk::effects::mulAlpha(ColorT src, unsigned int alpha)
 }
 ColorT mutalisk::effects::replaceAlpha(mutalisk::data::Color src, float alpha)
 {
-	return color3(src) | CHANNEL(alpha, 24);
+	return colorRGBtoDWORD(src) | COLOR_CHANNEL(alpha, 24);
 }
 ColorT mutalisk::effects::mulAlpha(mutalisk::data::Color src, float alpha)
 {
-	return color3(src) | CHANNEL(src.a * alpha, 24);
+	return colorRGBtoDWORD(src) | COLOR_CHANNEL(src.a * alpha, 24);
 }
 
 size_t CommonEffectImpl::organizeLightsInPasses(BaseEffect::Input::Lights const& lights,
@@ -80,7 +69,7 @@ void CommonEffectImpl::setupLights(LightsPerPass const& input)
 		// $TBD: support specular
 		// $TBD: support point/spot lights
 
-		sceGuLightColor(q, GU_DIFFUSE, color4(light.diffuse));
+		sceGuLightColor(q, GU_DIFFUSE, colorRGBAtoDWORD(light.diffuse));
 		sceGuLightAtt(q, light.attenuation[0], light.attenuation[1], light.attenuation[2]);
 
 		totalAmbient.r += light.ambient.r;
@@ -103,7 +92,7 @@ void CommonEffectImpl::setupLights(LightsPerPass const& input)
 
 		sceGuEnable(GU_LIGHT0 + q);
 	}
-	sceGuAmbient(color4(totalAmbient));
+	sceGuAmbient(colorRGBAtoDWORD(totalAmbient));
 
 	if(input.count > 0)
 		sceGuEnable(GU_LIGHTING);
@@ -233,10 +222,15 @@ void CommonEffectImpl::setupSurface(BaseEffect::Input const& input)
 		surface.srcBlend == GU_FIX && surface.srcFix == ~0U &&
 		surface.dstBlend == GU_FIX && surface.dstFix == 0U);
 	if(alphaBlendEnable)
+	{
+		sceGuTexFunc(GU_TFX_MODULATE, GU_TCC_RGBA);
 		sceGuEnable(GU_BLEND);
+	}
 	else
+	{
+		sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
 		sceGuDisable(GU_BLEND);
-//	sceGuDisable(GU_BLEND);
+	}
 	if (input.surface)
 	{
 		sceGuTexOffset(input.surface->uOffset, input.surface->vOffset);
@@ -262,6 +256,9 @@ void CommonEffectImpl::setupSurface(BaseEffect::Input const& input)
 			}
 			sceGuTexMode(texture.format,0,0,0);
 			sceGuTexImage(texture.mipmap,texture.width,texture.height,texture.stride,texture.data);
+			sceGuTexWrap(GU_CLAMP, GU_CLAMP);
+			sceGuTexFilter(GU_LINEAR_MIPMAP_NEAREST, GU_LINEAR_MIPMAP_NEAREST);
+//			sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
 		}
 		else
 		{

@@ -39,6 +39,7 @@ double const ANIM_SAMPLING_FREQ = 1.0f / 30.0;
 
 #include <mutalisk/mutalisk.h>
 #include <mutalisk/types.h>
+#include <mutalisk/utility.h>
 #include <mutalisk/dx9/dx9.h>
 #include <mutalisk/psp/psp.h>
 #include <mutalisk/psp/pspXcompile.h>
@@ -82,10 +83,12 @@ struct BaseSkinnedMesh
 	struct Vertex
 	{
 		typedef unsigned short BoneIndexT;
+		typedef DWORD Color;
 
 		Vec3 pos;
 		Vec3 normal;
 		Vec3 uvw;
+		Color color;
 
 		std::vector<
 			std::pair<BoneIndexT, float> > weights;
@@ -102,6 +105,7 @@ struct BaseSkinnedMesh
 	std::vector<IndexT> indices;
 	std::vector<Subset> subsets;
 	std::vector<Bone> bones;
+	bool hasVertexColor;
 };
 
 struct OutputSkinnedMesh : public BaseSkinnedMesh
@@ -116,6 +120,7 @@ struct OutputSkinnedMesh : public BaseSkinnedMesh
 		vertices.resize(0);
 		indices.resize(0);
 		bones.resize(0);
+		hasVertexColor = false;
 	}
 };
 
@@ -491,6 +496,7 @@ void blitBaseMesh(OutputSkinnedMesh const& mesh, mutalisk::data::base_mesh& data
 	for(size_t q = 0; q < data.vertexCount; ++q)
 	{
 		float* asFloat = reinterpret_cast<float*>(data.vertexData + q * data.vertexStride);
+		DWORD* asDword = reinterpret_cast<DWORD*>(data.vertexData + q * data.vertexStride);
 
 		int i = 0;
 		if(gLWMode)
@@ -501,6 +507,8 @@ void blitBaseMesh(OutputSkinnedMesh const& mesh, mutalisk::data::base_mesh& data
 			asFloat[i++] = mesh.vertices[q].normal[0]* 1.0f;
 			asFloat[i++] = mesh.vertices[q].normal[1]* 1.0f;
 			asFloat[i++] = mesh.vertices[q].normal[2]* 1.0f;
+			if(mesh.hasVertexColor)
+				asDword[i++] = mesh.vertices[q].color;		
 			asFloat[i++] = mesh.vertices[q].uvw[0];
 			asFloat[i++] = mesh.vertices[q].uvw[1];
 		}
@@ -512,6 +520,8 @@ void blitBaseMesh(OutputSkinnedMesh const& mesh, mutalisk::data::base_mesh& data
 			asFloat[i++] = mesh.vertices[q].normal[0];
 			asFloat[i++] = mesh.vertices[q].normal[1];
 			asFloat[i++] = mesh.vertices[q].normal[2];
+			if(mesh.hasVertexColor)
+				asDword[i++] = mesh.vertices[q].color;		
 			asFloat[i++] = mesh.vertices[q].uvw[0];
 			asFloat[i++] = mesh.vertices[q].uvw[1];
 		}
@@ -520,7 +530,12 @@ void blitBaseMesh(OutputSkinnedMesh const& mesh, mutalisk::data::base_mesh& data
 
 void blitMesh(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 {
-	data.fvfVertexDecl = D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX1 | D3DFVF_TEXCOORDSIZE2(0);
+	data.fvfVertexDecl = 
+		D3DFVF_XYZ |
+		D3DFVF_NORMAL |
+		((mesh.hasVertexColor)? D3DFVF_DIFFUSE: 0) |
+		(D3DFVF_TEX1|D3DFVF_TEXCOORDSIZE2(0))
+		;
 	data.vertexStride = D3DXGetFVFVertexSize(data.fvfVertexDecl);
 	data.skinInfo = 0;
 
@@ -529,7 +544,12 @@ void blitMesh(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 
 void blitMesh(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 {
-	data.vertexDecl = GU_VERTEX_32BITF | GU_NORMAL_32BITF | GU_TEXTURE_32BITF;
+	data.vertexDecl =
+		GU_VERTEX_32BITF |
+		GU_NORMAL_32BITF |
+		((mesh.hasVertexColor)? GU_COLOR_8888: 0) |
+		GU_TEXTURE_32BITF
+		;
 	data.vertexStride = sizeof(float) * (3+3+2);
 	data.skinInfo = 0;
 
@@ -540,12 +560,15 @@ void blitMesh(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 	for(size_t q = 0; q < data.vertexCount; ++q)
 	{
 		float* asFloat = reinterpret_cast<float*>(data.vertexData + q * data.vertexStride);
+		DWORD* asDword = reinterpret_cast<DWORD*>(data.vertexData + q * data.vertexStride);
 
 		if(gLWMode)
 		{
 			int i = 0;
 			asFloat[i++] = mesh.vertices[q].uvw[0];
 			asFloat[i++] = mesh.vertices[q].uvw[1];
+			if(mesh.hasVertexColor)
+				asDword[i++] = mesh.vertices[q].color;
 			asFloat[i++] = mesh.vertices[q].normal[0]* 1.0f;
 			asFloat[i++] = mesh.vertices[q].normal[1]* 1.0f;
 			asFloat[i++] = mesh.vertices[q].normal[2]* 1.0f;
@@ -558,6 +581,8 @@ void blitMesh(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 			int i = 0;
 			asFloat[i++] = mesh.vertices[q].uvw[0];
 			asFloat[i++] = mesh.vertices[q].uvw[1];
+			if(mesh.hasVertexColor)
+				asDword[i++] = mesh.vertices[q].color;
 			asFloat[i++] = mesh.vertices[q].normal[0];
 			asFloat[i++] = mesh.vertices[q].normal[1];
 			asFloat[i++] = mesh.vertices[q].normal[2];
@@ -592,7 +617,13 @@ std::pair<BaseSkinnedMesh::Vertex::BoneIndexT, float> getBoneWeight(OutputSkinne
 void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 {
 	data.vertexCount = mesh.vertices.size();
-	data.fvfVertexDecl = D3DFVF_XYZB5 | D3DFVF_LASTBETA_UBYTE4 | D3DFVF_NORMAL | D3DFVF_TEX1 | D3DFVF_TEXCOORDSIZE2(0);
+	data.fvfVertexDecl = 
+		D3DFVF_XYZB5 |
+		D3DFVF_LASTBETA_UBYTE4 |
+		D3DFVF_NORMAL |
+		((mesh.hasVertexColor)? D3DFVF_DIFFUSE: 0) |
+		(D3DFVF_TEX1|D3DFVF_TEXCOORDSIZE2(0))
+		;
 	// struct VERTEXPOSITION
 	// {
 	//    float pos[3];
@@ -635,6 +666,8 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 			asFloat[i++] = mesh.vertices[q].normal[0]* 1.0f;
 			asFloat[i++] = mesh.vertices[q].normal[1]* 1.0f;
 			asFloat[i++] = mesh.vertices[q].normal[2]* 1.0f;
+			if(mesh.hasVertexColor)
+				asDword[i++] = mesh.vertices[q].color;
 			asFloat[i++] = mesh.vertices[q].uvw[0];
 			asFloat[i++] = mesh.vertices[q].uvw[1];
 		}
@@ -646,6 +679,8 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 			asFloat[i++] = mesh.vertices[q].normal[0];
 			asFloat[i++] = mesh.vertices[q].normal[1];
 			asFloat[i++] = mesh.vertices[q].normal[2];
+			if(mesh.hasVertexColor)
+				asDword[i++] = mesh.vertices[q].color;
 			asFloat[i++] = mesh.vertices[q].uvw[0];
 			asFloat[i++] = mesh.vertices[q].uvw[1];
 		}
@@ -677,7 +712,13 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 	size_t weightsPerVertex = getWeightsPerVertex(mesh);
 
 	data.vertexCount = mesh.vertices.size();
-	data.vertexDecl = GU_VERTEX_32BITF | GU_NORMAL_32BITF | GU_TEXTURE_32BITF | GU_WEIGHT_32BITF|GU_WEIGHTS(weightsPerVertex);
+	data.vertexDecl = 
+		(GU_WEIGHT_32BITF|GU_WEIGHTS(weightsPerVertex)) | 
+		GU_VERTEX_32BITF | 
+		GU_NORMAL_32BITF | 
+		((mesh.hasVertexColor)? GU_COLOR_8888: 0) |
+		GU_TEXTURE_32BITF
+		;
 	// struct VERTEXPOSITION
 	// {
 	//	float skinWeight[WEIGHTS_PER_VERTEX];
@@ -706,6 +747,7 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 	for(size_t q = 0; q < data.vertexCount; ++q)
 	{
 		float* asFloat = reinterpret_cast<float*>(data.vertexData + q * data.vertexStride);
+		DWORD* asDword = reinterpret_cast<DWORD*>(data.vertexData + q * data.vertexStride);
 		byte* asByte = reinterpret_cast<byte*>(data.boneIndexData + q * data.boneIndexStride);
 
 		size_t w = 0;
@@ -724,6 +766,8 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 		{
 			asFloat[w++] = mesh.vertices[q].uvw[0];
 			asFloat[w++] = mesh.vertices[q].uvw[1];
+			if(mesh.hasVertexColor)
+				asDword[w++] = mesh.vertices[q].color;
 			asFloat[w++] = mesh.vertices[q].normal[0]* 1.0f;
 			asFloat[w++] = mesh.vertices[q].normal[1]* 1.0f;
 			asFloat[w++] = mesh.vertices[q].normal[2]* 1.0f;
@@ -735,6 +779,8 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 		{
 			asFloat[w++] = mesh.vertices[q].uvw[0];
 			asFloat[w++] = mesh.vertices[q].uvw[1];
+			if(mesh.hasVertexColor)
+				asDword[w++] = mesh.vertices[q].color;
 			asFloat[w++] = mesh.vertices[q].normal[0];
 			asFloat[w++] = mesh.vertices[q].normal[1];
 			asFloat[w++] = mesh.vertices[q].normal[2];
@@ -972,12 +1018,38 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 	{
 		assert(*i);
 		assert((*i)->GetNode());
-		assert((*i)->GetAttributeType() == KFbxNodeAttribute::eCAMERA ||
-			(*i)->GetAttributeType() == KFbxNodeAttribute::eCAMERA_SWITCHER);
+
+		// node
 		char const* name = (*i)->GetNode()->GetName();
 		data.cameras[q].id = q;
 		data.cameras[q].nodeName = name;
 		processMatrix(data.cameras[q].worldMatrix.data, (*i)->GetNode()->GetGlobalFromDefaultTake());
+
+		// camera
+		assert((*i)->GetAttributeType() == KFbxNodeAttribute::eCAMERA ||
+			(*i)->GetAttributeType() == KFbxNodeAttribute::eCAMERA_SWITCHER);
+
+		double const constAspect = 480.0 / 272.0;
+		double fovy = 30.0f;
+		switch((*i)->GetApertureFormat())
+		{
+		case KFbxCamera::eHORIZONTAL:
+			fovy = static_cast<float>((*i)->GetDefaultFieldOfView() / constAspect);
+			break;
+		case KFbxCamera::eVERTICAL:
+			fovy = static_cast<float>((*i)->GetDefaultFieldOfView());
+			break;
+		case KFbxCamera::eHORIZONTAL_AND_VERTICAL:
+		case KFbxCamera::eFOCAL_LENGTH:
+			fovy = (*i)->ComputeFieldOfView((*i)->GetDefaultFocalLength()) / constAspect;
+			break;
+		}
+		data.cameras[q].fov = static_cast<float>(fovy);
+		data.cameras[q].aspect = static_cast<float>(constAspect);
+		data.cameras[q].background.r = static_cast<float>((*i)->GetDefaultBackgroundColor().mRed);
+		data.cameras[q].background.g = static_cast<float>((*i)->GetDefaultBackgroundColor().mGreen);
+		data.cameras[q].background.b = static_cast<float>((*i)->GetDefaultBackgroundColor().mBlue);
+		data.cameras[q].background.a = static_cast<float>((*i)->GetDefaultBackgroundColor().mAlpha);
 	}
 
 	// actors
@@ -1732,6 +1804,82 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 			}
 		}
 	} // \[FBX gather] uv
+
+	// [FBX gather] vertex colors (single layer)
+//	if(0)
+	{
+		KFbxMesh* pMeshWithVtxc = pMeshTriangulated;
+
+		kInt const MAX_LAYER_COUNT = 1;
+		for (kInt l = 0; l < min(MAX_LAYER_COUNT, pMeshWithVtxc->GetLayerCount()); l++)
+		{
+			KFbxLayerElementVertexColor* leVtxc = pMeshWithVtxc->GetLayer(l)->GetVertexColors();
+
+			if (!leVtxc)
+				continue;
+
+			result.hasVertexColor = true;
+
+			for (kInt i = 0; i < pMeshWithVtxc->GetPolygonCount(); i++)
+			{
+				for (kInt j = 0; j < pMeshWithVtxc->GetPolygonSize(i); j++)
+				{
+					kInt lControlPointIndex = pMeshWithVtxc->GetPolygonVertex(i, j);
+
+					int tmpId;
+					KFbxColor color;
+					switch (leVtxc->GetMappingMode())
+					{
+					case KFbxLayerElement::eBY_CONTROL_POINT:
+						switch (leVtxc->GetReferenceMode())
+						{
+						case KFbxLayerElement::eDIRECT:
+							color = leVtxc->GetDirectArray().GetAt(lControlPointIndex);
+							break;
+						case KFbxLayerElement::eINDEX_TO_DIRECT:
+							tmpId = leVtxc->GetIndexArray().GetAt(lControlPointIndex);
+							color = leVtxc->GetDirectArray().GetAt(tmpId);
+							break;
+						default:
+							break; // other reference modes not shown here!
+						}
+						break;
+
+					case KFbxLayerElement::eBY_POLYGON_VERTEX:
+						{
+						kInt tmpTextureVtxcIndex = pMeshWithVtxc->GetTextureUVIndex(i, j);
+						switch (leVtxc->GetReferenceMode())
+						{
+						case KFbxLayerElement::eDIRECT:
+							color = leVtxc->GetDirectArray().GetAt(tmpTextureVtxcIndex);
+							break;
+						case KFbxLayerElement::eINDEX_TO_DIRECT:
+//							tmpId = leVtxc->GetIndexArray().GetAt(tmpTextureUVIndex);
+//							color = leVtxc->GetDirectArray().GetAt(tmpId);
+							color = leVtxc->GetDirectArray().GetAt(tmpTextureVtxcIndex);
+							break;
+						default:
+							break; // other reference modes not shown here!
+						}
+						}
+						break;
+
+					case KFbxLayerElement::eBY_POLYGON: // doesn't make much sense for UVs
+					case KFbxLayerElement::eALL_SAME:   // doesn't make much sense for UVs
+					case KFbxLayerElement::eNONE:       // doesn't make much sense for UVs
+						break;
+					}
+
+					assert(lControlPointIndex < (kInt)result.vertices.size());
+					result.vertices[lControlPointIndex].color = mutalisk::data::colorRGBAtoDWORD(
+						static_cast<float>(color.mRed),
+						static_cast<float>(color.mGreen),
+						static_cast<float>(color.mBlue),
+						static_cast<float>(color.mAlpha));
+				}
+			}
+		}
+	} // \[FBX gather] vertex colors
 
 	// [FBX gather] bone weights
 	{

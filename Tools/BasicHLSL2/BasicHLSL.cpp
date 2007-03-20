@@ -810,7 +810,8 @@ INT WINAPI WinMain( HINSTANCE, HINSTANCE, LPSTR cmdLine, int )
     // allow you to set several options which control the behavior of the framework.
     DXUTInit( true, true, true ); // Parse the command line, handle the default hotkeys, and show msgboxes
     DXUTCreateWindow( L"BasicHLSL" );
-    DXUTCreateDevice( D3DADAPTER_DEFAULT, true, 480*2, 282*2, (LPDXUTCALLBACKISDEVICEACCEPTABLE)IsDeviceAcceptable, (LPDXUTCALLBACKMODIFYDEVICESETTINGS)ModifyDeviceSettings );
+	float const screenScaler = 2;
+    DXUTCreateDevice( D3DADAPTER_DEFAULT, true, 480*screenScaler, 272*screenScaler, (LPDXUTCALLBACKISDEVICEACCEPTABLE)IsDeviceAcceptable, (LPDXUTCALLBACKMODIFYDEVICESETTINGS)ModifyDeviceSettings );
 
     // Pass control to DXUT for handling the message pump and 
     // dispatching render calls. DXUT will call your FrameMove 

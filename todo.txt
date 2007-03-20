@@ -29,6 +29,7 @@ _RunTime_
  .	 cube-to-SH									[dx9: only]
  .	 per-vertex SH lighting
 .	fix psp skinning
+.       timeline
 .   	timeline helper functions (show_scene, clear_framebuffer, clear_zbuffer, apply_postprocess, blink, ...) 
 
 
@@ -37,10 +38,13 @@ _Mutalisk_
  +	 texture uv
   .	  more than 1 layer uv support
  +	 texture image
- .	 vertex color
+ ~	 vertex color
  .	 aux vertex element stream support
  .	 visibility flag animation
- .	 camera target, fov, aspect animation
+ ~	 camera params
+  .       camera target
+  +       fov
+  .       aspect animation
  ~	 materials/shaders
   +	  shader names
   .	  instance specific mesh subsets

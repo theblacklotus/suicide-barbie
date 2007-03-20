@@ -231,6 +231,28 @@ namespace {
 //;;printf("!blastSurfaceInputs -- toNative\n");
 	}
 
+	void setProjection(RenderContext& rc, float fovy, float aspect)
+	{
+		float const zn = 1.0f;
+		float const zf = 50.0f;
+
+		// 
+		float angle = (fovy / 2) * (GU_PI/180.0f);
+		float cotangent = cosf(angle) / sinf(angle);
+
+		ScePspFMatrix4 t;
+		gumLoadIdentity(&t);
+		t.x.x = cotangent / aspect;
+		t.y.y = cotangent;
+		t.z.z = zf/(zn-zf);// (far + near) / delta_z; // -(far + near) / delta_z
+		t.w.z = zn*zf/(zn-zf);//2.0f * (far * near) / delta_z; // -2 * (far * near) / delta_z
+		t.z.w = -1.0f;
+		t.w.w = 0.0f;
+
+		rc.projMatrix = t;
+		//gumMultMatrix(&rc.projMatrix, &rc.projMatrix, &t);
+	}
+
 	void setCameraMatrix(RenderContext& rc, ScePspFMatrix4 const& camera)
 	{
 		ScePspFMatrix4 view = camera;
@@ -581,6 +603,7 @@ void render(RenderContext& rc, RenderableScene const& scene, int maxActors)
 				toNative(nativeMatrix, scene.mBlueprint.cameras[cameraIndex].worldMatrix.data);
 			}
 
+			setProjection(rc, scene.mBlueprint.cameras[cameraIndex].fov, scene.mBlueprint.cameras[cameraIndex].aspect);
 			setCameraMatrix(rc, nativeMatrix);
 			getTranslation(cameraPos, nativeMatrix);
 		}

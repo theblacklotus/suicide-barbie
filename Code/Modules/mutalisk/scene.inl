@@ -81,7 +81,9 @@ inline template <typename In> In& operator>> (In& i, scene& data)
 		for(size_t q = 0; q < data.cameras.size(); ++q)
 		{
 			i >> data.cameras[q].base();
-
+			i.readType(data.cameras[q].background);
+			i.readType(data.cameras[q].fov);
+			i.readType(data.cameras[q].aspect);
 		}
 		data.defaultCameraIndex = i.readDword();
 
@@ -152,6 +154,9 @@ inline template <typename Out> Out& operator<< (Out& o, scene const& data)
 		for(size_t q = 0; q < data.cameras.size(); ++q)
 		{
 			o << data.cameras[q].base();
+			o.writeType(data.cameras[q].background);
+			o.writeType(data.cameras[q].fov);
+			o.writeType(data.cameras[q].aspect);
 		}
 		o.writeDword(data.defaultCameraIndex);
 
