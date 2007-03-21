@@ -1,0 +1,33 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.blendOp = 'Lerp'
+scene.RootNode.zOp = 'ReadOnly'
+scene.RootNode.shader = 'unlit'
+
+scene.pPlane8 = {}
+scene.pPlane8.blendOp = 'Lerp'
+scene.pPlane8.zOp = 'ReadWrite'
+scene.pPlane8.shader = 'unlit'
+
+scene.branch_01 = {}
+scene.branch_02 = {}
+scene.branch_03 = {}
+scene.branch_04 = {}
+scene.branch_05 = {}
+scene.branch_06 = {}
+scene.branch_07 = {}
+scene.branch_08 = {}
+
+scene.branch_01.slice = 10
+scene.branch_02.slice = 9
+scene.branch_03.slice = 8
+scene.branch_04.slice = 7
+scene.branch_05.slice = 6
+scene.branch_06.slice = 5
+scene.branch_07.slice = 4
+scene.branch_08.slice = 3
+
+
+return scene
