@@ -66,11 +66,13 @@ struct BaseSkinnedMesh
 {
 	// definition
 	struct Vec3 {
+		Vec3() { std::fill_n(data, 3, 0.0f); }
 		float const& operator[](size_t i) const { return data[i]; }
 		float& operator[](size_t i) { return data[i]; }
 		float data[3];
 	};
 	struct Mat16 {
+		Mat16() { std::fill_n(data, 16, 0.0f); }
 		float const& operator[](size_t i) const { return data[i]; }
 		float& operator[](size_t i) { return data[i]; }
 		float data[16];
@@ -184,14 +186,15 @@ struct OutputScene
 
 	struct Actor
 	{
-		Actor() : mesh(0), node(0), active(true) {}
+		Actor() : mesh(0), node(0), active(true), slice(0) {}
 		OutputSkinnedMesh*	mesh;
 		MaterialsT			materials;
 		Properties			properties;
 
 		KFbxNode*			node;
 
-		int					active;
+		unsigned			active;
+		unsigned			slice;
 	};
 
 	typedef std::map<std::string, OutputSkinnedMesh>	OutputMeshesT;
@@ -1071,7 +1074,11 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 		assert(meshIndex < scene.meshResources.size());
 		data.actors[q].meshIndex = meshIndex;
 
+		// slice
+		data.actors[q].slice = scene.actors[q].slice;
+
 		// materials
+		assert(i->materials.size() > 0);
 		data.actors[q].materials.resize(i->materials.size());
 		for(size_t w = 0; w < i->materials.size(); ++w)
 		{
@@ -1275,9 +1282,9 @@ void processMaterials(KFbxMesh* pMesh, OutputScene::MaterialsT& materials, Outpu
 		std::map<CombinationKeyT, CombinationIndexT> combinationIndices;
 
 		// preallocate enough space for all possible material/texture permutations
-		materials.resize(materialCount * textureCount);
+		materials.resize(materialCount * max(1, textureCount));
 		if (subsets)
-			subsets->resize(materialCount * textureCount);
+			subsets->resize(materialCount * max(1, textureCount));
 
 		if (materials.empty())
 			continue;
@@ -1473,8 +1480,11 @@ void processLuaProperties(mutalisk::lua::Properties const& src, OutputScene::Pro
 		std::copy(i->second.begin(), i->second.end(), dst.vectors[i->first].begin());
 	}
 
-	// $TBD: numbers
-	// $TBD: vectors
+	for(mutalisk::lua::Properties::NumbersT::const_iterator i = src.numbers.begin(); i != src.numbers.end(); ++i)
+	{
+		dst.vectors[i->first].resize(1);
+		dst.vectors[i->first][0] = i->second;
+	}
 }
 
 void processAnimatedProperties(KFbxNode* pNode, OutputScene::Properties& properties)
@@ -1601,6 +1611,11 @@ void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& propert
 	{
 		if(properties.strings["active"] == "false")
 			actor.active = false;
+	}
+
+	if(properties.hasVector("slice") && !properties.vectors["slice"].empty())
+	{
+		actor.slice = static_cast<unsigned>(properties.vectors["slice"][0]);
 	}
 
 	if(properties.hasVector("ambient") || properties.hasVector("diffuse") || properties.hasVector("specular"))
@@ -1735,8 +1750,8 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 				{
 					kInt lControlPointIndex = pMeshWithUv->GetPolygonVertex(i, j);
 
-					int tmpId;
-					KFbxVector2 uv;
+					int tmpId = -1;
+					KFbxVector2 uv; uv[0] = 0.0; uv[1] = 0.0;
 					switch (leUV->GetMappingMode())
 					{
 					case KFbxLayerElement::eBY_CONTROL_POINT:
@@ -1744,9 +1759,11 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 						{
 						case KFbxLayerElement::eDIRECT:
 							uv = leUV->GetDirectArray().GetAt(lControlPointIndex);
+							//uv[0] = 0.0;
 							break;
 						case KFbxLayerElement::eINDEX_TO_DIRECT:
 							tmpId = leUV->GetIndexArray().GetAt(lControlPointIndex);
+							assert(tmpId >= 0);
 							uv = leUV->GetDirectArray().GetAt(tmpId);
 							break;
 						default:
@@ -1757,6 +1774,7 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 					case KFbxLayerElement::eBY_POLYGON_VERTEX:
 						{
 						kInt tmpTextureUVIndex = pMeshWithUv->GetTextureUVIndex(i, j);
+						assert(tmpTextureUVIndex >= 0);
 						switch (leUV->GetReferenceMode())
 						{
 						case KFbxLayerElement::eDIRECT:
@@ -1770,9 +1788,8 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 						default:
 							break; // other reference modes not shown here!
 						}
-/*
-//						kInt tmpTextureUVIndex = pMeshWithUv->GetTextureUVIndex(i, j);
-						switch (leUV->GetReferenceMode())
+
+/*						switch (leUV->GetReferenceMode())
 						{
 						case KFbxLayerElement::eDIRECT:
 							tmpId = leUV->GetIndexArray().GetAt(lControlPointIndex);
@@ -1872,9 +1889,9 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 
 					assert(lControlPointIndex < (kInt)result.vertices.size());
 					result.vertices[lControlPointIndex].color = mutalisk::data::colorRGBAtoDWORD(
-						static_cast<float>(color.mRed),
-						static_cast<float>(color.mGreen),
 						static_cast<float>(color.mBlue),
+						static_cast<float>(color.mGreen),
+						static_cast<float>(color.mRed),
 						static_cast<float>(color.mAlpha));
 				}
 			}
@@ -2491,7 +2508,7 @@ void saveScene(Platform platform)
 
 	for(OutputScene::OutputMeshesT::const_iterator i = gOutputScene.meshResources.begin(); i != gOutputScene.meshResources.end(); ++i)
 	{
-		assert(i->first == i->second.name);
+		assert(i->first == i->second.source);
 		if(gPlatform == Platform::DX9)
 		{
 			mutalisk::data::dx9_mesh meshData;

@@ -307,7 +307,7 @@ namespace {
 	void setProjection(RenderContext& rc, float fovy, float aspect)
 	{
 		if(gSettings.overrideCameraMethod == 1)
-			D3DXMatrixPerspectiveFovLH(&rc.projMatrix, fovy * (D3DX_PI/180.0f), aspect, 2.0f, 40000.0f);
+			D3DXMatrixPerspectiveFovLH(&rc.projMatrix, fovy * (D3DX_PI/180.0f), aspect, 0.5f, 40000.0f);
 	}
 
 	void setCameraMatrix(RenderContext& rc, D3DXMATRIX const& camera)
@@ -761,7 +761,7 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors)
 	blastInstanceInputs(scene, camera) (visibleActors, instanceInputs);
 	blastSurfaceInputs(scene, 0) (visibleActors, surfaceInputs);
 	blastRenderBlocks(scene, cameraPos) (visibleActors, bgRenderBlocks, opaqueRenderBlocks, transparentRenderBlocks, fgRenderBlocks);
-	sortRenderBlocks()(transparentRenderBlocks);
+	sortRenderBlocks()(transparentRenderBlocks, false);
 	if(instanceInputs.empty() || surfaceInputs.empty())
 	{
 		ASSERT(visibleActors.empty());
@@ -770,21 +770,25 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors)
 	{
 		BaseEffect::Input::BufferControl background;
 		background.colorWriteEnable = true;
+		background.alphaTestEnable = false;
 		background.zWriteEnable = false;
 		background.zReadEnable = true;
 		background.zEqual = false;
 
 		BaseEffect::Input::BufferControl opaque[2];
 		opaque[0].colorWriteEnable = true;
+		opaque[0].alphaTestEnable = false;
 		opaque[0].zWriteEnable = true;
 		opaque[0].zReadEnable = true;
 		opaque[0].zEqual = false;
 		// zpass
 		opaque[1] = opaque[0];
+		opaque[1].alphaTestEnable = true;
 		opaque[1].colorWriteEnable = false;
 
 		BaseEffect::Input::BufferControl transparent[2];
 		transparent[0].colorWriteEnable = true;
+		transparent[0].alphaTestEnable = false;
 		transparent[0].zWriteEnable = false;
 		transparent[0].zReadEnable = true;
 		transparent[0].zEqual = false;
@@ -794,6 +798,7 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors)
 
 		BaseEffect::Input::BufferControl foreground;
 		foreground.colorWriteEnable = true;
+		foreground.alphaTestEnable = false;
 		foreground.zWriteEnable = false;
 		foreground.zReadEnable = false;
 		foreground.zEqual = false;
@@ -806,7 +811,6 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors)
 		draw(transparentRenderBlocks,	transparent[0], transparent[1]);
 		draw(fgRenderBlocks,			foreground, foreground);
 	}
-
 }
 ////////////////////////////////////////////////
 

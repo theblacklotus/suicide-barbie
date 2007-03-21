@@ -23,7 +23,7 @@ namespace mutalisk { namespace data
 
 	struct scene
 	{
-		enum { Version = 0x0120 };
+		enum { Version = 0x0121 };
 
 		typedef std::string Ref;
 		typedef unsigned Id;
@@ -61,6 +61,7 @@ namespace mutalisk { namespace data
 			};
 			unsigned meshIndex;
 			array<Material> materials;
+			unsigned slice;
 		};
 
 		array<Ref> meshIds;

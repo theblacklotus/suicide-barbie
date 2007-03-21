@@ -16,6 +16,7 @@ struct RenderBlock
 	RenderableMesh const*	mesh;
 	unsigned				subset;
 
+	unsigned				slice;
 	float					cameraDistanceSq;
 	bool					hasZPass;
 };
@@ -130,7 +131,7 @@ struct blastRenderBlocks
 
 			RenderableMesh const* mesh = this->scene.mResources.meshes[actor.meshIndex].renderable.get();
 			float cameraDistanceSq = calcCameraDistanceSq(
-				this->scene.mState.matrices[this->scene.mState.actor2XformIndex[actor.id]].Move);				
+				this->scene.mState.matrices[this->scene.mState.actor2XformIndex[actor.id]].Move);
 
 			ASSERT(!actor.materials.empty());
 			/*renderBlocks.resize(renderBlocks.size() + actor.materials.size());
@@ -155,6 +156,7 @@ struct blastRenderBlocks
 				renderBlock.fx = mutalisk::effects::getByIndex(actor.materials[q].shaderIndex);
 				renderBlock.mesh = mesh;
 				renderBlock.subset = q;
+				renderBlock.slice = actor.slice;
 				renderBlock.cameraDistanceSq = cameraDistanceSq;
 				renderBlock.hasZPass = (zBufferOp == Shader::zboTwoPassReadWrite);
 
@@ -192,7 +194,11 @@ struct sortRenderBlocks
 	{
 		bool operator()(T const& l, T const& r) const
 		{
-			return (l.cameraDistanceSq > r.cameraDistanceSq);
+			if(l.slice > r.slice)
+				return true;
+			if(l.slice == r.slice)
+				return (l.cameraDistanceSq > r.cameraDistanceSq);
+			return false;
 		}
 	};
 	template <typename T>
@@ -200,7 +206,11 @@ struct sortRenderBlocks
 	{
 		bool operator()(T const& l, T const& r) const
 		{
-			return (l.cameraDistanceSq < r.cameraDistanceSq);
+			if(l.slice < r.slice)
+				return true;
+			if(l.slice == r.slice)
+				return (l.cameraDistanceSq < r.cameraDistanceSq);
+			return false;
 		}
 	};
 

@@ -171,6 +171,10 @@ void CommonEffectImpl::setupBuffers(BaseEffect::Input const& input)
 		device().SetRenderState(D3DRS_COLORWRITEENABLE, (gBufferControl.colorWriteEnable)? 
 			D3DCOLORWRITEENABLE_ALPHA|D3DCOLORWRITEENABLE_BLUE|D3DCOLORWRITEENABLE_GREEN|D3DCOLORWRITEENABLE_RED: 0);
 
+//	device().SetRenderState(D3DRS_ALPHATESTENABLE, bufferControl.alphaTestEnable);
+//	device().SetRenderState(D3DRS_ALPHAFUNC, );
+//	device().SetRenderState(D3DRS_ALPHAREF, 0x80);
+
 	if(gBufferControl.zWriteEnable != bufferControl.zWriteEnable || !gBufferControlInitialized)
 		device().SetRenderState(D3DRS_ZWRITEENABLE, bufferControl.zWriteEnable);
 
@@ -180,7 +184,7 @@ void CommonEffectImpl::setupBuffers(BaseEffect::Input const& input)
 	if(gBufferControl.zEqual != bufferControl.zEqual || !gBufferControlInitialized)
 		device().SetRenderState(D3DRS_ZFUNC, (bufferControl.zEqual)? D3DCMP_EQUAL: D3DCMP_LESSEQUAL);
 
-	gBufferControlInitialized = true;
+	gBufferControlInitialized = false;//true;
 	gBufferControl = *input.bufferControl;
 }
 

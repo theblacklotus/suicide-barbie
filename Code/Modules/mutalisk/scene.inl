@@ -100,6 +100,7 @@ inline template <typename In> In& operator>> (In& i, scene& data)
 				i >> data.actors[q].materials[w].shaderInput;
 				// data.actors[q].materials[w].inputIndex = i.readDword();
 			}
+			data.actors[q].slice = i.readDword();
 		}
 
 		// clips
@@ -173,6 +174,7 @@ inline template <typename Out> Out& operator<< (Out& o, scene const& data)
 				//o.writeDword(data.actors[q].materials[w].inputIndex);
 				o << data.actors[q].materials[w].shaderInput;
 			}
+			o.writeDword(data.actors[q].slice);
 		}
 
 		// clips

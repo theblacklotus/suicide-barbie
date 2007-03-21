@@ -72,15 +72,15 @@ namespace mutalisk {
         // operator[]
         reference operator[](size_type i) 
         {
-			if(empty()) return dummy;
             ASSERT(i < N && "out of range"); 
+			if(empty()) return dummy;
             return elems[i];
         }
         
         const_reference operator[](size_type i) const 
         {     
-			if(empty()) return dummy;
             ASSERT(i < N && "out of range"); 
+			if(empty()) return dummy;
             return elems[i]; 
         }
 

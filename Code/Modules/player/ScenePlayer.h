@@ -195,9 +195,12 @@ struct RenderableScene
 		mState.setClip(*mResources.animCharSet, clipIndex, looping);
 
 		ASSERT(mState.hierarchy);
-		mapNodesToHierarchy(*mState.hierarchy, &mBlueprint.lights[0], mBlueprint.lights.size(), mState.light2XformIndex);
-		mapNodesToHierarchy(*mState.hierarchy, &mBlueprint.cameras[0], mBlueprint.cameras.size(), mState.camera2XformIndex);
-		mapNodesToHierarchy(*mState.hierarchy, &mBlueprint.actors[0], mBlueprint.actors.size(), mState.actor2XformIndex);
+		if(!mBlueprint.lights.empty())
+			mapNodesToHierarchy(*mState.hierarchy, &mBlueprint.lights[0], mBlueprint.lights.size(), mState.light2XformIndex);
+		if(!mBlueprint.cameras.empty())
+			mapNodesToHierarchy(*mState.hierarchy, &mBlueprint.cameras[0], mBlueprint.cameras.size(), mState.camera2XformIndex);
+		if(!mBlueprint.actors.empty())
+			mapNodesToHierarchy(*mState.hierarchy, &mBlueprint.actors[0], mBlueprint.actors.size(), mState.actor2XformIndex);
 		
 		mState.bone2XformIndex.resize(mBlueprint.meshIds.size());
 		for(size_t q = 0; q < mBlueprint.meshIds.size(); ++q)

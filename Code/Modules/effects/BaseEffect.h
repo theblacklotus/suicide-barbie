@@ -89,6 +89,7 @@ public:
 		struct BufferControl
 		{
 			bool			colorWriteEnable;
+			bool			alphaTestEnable;
 			//bool			blendEnable;
 			bool			zWriteEnable;
 			bool			zReadEnable;
