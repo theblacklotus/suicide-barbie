@@ -5,6 +5,7 @@ scene.RootNode = {}
 scene.RootNode.blendOp = 'Lerp'
 scene.RootNode.zOp = 'ReadOnly'
 scene.RootNode.shader = 'unlit'
+--scene.RootNode.ambient = {1,1,1}
 
 scene.pPlane8 = {}
 scene.pPlane8.blendOp = 'Lerp'
