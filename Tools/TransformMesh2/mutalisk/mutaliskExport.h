@@ -442,7 +442,7 @@ inline void convertTexture(const std::string& dstName, const std::string& srcNam
 	PROCESS_INFORMATION procInfo;
 	STARTUPINFO startupInfo = { sizeof(startupInfo) };
 	DWORD result = 0;
-	std::string params = "\"" + std::string(exeDir) + "\" -8 -blend " + srcName + " " + outputFileName(dstName);
+	std::string params = "\"" + std::string(exeDir) + "\" -8 -blend -timestamp " + srcName + " " + outputFileName(dstName);
 	if (CreateProcessA(NULL, const_cast<char*>(params.c_str()), NULL, NULL, FALSE, CREATE_UNICODE_ENVIRONMENT, NULL, NULL, &startupInfo, &procInfo))
 	{
 		WaitForSingleObject(procInfo.hProcess, INFINITE);
