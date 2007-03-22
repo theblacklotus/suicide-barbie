@@ -259,10 +259,11 @@ void CommonEffectImpl::setupSurface(BaseEffect::Input const& input)
 			sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 			sceGuTexFilter(GU_LINEAR_MIPMAP_NEAREST, GU_LINEAR_MIPMAP_NEAREST);
 //			sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
+			sceGuEnable(GU_TEXTURE_2D);
 		}
 		else
 		{
-			printf("¤¤ no diffuse\n");
+			sceGuDisable(GU_TEXTURE_2D);
 		}
 	}
 	else
