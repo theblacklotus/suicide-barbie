@@ -12,7 +12,7 @@ _RunTime_
  ~	 CPU blur (optimize)
  ~	 GPU
 +	transparent objects support
-.	directional 3-color lighting (2 polar colors and 1 equator color)
+~	directional 3-color lighting (2 polar colors and 1 equator color)
 .	textcoordgen
  +	 scroll
  .	 envmap
@@ -29,8 +29,9 @@ _RunTime_
  .	 cube-to-SH									[dx9: only]
  .	 per-vertex SH lighting
 .	fix psp skinning
-.       timeline
-.   	timeline helper functions (show_scene, clear_framebuffer, clear_zbuffer, apply_postprocess, blink, ...) 
+~       timeline
+~   	timeline helper functions (show_scene, clear_framebuffer, clear_zbuffer, apply_postprocess, blink, ...) 
+.	alpha-ref
 
 
 _Mutalisk_
