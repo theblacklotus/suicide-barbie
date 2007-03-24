@@ -55,8 +55,8 @@ namespace mutalisk {
         typedef std::ptrdiff_t difference_type;
 
       public:
-          array(size_type n = 0) : elems(0) { resize(n); }
-		  array(array<T> const& c) :  elems(0) { assignArray(c); }
+          array(size_type n = 0) : elems(0), N(0) { resize(n); }
+		  array(array<T> const& c) :  elems(0), N(0) { assignArray(c); }
           ~array() { resize(0); }
     
         // iterator support
@@ -106,7 +106,7 @@ namespace mutalisk {
         
         const_reference back() const 
         { 
-            return elems[N-1]; 
+            return elems[N-1];
         }
 
 		// size
@@ -120,7 +120,9 @@ namespace mutalisk {
                 elems = new T[size];
             else
                 elems = 0;
+
             N = size;
+			ASSERT(elems || N == 0);
         }
         size_type size() const { return N; }
         bool empty() const { return (elems == 0); }

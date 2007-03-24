@@ -46,9 +46,9 @@ namespace mutant
 					THROW_MutantError( "Invalid write type id passed" );
 				}
 			} catch( EIoEof& ) {
-				THROW_MutantError( "unexpected end of file while writing `" + name + "'" );
+				THROW_MutantError( std::string("unexpected end of file while writing `") + name + std::string("'") );
 			} catch( EIoError& ) {
-				THROW_MutantError( "Error while writing `" + name + "'" );
+				THROW_MutantError( std::string("Error while writing `") + name + std::string("'") );
 			}
 			return ret_ptr(NULL);
 		}
@@ -95,7 +95,7 @@ namespace mutant
 					THROW_IoError( "Invalid magic token. File corrupted or unsupported version" );
 				}
 			} catch( EIoEof& ) {
-				THROW_MutantError( "unexpected end of file while reading `" + name + "'" );
+				THROW_MutantError( std::string("unexpected end of file while reading `") + name + std::string("'") );
 			} catch( EIoError& /*e*/ ) {
 				THROW_MutantError( std::string("Error while reading file. ") + e.what() );
 			}

@@ -16,12 +16,14 @@ struct Settings
 	bool forceIdentityActorsMatrix;
 	bool forceAnimatedActors;
 	bool forceAnimatedCamera;
+	bool debugHierarchy;
 
 	Settings()
 		: overrideCameraMethod(1)
 		, forceIdentityActorsMatrix(false)
 		, forceAnimatedActors(true)
 		, forceAnimatedCamera(true)
+		, debugHierarchy(false)
 	{}
 };
 static Settings gSettings;
@@ -77,7 +79,7 @@ static com_ptr<IDirect3DTexture9> prepare(RenderContext& rc, std::string fileNam
 {
 	com_ptr<IDirect3DTexture9> resource;
 	DX_MSG("load texture") = 
-		D3DXCreateTextureFromFileA(rc.device, fileName.c_str(), &resource);
+		D3DXCreateTextureFromFileA(rc.device, (getResourcePath() + fileName).c_str(), &resource);
 	return resource;
 }
 
@@ -810,6 +812,31 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors)
 		draw(bgRenderBlocks,			background, background);
 		draw(transparentRenderBlocks,	transparent[0], transparent[1]);
 		draw(fgRenderBlocks,			foreground, foreground);
+	}
+
+	if(gSettings.debugHierarchy)
+	{
+		static float radius = 0.1f;
+		static ID3DXMesh* mesh = 0;
+		if(!mesh)
+			D3DXCreateSphere(rc.device, radius, 8, 8, &mesh, 0); 
+		for(size_t q = 0; q < scene.mState.matrices.size(); ++q)
+		{
+			D3DXMATRIX world;
+			toNative(world, scene.mState.matrices[q]);
+	
+			D3DXMATRIX worldViewProj;
+			D3DXMatrixMultiply(&worldViewProj, &world, &rc.viewProjMatrix);
+			gContext.uberShader->SetMatrix("mWorld", &world);
+			gContext.uberShader->SetMatrix("mWorldViewProjection", &worldViewProj);
+
+			uint passes = 0;
+			gContext.uberShader->Begin(&passes, 0);
+			gContext.uberShader->BeginPass(0);
+			mesh->DrawSubset(0);
+			gContext.uberShader->EndPass();
+			gContext.uberShader->End();
+		}
 	}
 }
 ////////////////////////////////////////////////

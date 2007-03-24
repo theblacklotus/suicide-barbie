@@ -1,6 +1,25 @@
 #include "ScenePlayer.h"
 
 ////////////////////////////////////////////////
+std::string gResourcePath = "";
+void setResourcePath(std::string const& path)
+{
+	gResourcePath = path;
+}
+
+std::string getResourcePath()
+{
+	return gResourcePath;
+}
+
+std::auto_ptr<mutant::mutant_reader> createFileReader(std::string const& fileName)
+{
+	std::auto_ptr<mutant::binary_input> input = mutant::reader_factory::createInput(gResourcePath + fileName);
+	std::auto_ptr<mutant::mutant_reader> mutReader(new mutant::mutant_reader(input));
+	mutReader->enableLog(false);
+
+	return mutReader;
+}
 
 void CSkinnedAlgos::processSkinMesh(Vec3 const* srcPositions, Vec3 const* srcNormals, float const* srcWeights, unsigned char const* srcBoneIndices,
 	Vec3 *dstPositions, Vec3* dstNormals, size_t srcVertexStride, size_t srcWeightStride, size_t srcBoneIndexStride,

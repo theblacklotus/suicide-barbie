@@ -4,10 +4,10 @@
 #include "cfg.h"
 
 
-#define THROW_IoError(msg) ;
+#define THROW_IoError(msg) (ASSERT(!"IoError"));
 //throw( EIoError( IO_ERROR, msg ) );
 
-#define THROW_MutantError(msg) ;
+#define THROW_MutantError(msg) (ASSERT(!"MutantError"));
 // throw_mutant( msg );
 
 #endif

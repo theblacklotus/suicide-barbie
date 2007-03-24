@@ -213,14 +213,9 @@ struct RenderableScene
 	void process() { mState.process(mResources); }
 };
 
-static AP<mutant::mutant_reader> createFileReader(std::string fileName)
-{
-	AP<mutant::binary_input> input = mutant::reader_factory::createInput(fileName);
-	AP<mutant::mutant_reader> mutReader(new mutant::mutant_reader(input));
-	mutReader->enableLog(false);
-
-	return mutReader;
-}
+void setResourcePath(std::string const& path);
+std::string getResourcePath();
+AP<mutant::mutant_reader> createFileReader(std::string const& fileName);
 
 template <typename ResourceType>
 static AP<ResourceType> loadResource(std::string fileName)

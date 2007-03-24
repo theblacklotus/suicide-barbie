@@ -88,628 +88,290 @@ static bool gRenderDebugSkeleton = true;
 
 
 std::string gSceneFileName = "test_baked.msk";
-//std::string gSceneFileName = "test_texture.msk";
 
-//*
-std::string gAnimFileName = "guffy.man";
-std::string gCharName = "character";
-std::string gClipName = "LW Take 001";
-std::string gSkinFileName = "Model__Guffy.msh";
+//--------------------------------------------------------------------------------------
+//
+//--------------------------------------------------------------------------------------
+enum { FramesPerSecond = 30 };
+unsigned timeToFrame(float t) { return static_cast<unsigned>(floor(t*FramesPerSecond)); }
 
-/*/
-std::string gAnimFileName = "mutant1.man";
-std::string gCharName = "Mutant";
-std::string gClipName = "attack1";
-std::string gSkinFileName = "mutant1.msh";
-
-//*/
-
-
-std::auto_ptr<mutant::anim_character_set> loadAnimation(std::string const& fileName)
+template <typename Context>
+class Timeline
 {
-//	std::string fileName = "mutant1.man";
-//	std::string fileName = "guffy.man";
+public:
+	typename typedef void (Context::*TimelineFuncT)();
+	struct Item
+	{
+		enum nFlags { EachFrame = 0x00, Once = 0x01, AutoClear = 0x02,
+			Default = EachFrame|AutoClear };
+		unsigned startFrame;
+		TimelineFuncT func;
+		nFlags flags;
 
-	std::auto_ptr<mutant::binary_input> input = mutant::reader_factory::createInput( fileName );
-	mutant::mutant_reader mutReader( input );
-	mutReader.enableLog( false );
+		Item(unsigned sec = 0, int frame = -1, TimelineFuncT func_ = 0, nFlags flags_ = Default)
+		: func(func_), flags(flags_) { startFrame = (frame >= 0)? sec*FramesPerSecond + frame: ~0U; }
+	};
 
-	std::auto_ptr<mutant::anim_character_set> mutCharSet( new mutant::anim_character_set );
-	mutReader.read( *mutCharSet );
+	void addScript(Item items[])
+	{
+		unsigned itemCount = 0;
+		for(int q = 0; items[q].startFrame != ~0U; ++q)
+			++itemCount;
 
-	return mutCharSet;
-}
+		ASSERT(itemCount > 0);
+
+		ScriptT newScript(itemCount);
+		std::copy(items, items + itemCount, newScript.begin());
+		mScripts.push_back(std::make_pair(newScript, 0));
+	}
+
+	void update(Context& ctx, unsigned frame)
+	{
+		for(RunningScripts::iterator it = mScripts.begin(); it != mScripts.end(); ++it)
+		{
+			unsigned& currScriptIt = it->second;
+			if(currScriptIt == it->first.size())
+				continue;
+
+			unsigned nextScriptIt = currScriptIt;
+			if(frame >= it->first[currScriptIt].startFrame)
+			{
+				++nextScriptIt;
+				if(nextScriptIt < it->first.size() && frame >= it->first[nextScriptIt].startFrame)
+					currScriptIt = nextScriptIt;
+			}
+			else
+			{
+				if(nextScriptIt > 0)
+					--nextScriptIt;
+				if(frame < it->first[currScriptIt].startFrame)
+					currScriptIt = nextScriptIt;
+			}
+
+			TimelineFuncT func = it->first[currScriptIt].func;
+			ASSERT(func);
+			(ctx.*func)();
+		}
+	}
+
+private:
+	typedef std::vector<Item>											ScriptT;
+	typedef std::vector<std::pair<ScriptT, unsigned> >					RunningScripts;
+
+	RunningScripts	mScripts;
+};
 
 /*
-std::auto_ptr<mutant::simple_skinned> loadSkin(std::string fileName)
-{
-//	std::string fileName = "mutant1.msh";
-//	std::string fileName = "Model__Guffy.msh";
-//	std::string fileName = "Model__Gun_(1).msh";
-
-
-	std::auto_ptr<mutant::binary_input> input = mutant::reader_factory::createInput( fileName );
-	mutant::mutant_reader mutReader( input );
-	mutReader.enableLog( false );
-
-	std::auto_ptr<mutant::simple_skinned> mutSkinned( new mutant::simple_skinned );
-	mutReader.read( *mutSkinned );
-
-	return mutSkinned;
-}
-
-
-void skinToBuffers( mutant::simple_skinned& skin, void** vbuffer, void** ibuffer )
-{
-	*vbuffer = malloc( skin.vertexCount * sizeof(mutant::simple_skinned::Vec3) * 2 );
-	u8* vdst = reinterpret_cast<u8*>(*vbuffer);
-	for(size_t q = 0; q < skin.vertexCount; ++q)
-	{
-		memcpy( vdst, &skin.positions[q], sizeof(mutant::simple_skinned::Vec3) );
-		vdst += sizeof(mutant::simple_skinned::Vec3);
-		memcpy( vdst, &skin.normals[q], sizeof(mutant::simple_skinned::Vec3) );
-		vdst += sizeof(mutant::simple_skinned::Vec3);
-	}
-	memcpy( *vbuffer, skin.positions, skin.vertexCount * sizeof(mutant::simple_skinned::Vec3) );
-//	*vbuffer = (void*)skin.positions; // copy
-	*ibuffer = (void*)skin.indices;
-}
-
-typedef std::vector<std::pair<int, int> > BoneMapT;
-BoneMapT& mapSkinnedBonesToHierarchy(
-	mutant::simple_skinned::Bone* bones, size_t boneCount,
-	mutant::anim_hierarchy const& hierarchy,
-	BoneMapT& remapedBones )
-{
-	remapedBones.reserve( remapedBones.size() + boneCount );
-
-	for( size_t q = 0; q < boneCount; ++q )
-	{
-		unsigned boneId = 0;
-		std::string const& boneName = bones[q].name;
-
-		while( boneId < hierarchy.size() && hierarchy[ boneId ].name != boneName )
-			++boneId;
-
-		if( boneId == hierarchy.size() )
-			printf( "Couldn't find '%s' in hierarchy", boneName.c_str() );
-		else
-			remapedBones.push_back( std::make_pair( q, boneId ) );
-	}
-
-	return remapedBones;
-}
+	mCurrFrame = static_cast<unsigned>(floor(t * FramesPerSecond));
+	mCurrTime = t;
 */
-/*	
-void updateSkinMesh( mutant::simple_skinned& skin, BoneMapT& boneMap, CTransform::t_matrix const* data, float* vbuffer, size_t stride )
+
+class BaseDemoPlayer
 {
-//	CMeshSegment::TBoneMap const& boneIds = mSlotBuffer[segment]->bonesInCombination();
-	static std::vector<D3DXMATRIX> worldMatrices;
-	worldMatrices.resize( boneMap.size() );
+/*public:
+	// system interface
+	virtual void doFrame(float t);*/
 
-	unsigned i = 0;
-	BoneMapT::iterator bIdIt = boneMap.begin();
-	for( ; (i < boneMap.size()) && (bIdIt != boneMap.end()); ++bIdIt, ++i )
+public:
+	struct Scene
 	{
-		float* mat16 = skin.bones[ bIdIt->first ].matrix.data;
-		D3DXMATRIX m(
-			mat16[0], mat16[1], mat16[2], mat16[3],
-			mat16[4], mat16[5], mat16[6], mat16[7],
-			mat16[8], mat16[9], mat16[10], mat16[11],
-			mat16[12], mat16[13], mat16[14], mat16[15]
-		);
+		std::auto_ptr<mutalisk::data::scene>	blueprint;
+		mutable Dx9RenderableScene*				renderable;
+		mutable float							startTime;
+	};
 
-		CTransform::t_matrix const& src = data[ bIdIt->second ];
-		D3DXMATRIX animM(
-			src.Rot.Row[0].x, src.Rot.Row[1].x, src.Rot.Row[2].x, 0.0f,
-			src.Rot.Row[0].y, src.Rot.Row[1].y, src.Rot.Row[2].y, 0.0f,
-			src.Rot.Row[0].z, src.Rot.Row[1].z, src.Rot.Row[2].z, 0.0f,
-			src.Move.x, src.Move.y, src.Move.z, 1.0f
-		); 
+public:
+	void start() { onStart(); }
+protected:
+	virtual void onStart() = 0;
 
-		worldMatrices[i] = m * animM;
-//		worldMatrices[i] = animM * m;
+public:
+	// script interface
+	void clear() {}
+	void clearZ();
+	void clearColor() {}
+
+	Scene load(std::string const& sceneName);
+	void draw(Scene const& scene);
+	void pause(Scene const& scene) {}
+	void restart(Scene const& scene) {}
+	float sceneTime(Scene const& scene);
+
+	void blink() {}
+
+	//
+	unsigned frame() const { return mCurrFrame; }
+	float time() const { return mCurrTime; }
+
+protected:
+	void setTime(float t) { mCurrTime = t; mCurrFrame = timeToFrame(t); }
+
+private:
+//	typedef std::map<mutalisk::data::scene const*, RenderableScene*>	ScenesT;
+//	ScenesT			mScenes;
+	float			mCurrTime;
+	unsigned		mCurrFrame;
+
+public:
+	void platformSetup(IDirect3DDevice9& device, ID3DXEffect& defaultEffect)
+	{
+		renderContext.device = &device;	
+		renderContext.defaultEffect = &defaultEffect;
+		D3DXMatrixIdentity(&renderContext.viewProjMatrix);
+		D3DXMatrixIdentity(&renderContext.projMatrix);
 	}
 
-//	i = 0;
+protected:
+	RenderContext	renderContext;
+};
 
-	while( i < worldMatrices.size() )
-		D3DXMatrixIdentity( &worldMatrices[i++] );
-//		Mat34_setIdentity( &worldMatrices[i++] );
+void splitFilename(std::string const& fullPath, std::string& path, std::string& fileName)
+{
+	size_t offset0 = fullPath.find_last_of('/');
+	size_t offset1 = fullPath.find_last_of('\\');
 
-	for( size_t q = 0; q < skin.vertexCount; ++q )
-	{
-//		CTransform::t_vector pos( skin.positions[q].data[0], skin.positions[q].data[1], skin.positions[q].data[2] );
-//		CTransform::t_vector accum( 0.0f, 0.0f, 0.0f );
-		D3DXVECTOR3 pos( skin.positions[q].data[0], skin.positions[q].data[1], skin.positions[q].data[2] );
-		D3DXVECTOR3 accum( 0.0f, 0.0f, 0.0f );
-		float accumWeight = 0.0f;
-		const size_t weightsPerVertex = skin.weightsPerVertex;
-		for( size_t w = 0; w < weightsPerVertex; ++w )
-		{
-			unsigned short boneId = skin.boneIndices[q * skin.weightsPerVertex + w];
-			float boneWeight = skin.weights[q * skin.weightsPerVertex + w];
-			if( w != weightsPerVertex - 1 )
-				accumWeight += boneWeight;
-			else
-				boneWeight = 1.0f - accumWeight;
+	size_t offset = max(offset0, offset1);
+	if(offset == std::string::npos)
+		offset = min(offset0, offset1);
 
-			D3DXVECTOR3 v;
-			D3DXVec3TransformCoord( &v, &pos, &worldMatrices[boneId] );
-			accum += v * boneWeight;
+	path = "";
+	fileName = fullPath;
+	if(offset == std::string::npos)
+		return;
 
-//			Vec3 v;
-//			Vec3_setMat34MulVec3( &accum, &worldMatrices[boneId], &pos );
-//			Vec3_scale( &v, &v, boneWeight );
-//			Vec3_add( &accum, &accum, &v );
-			
-		}
-
-		vbuffer[0] = accum.x;
-		vbuffer[1] = accum.y;
-		vbuffer[2] = accum.z;
-		vbuffer = (float*)((u8*)vbuffer + stride);
-	}
+	++offset;
+	path = fullPath.substr(0, offset);
+	fileName = fullPath.substr(offset);
 }
 
-void updateSkinMesh2( mutant::simple_skinned& skin, BoneMapT& boneMap, CTransform::t_matrix const* data, float* vbuffer, size_t stride )
+BaseDemoPlayer::Scene BaseDemoPlayer::load(std::string const& sceneName)
 {
-	static std::vector<CTransform::t_matrix> worldMatrices;
-	worldMatrices.resize( boneMap.size() );
+	std::string path, fileName;
+	splitFilename(sceneName, path, fileName);
+	setResourcePath(path);
 
-	unsigned i = 0;
-	BoneMapT::iterator bIdIt = boneMap.begin();
-	for( ; (i < boneMap.size()) && (bIdIt != boneMap.end()); ++bIdIt, ++i )
-	{
-		float* mat16 = skin.bones[ bIdIt->first ].matrix.data;
-		CTransform::t_matrix m(
-			mat16[0], mat16[1], mat16[2], //mat16[3],
-			mat16[4], mat16[5], mat16[6], //mat16[7],
-			mat16[8], mat16[9], mat16[10], //mat16[11],
-			mat16[12], mat16[13], mat16[14] //mat16[15]
-		);
-		CTransform::t_matrix const& src = data[ bIdIt->second ];
-		CTransform::t_matrix animM(
-			src.Rot.Row[0].x, src.Rot.Row[1].x, src.Rot.Row[2].x,
-			src.Rot.Row[0].y, src.Rot.Row[1].y, src.Rot.Row[2].y,
-			src.Rot.Row[0].z, src.Rot.Row[1].z, src.Rot.Row[2].z,
-			src.Move.x, src.Move.y, src.Move.z
-			);
-//		worldMatrices[i] = m * animM;
-		Mat34_mul( &worldMatrices[i], &m, (Mat34*)&src );
-//		Mat34_mul( &worldMatrices[i], &m, (Mat34*)&animM );
-	}
-
-//	i = 0;
-
-	while( i < worldMatrices.size() )
-		Mat34_setIdentity( &worldMatrices[i++] );
-
-	for( size_t q = 0; q < skin.vertexCount; ++q )
-	{
-		CTransform::t_vector pos( skin.positions[q].data[0], skin.positions[q].data[1], skin.positions[q].data[2] );
-		CTransform::t_vector accum( 0.0f, 0.0f, 0.0f );
-		float accumWeight = 0.0f;
-		const size_t weightsPerVertex = skin.weightsPerVertex;
-		for( size_t w = 0; w < weightsPerVertex; ++w )
-		{
-			unsigned short boneId = skin.boneIndices[q * skin.weightsPerVertex + w];
-			float boneWeight = skin.weights[q * skin.weightsPerVertex + w];
-			if( w != weightsPerVertex - 1 )
-				accumWeight += boneWeight;
-			else
-				boneWeight = 1.0f - accumWeight;
-
-			CTransform::t_matrix& src = worldMatrices[boneId];
-			CTransform::t_matrix animTM(
-				src.Rot.Row[0].x, src.Rot.Row[1].x, src.Rot.Row[2].x,
-				src.Rot.Row[0].y, src.Rot.Row[1].y, src.Rot.Row[2].y,
-				src.Rot.Row[0].z, src.Rot.Row[1].z, src.Rot.Row[2].z,
-				src.Move.x, src.Move.y, src.Move.z
-				);
-
-			Vec3 v;
-			Vec3_setMat34MulVec3( &v, &animTM, &pos );//worldMatrices[boneId], &pos3 );
-//			Vec3_setMat34MulVec3( &v3, &worldMatrices[boneId], &pos3 );
-			Vec3_scale( &v, &v, boneWeight );
-			Vec3_add( &accum, &accum, &v );
-
-		}
-
-		vbuffer[0] = accum.x;
-		vbuffer[1] = accum.y;
-		vbuffer[2] = accum.z;
-		vbuffer = (float*)((u8*)vbuffer + stride);
-	}
+	Scene scene;
+	scene.blueprint = loadResource<mutalisk::data::scene>(fileName);
+	scene.renderable = prepare(renderContext, *scene.blueprint).release();
+	scene.startTime = -1.0f;
+	return scene;
 }
 
-void updateSkinMesh3( mutant::simple_skinned& skin, BoneMapT& boneMap, CTransform::t_matrix const* data, float* vbuffer, size_t stride )
+float BaseDemoPlayer::sceneTime(Scene const& scene)
 {
-	static std::vector<CTransform::t_matrix> worldMatrices;
-	worldMatrices.resize( boneMap.size() );
+	ASSERT(scene.startTime >= 0.0f);
+	return time() - scene.startTime;
+}
 
-	unsigned i = 0;
-	BoneMapT::iterator bIdIt = boneMap.begin();
-	for( ; (i < boneMap.size()) && (bIdIt != boneMap.end()); ++bIdIt, ++i )
-	{
-		float* mat16 = skin.bones[ bIdIt->first ].matrix.data;
-		D3DXMATRIX m(
-			mat16[0], mat16[1], mat16[2], mat16[3],
-			mat16[4], mat16[5], mat16[6], mat16[7],
-			mat16[8], mat16[9], mat16[10], mat16[11],
-			mat16[12], mat16[13], mat16[14], mat16[15]
-		);
+void BaseDemoPlayer::draw(Scene const& scene)
+{
+	if(scene.startTime <= 0.0f)
+		scene.startTime = time();
 
-		CTransform::t_matrix const& src = data[ bIdIt->second ];
-		D3DXMATRIX animM(
-			src.Rot.Row[0].x, src.Rot.Row[1].x, src.Rot.Row[2].x, 0.0f,
-			src.Rot.Row[0].y, src.Rot.Row[1].y, src.Rot.Row[2].y, 0.0f,
-			src.Rot.Row[0].z, src.Rot.Row[1].z, src.Rot.Row[2].z, 0.0f,
-			src.Move.x, src.Move.y, src.Move.z, 1.0f
-		);
-		D3DXMATRIX t = m * animM;
-//		worldMatrices[i] = m * animM;
+	ASSERT(scene.renderable);
+	::update(*scene.renderable, time() - scene.startTime);
+	::process(*scene.renderable);
+	::render(renderContext, *scene.renderable);
+}
 
-		worldMatrices[i] = CTransform::t_matrix(
-			t._11, t._12, t._13, 
-			t._21, t._22, t._23, 
-			t._31, t._32, t._33, 
-			t._41, t._42, t._43
-		);
-	}
-
-//	i = 0;
-
-	while( i < worldMatrices.size() )
-		Mat34_setIdentity( &worldMatrices[i++] );
-
-	for( size_t q = 0; q < skin.vertexCount; ++q )
-	{
-		CTransform::t_vector pos3( skin.positions[q].data[0], skin.positions[q].data[1], skin.positions[q].data[2] );
-		CTransform::t_vector accum3( 0.0f, 0.0f, 0.0f );
-		D3DXVECTOR3 pos( skin.positions[q].data[0], skin.positions[q].data[1], skin.positions[q].data[2] );
-		D3DXVECTOR3 accum( 0.0f, 0.0f, 0.0f );
-		float accumWeight = 0.0f;
-		const size_t weightsPerVertex = skin.weightsPerVertex;
-		for( size_t w = 0; w < weightsPerVertex; ++w )
-		{
-			unsigned short boneId = skin.boneIndices[q * skin.weightsPerVertex + w];
-			float boneWeight = skin.weights[q * skin.weightsPerVertex + w];
-			if( w != weightsPerVertex - 1 )
-				accumWeight += boneWeight;
-			else
-				boneWeight = 1.0f - accumWeight;
-
-			CTransform::t_matrix& src = worldMatrices[boneId];
-			D3DXMATRIX animM(
-				src.Rot.Row[0].x, src.Rot.Row[0].y, src.Rot.Row[0].z, 0.0f,
-				src.Rot.Row[1].x, src.Rot.Row[1].y, src.Rot.Row[1].z, 0.0f,
-				src.Rot.Row[2].x, src.Rot.Row[2].y, src.Rot.Row[2].z, 0.0f,
-				src.Move.x, src.Move.y, src.Move.z, 1.0f
-			); 
-			CTransform::t_matrix animTM(
-				src.Rot.Row[0].x, src.Rot.Row[1].x, src.Rot.Row[2].x,
-				src.Rot.Row[0].y, src.Rot.Row[1].y, src.Rot.Row[2].y,
-				src.Rot.Row[0].z, src.Rot.Row[1].z, src.Rot.Row[2].z,
-				src.Move.x, src.Move.y, src.Move.z
-				);
-
-			Vec3 v3;
-			Vec3_setMat34MulVec3( &v3, &animTM, &pos3 );//worldMatrices[boneId], &pos3 );
-//			Vec3_setMat34MulVec3( &v3, &worldMatrices[boneId], &pos3 );
-			Vec3_scale( &v3, &v3, boneWeight );
-			Vec3_add( &accum3, &accum3, &v3 );
-
-			D3DXVECTOR3 v;
-			D3DXVec3TransformCoord( &v, &pos, &animM );
-			accum += v * boneWeight;			
-		}
-
-		vbuffer[0] = accum3.x;
-		vbuffer[1] = accum3.y;
-		vbuffer[2] = accum3.z;
-		vbuffer = (float*)((u8*)vbuffer + stride);
-	}
+void BaseDemoPlayer::clearZ()
+{
+	DX_MSG("Depth clear") = 
+		renderContext.device->Clear(0, NULL, D3DCLEAR_ZBUFFER, D3DXCOLOR(0.0f,0.0f,0.0f,0.0f), 1.0f, 0);
 }
 
 
-void updateSkinMesh4( mutant::simple_skinned& skin, BoneMapT& boneMap, CTransform::t_matrix const* data, float* vbuffer, size_t stride )
+
+#ifndef AP
+#define AP_DEFINED_LOCALY
+#define AP std::auto_ptr
+#endif
+
+#define S_FUNC(f) (&SelfT::f)
+
+class TestDemo : public BaseDemoPlayer
 {
-	static std::vector<CTransform::t_matrix> worldMatrices;
-	worldMatrices.resize( boneMap.size() );
-
-	unsigned i = 0;
-	BoneMapT::iterator bIdIt = boneMap.begin();
-	for( ; (i < boneMap.size()) && (bIdIt != boneMap.end()); ++bIdIt, ++i )
+	typedef TestDemo				SelfT;
+//	typedef mutalisk::data::scene	SceneT;
+	typedef Timeline<SelfT>			TimelineT;
+	typedef TimelineT::Item			Item;
+	struct Scenes
 	{
-		float* mat16 = skin.bones[ bIdIt->first ].matrix.data;
-		CTransform::t_matrix tm(
-			mat16[0], mat16[4], mat16[8], //mat16[3],
-			mat16[1], mat16[5], mat16[9], //mat16[7],
-			mat16[2], mat16[6], mat16[10], //mat16[11],
+		Scene	logo;
+		Scene	flower;
+		Scene	phone0;
+		Scene	walk;
+	};
+	Scenes							scn;
+	TimelineT						timeline;
 
-			mat16[12], mat16[13], mat16[14] //mat16[15]
-		);
-		D3DXMATRIX m(
-			mat16[0], mat16[1], mat16[2], mat16[3],
-			mat16[4], mat16[5], mat16[6], mat16[7],
-			mat16[8], mat16[9], mat16[10], mat16[11],
-			mat16[12], mat16[13], mat16[14], mat16[15]
-		);
-
-		CTransform::t_matrix const& src = data[ bIdIt->second ];
-		CTransform::t_matrix animTM(
-			src.Rot.Row[0].x, src.Rot.Row[0].y, src.Rot.Row[0].z,
-			src.Rot.Row[1].x, src.Rot.Row[1].y, src.Rot.Row[1].z,
-			src.Rot.Row[2].x, src.Rot.Row[2].y, src.Rot.Row[2].z,
-			src.Move.x, src.Move.y, src.Move.z
-			);
-		D3DXMATRIX animM(
-			src.Rot.Row[0].x, src.Rot.Row[1].x, src.Rot.Row[2].x, 0.0f,
-			src.Rot.Row[0].y, src.Rot.Row[1].y, src.Rot.Row[2].y, 0.0f,
-			src.Rot.Row[0].z, src.Rot.Row[1].z, src.Rot.Row[2].z, 0.0f,
-			src.Move.x, src.Move.y, src.Move.z, 1.0f
-		);
-
-		D3DXMATRIX t = m * animM;
-		worldMatrices[i] = CTransform::t_matrix(
-			t._11, t._12, t._13, 
-			t._21, t._22, t._23, 
-			t._31, t._32, t._33, 
-			t._41, t._42, t._43
-		);
-		Vec3 t0, t1;
-		Vec3_setMat34MulVec3(&t0, &tm, &animTM.Move);
-		Vec3_setMat34MulVec3(&t1, &animTM, &tm.Move);
-
-
-		float a41 =
-			m._41 * animM._11 + 
-			m._42 * animM._21 +
-			m._43 * animM._31 +
-			m._44 * animM._41;
-		float a42 =
-			m._41 * animM._12 + 
-			m._42 * animM._22 +
-			m._43 * animM._32 +
-			m._44 * animM._42;
-		float a43 =
-			m._41 * animM._13 + 
-			m._42 * animM._23 +
-			m._43 * animM._33 +
-			m._44 * animM._43;
-
-		float a41_ =
-			tm.Move.x * animTM.Rot.Row[0].x + 
-			tm.Move.y * animTM.Rot.Row[1].x +
-			tm.Move.z * animTM.Rot.Row[2].x +
-			1.0f      * animTM.Move.x;
-		float a42_ =
-			tm.Move.x * animTM.Rot.Row[0].y + 
-			tm.Move.y * animTM.Rot.Row[1].y +
-			tm.Move.z * animTM.Rot.Row[2].y +
-			1.0f      * animTM.Move.y;
-		float a43_ =
-			tm.Move.x * animTM.Rot.Row[0].z + 
-			tm.Move.y * animTM.Rot.Row[1].z +
-			tm.Move.z * animTM.Rot.Row[2].z +
-			1.0f      * animTM.Move.z;
-
-//		Vec3_setMat34MulVec3(&t->Move, tm, &animTM->Move);
-//		Mat33_mul(&t->Rot, &t0->Rot, &t1->Rot);
-
-
-
-//void Mat34_mul(__reg("a2") Mat34* t, __reg("a0") Mat34* tm, __reg("a1") Mat34* animTM)
-//{
-//  Vec3_setMat34MulVec3(&t->Move, tm, &animTM->Move);
-//  Mat33_mul(&t->Rot, &t0->Rot, &t1->Rot);
-//
-//
-//}
-
-//		Mat34_mul( &worldMatrices[i], &tm, (Mat34*)&animTM );
-		Mat34_mul( &worldMatrices[i], (Mat34*)&src, &tm );
-		worldMatrices[i] = worldMatrices[i];
+public:
+	void doFrame(float t)
+	{
+		setTime(t);
+		timeline.update(*this, frame());
 	}
 
-//	i = 0;
-
-	while( i < worldMatrices.size() )
-		Mat34_setIdentity( &worldMatrices[i++] );
-
-	for( size_t q = 0; q < skin.vertexCount; ++q )
+protected:
+	virtual void onStart()
 	{
-		CTransform::t_vector pos3( skin.positions[q].data[0], skin.positions[q].data[1], skin.positions[q].data[2] );
-		CTransform::t_vector accum3( 0.0f, 0.0f, 0.0f );
-		D3DXVECTOR3 pos( skin.positions[q].data[0], skin.positions[q].data[1], skin.positions[q].data[2] );
-		D3DXVECTOR3 accum( 0.0f, 0.0f, 0.0f );
-		float accumWeight = 0.0f;
-		const size_t weightsPerVertex = skin.weightsPerVertex;
-		for( size_t w = 0; w < weightsPerVertex; ++w )
-		{
-			unsigned short boneId = skin.boneIndices[q * skin.weightsPerVertex + w];
-			float boneWeight = skin.weights[q * skin.weightsPerVertex + w];
-			if( w != weightsPerVertex - 1 )
-				accumWeight += boneWeight;
-			else
-				boneWeight = 1.0f - accumWeight;
+		{Item items[] = {
+			Item(0,		0,	S_FUNC(logo)),
+			Item(9,		20,	S_FUNC(logo_to_flower)),
+			Item(12,	15,	S_FUNC(flower)),
+			Item(26,	18,	S_FUNC(flower_to_phone0)),
+			Item(32,	0,	S_FUNC(phone0)),
+			Item(34,	12,	S_FUNC(walk)),
+			Item()
+		};
+		timeline.addScript(items);}
 
-			CTransform::t_matrix& src = worldMatrices[boneId];
-			D3DXMATRIX animM(
-				src.Rot.Row[0].x, src.Rot.Row[0].y, src.Rot.Row[0].z, 0.0f,
-				src.Rot.Row[1].x, src.Rot.Row[1].y, src.Rot.Row[1].z, 0.0f,
-				src.Rot.Row[2].x, src.Rot.Row[2].y, src.Rot.Row[2].z, 0.0f,
-				src.Move.x, src.Move.y, src.Move.z, 1.0f
-			); 
-			CTransform::t_matrix animTM(
-				src.Rot.Row[0].x, src.Rot.Row[1].x, src.Rot.Row[2].x,
-				src.Rot.Row[0].y, src.Rot.Row[1].y, src.Rot.Row[2].y,
-				src.Rot.Row[0].z, src.Rot.Row[1].z, src.Rot.Row[2].z,
-				src.Move.x, src.Move.y, src.Move.z
-				);
-
-			Vec3 v3;
-//			Vec3_setMat34MulVec3( &v3, &animTM, &pos3 );//worldMatrices[boneId], &pos3 );
-			Vec3_setMat34MulVec3( &v3, &worldMatrices[boneId], &pos3 );
-			Vec3_scale( &v3, &v3, boneWeight );
-			Vec3_add( &accum3, &accum3, &v3 );
-
-			D3DXVECTOR3 v;
-			D3DXVec3TransformCoord( &v, &pos, &animM );
-			accum += v * boneWeight;			
-		}
-
-		vbuffer[0] = accum3.x;
-		vbuffer[1] = accum3.y;
-		vbuffer[2] = accum3.z;
-		vbuffer = (float*)((u8*)vbuffer + stride);
-	}
-}*/
-
-/*void updateSkinMesh5( mutant::simple_skinned& skin, BoneMapT& boneMap, CTransform::t_matrix const* data, float* vbuffer, size_t stride )
-{
-	static std::vector<CTransform::t_matrix> worldMatrices;
-	worldMatrices.resize( boneMap.size() );
-
-	unsigned i = 0;
-	BoneMapT::iterator bIdIt = boneMap.begin();
-	for( ; (i < boneMap.size()) && (bIdIt != boneMap.end()); ++bIdIt, ++i )
-	{
-		float* mat16 = skin.bones[ bIdIt->first ].matrix.data;
-		CTransform::t_matrix tm( // new-age wants transposed matrix
-			mat16[0], mat16[4], mat16[8],
-			mat16[1], mat16[5], mat16[9],
-			mat16[2], mat16[6], mat16[10],
-			mat16[12], mat16[13], mat16[14]
-		);
-		worldMatrices[i] = tm;
-		Mat34_mul( &worldMatrices[i], (Mat34*)&data[ bIdIt->second ], &tm );
-		worldMatrices[i] = worldMatrices[i];
+		scn.logo = load("logo\\dx9\\logo.msk");
+		scn.flower = load("flower\\dx9\\flower.msk");
+		scn.phone0 = load("telephone_s1\\dx9\\telephone_s1.msk");
+		scn.walk = load("walk01\\dx9\\walk01.msk");
 	}
 
-	while( i < worldMatrices.size() )
-		Mat34_setIdentity( &worldMatrices[i++] );
-
-//	i = 0;
-//	static unsigned x = 16;
-//	bIdIt = boneMap.begin();
-//	for( ; (i < boneMap.size()) && (bIdIt != boneMap.end()); ++bIdIt, ++i )
-//		if(bIdIt->first != x)
-//			Mat34_setIdentity( &worldMatrices[i] );
-
-	for( size_t q = 0; q < skin.vertexCount; ++q )
+	void logo()
 	{
-		CTransform::t_vector pos3( skin.positions[q].data[0], skin.positions[q].data[1], skin.positions[q].data[2] );
-		CTransform::t_vector nrm3( skin.normals[q].data[0], skin.normals[q].data[1], skin.normals[q].data[2] );
-		CTransform::t_vector accumP3( 0.0f, 0.0f, 0.0f ), accumN3( 0.0f, 0.0f, 0.0f );
-		float accumWeight = 0.0f;
-		const size_t weightsPerVertex = skin.weightsPerVertex;
-		for( size_t w = 0; w < weightsPerVertex; ++w )
-		{
-			unsigned short boneId = skin.boneIndices[q * skin.weightsPerVertex + w];
-			float boneWeight = skin.weights[q * skin.weightsPerVertex + w];
-			if( w != weightsPerVertex - 1 )
-				accumWeight += boneWeight;
-			else
-				boneWeight = 1.0f - accumWeight;
-
-			Vec3 v3;
-			Vec3_setMat34MulVec3( &v3, &worldMatrices[boneId], &pos3 );
-			Vec3_scale( &v3, &v3, boneWeight );
-			Vec3_add( &accumP3, &accumP3, &v3 );
-
-			Vec3 n3;
-			Vec3_setMat33MulVec3( &n3, &worldMatrices[boneId].Rot, &nrm3 );
-			Vec3_scale( &n3, &n3, boneWeight );
-			Vec3_add( &accumN3, &accumN3, &n3 );
-		}
-
-		vbuffer[0] = accumP3.x;
-		vbuffer[1] = accumP3.y;
-		vbuffer[2] = accumP3.z;
-
-		vbuffer[3] = accumN3.x;
-		vbuffer[4] = accumN3.y;
-		vbuffer[5] = accumN3.z;
-
-		vbuffer = (float*)((u8*)vbuffer + stride);
+		draw(scn.logo);
 	}
-}
 
-void copySkinMesh( mutant::simple_skinned& skin, float* vbuffer, size_t stride )
-{
-	for( size_t q = 0; q < skin.vertexCount; ++q )
+	void logo_to_flower()
 	{
-		CTransform::t_vector pos3( skin.positions[q].data[0], skin.positions[q].data[1], skin.positions[q].data[2] );
-		CTransform::t_vector nrm3( skin.normals[q].data[0], skin.normals[q].data[1], skin.normals[q].data[2] );
-
-		vbuffer[0] = pos3.x;
-		vbuffer[1] = pos3.y;
-		vbuffer[2] = pos3.z;
-
-		vbuffer[3] = nrm3.x;
-		vbuffer[4] = nrm3.y;
-		vbuffer[5] = nrm3.z;
-
-		vbuffer = (float*)((u8*)vbuffer + stride);
+		draw(scn.logo);
+		clearZ();
+		draw(scn.flower);
 	}
-}
 
-
-std::auto_ptr<mutant::anim_character_set> animCharSet;
-std::auto_ptr<mutant::simple_skinned> skin;
-float* vbuffer;
-void* ibuffer;
-BoneMapT boneMap;
-CTransformArrayAnimator xformArrayAnimator;
-
-typedef std::vector<CTransform> TransformsT;
-typedef std::vector<CTransform::t_matrix> MatricesT;
-TransformsT transforms;
-MatricesT matrices;
-
-template <typename Device>
-void updateAnim( Device* d )
-{
-	static float val = 0.0f;
-	val++;
-	if( animCharSet.get() )
+	void flower()
 	{
-		xformArrayAnimator.updateTransforms( (float)val * 0.003f,
-			transforms.begin(), transforms.end() );
-
-//		mutant::anim_character& animChar = (*animCharSet)["Mutant"];
-		mutant::anim_character& animChar = (*animCharSet)[gCharName];
-		mutant::anim_hierarchy& charHierarchy = animChar.hierarchy( mutant::sTypeNames::HIERARCHY_DEFAULT ) ;
-		CAnimatorAlgos::transformHierarchy(
-			matrices.begin(), matrices.end(),
-			transforms.begin(), charHierarchy );
+		draw(scn.flower);
 	}
-}
-		
-template <typename Device>
-void renderAnim( Device* d )
-{
-	if( animCharSet.get() )
+
+	void flower_to_phone0()
 	{
-		if(!transforms.empty())
-			updateSkinMesh5( *skin, boneMap, &*matrices.begin(), vbuffer, sizeof(float)*6 );
-		else
-			copySkinMesh( *skin, vbuffer, sizeof(float)*6 );
-
-		d->SetFVF(D3DFVF_XYZ|D3DFVF_NORMAL);
-		d->DrawIndexedPrimitiveUP( D3DPT_TRIANGLELIST, 
-			0, 
-			skin->vertexCount,
-			skin->indexCount / 3,
-			ibuffer,
-			D3DFMT_INDEX16,
-			vbuffer,
-			sizeof(float)*6 );
+		draw(scn.phone0);
+		clearZ();
+		draw(scn.flower);
 	}
-}
-*/
+
+	void phone0()
+	{
+		draw(scn.phone0);
+	}
+
+	void walk()
+	{
+		draw(scn.walk);
+	}
+};
+
+#ifdef AP_DEFINED_LOCALY
+#undef AP
+#endif
+
+std::auto_ptr<TestDemo> gDemo;
 
 //--------------------------------------------------------------------------------------
 // Global variables
@@ -1044,39 +706,12 @@ HRESULT CALLBACK OnCreateDevice( IDirect3DDevice9* pd3dDevice, const D3DSURFACE_
 
 //---
 
-	scenePlayerApp.reset(new ScenePlayerApp(gSceneFileName, *pd3dDevice, *g_pEffect));
+//	scenePlayerApp.reset(new ScenePlayerApp(gSceneFileName, *pd3dDevice, *g_pEffect));
+	gDemo.reset(new TestDemo());
+	gDemo->platformSetup(*pd3dDevice, *g_pEffect);
+	gDemo->start();
+
 	scenePlayerTime = 0.0;
-
-//---
-/*
-	animCharSet = loadAnimation(gAnimFileName);
-//	mutant::anim_character& animChar = (*animCharSet)["Mutant"];
-//	mutant::anim_character& animChar = (*animCharSet)["character"];
-	mutant::anim_character& animChar = (*animCharSet)[gCharName];
-	mutant::anim_hierarchy& charHierarchy = animChar.hierarchy( mutant::sTypeNames::HIERARCHY_DEFAULT ) ;
-	xformArrayAnimator.createFromClip(
-//		animChar["attack1"], charHierarchy );
-//		animChar["LW Take 001"], charHierarchy );
-		animChar[gClipName], charHierarchy );
-
-	skin = loadSkin(gSkinFileName);
-
-	if(skin.get())
-		skinToBuffers( *skin, (void**)&vbuffer, &ibuffer );
-
-	if(gEnableAnimations)
-	{
-		mapSkinnedBonesToHierarchy( skin->bones, skin->boneCount, charHierarchy, boneMap );
-		transforms.resize( charHierarchy.size(), CTransform::identity() );
-		matrices.resize( charHierarchy.size() );
-	}
-
-	if(!gLoadSkin)
-		skin.release();
-
-//---
-*/
-
 
     return S_OK;
 }
@@ -1357,12 +992,14 @@ void CALLBACK OnFrameRender( IDirect3DDevice9* pd3dDevice, double fTime, float f
 		if(scenePlayerTime - fElapsedTime < scenePlayerKey[1] && scenePlayerTime >= scenePlayerKey[1])
 			scenePlayerTime = scenePlayerKey[0];
 
-		scenePlayerApp->setViewMatrix(mView);
+/*		scenePlayerApp->setViewMatrix(mView);
 		scenePlayerApp->setProjMatrix(mProj);
 		scenePlayerApp->update(static_cast<float>(scenePlayerTime));
 		scenePlayerApp->process();
 		static int maxActors = -1;
-		scenePlayerApp->render(maxActors);
+		scenePlayerApp->render(maxActors);*/
+		gDemo->doFrame(scenePlayerTime);
+
 
 #if 0
         // Apply the technique contained in the effect 
@@ -1418,6 +1055,7 @@ void RenderText( double fTime )
     
     txtHelper.SetForegroundColor( D3DXCOLOR( 1.0f, 1.0f, 1.0f, 1.0f ) );
     txtHelper.DrawFormattedTextLine( L"fTime: %0.1f  sin(fTime): %0.4f", fTime, sin(fTime) );
+	txtHelper.DrawFormattedTextLine( L"demoTime: %0.1f ", scenePlayerTime );
     
     // Draw help
     if( g_bShowHelp )

@@ -33,16 +33,16 @@ double const ANIM_SAMPLING_FREQ = 1.0f / 30.0;
 #include <string>
 #include <functional>
 
-#include <mutant/mutant.h>
-#include <mutant/writer.h>
-#include <mutant/io_factory.h>
-
 #include <mutalisk/mutalisk.h>
 #include <mutalisk/types.h>
 #include <mutalisk/utility.h>
 #include <mutalisk/dx9/dx9.h>
 #include <mutalisk/psp/psp.h>
 #include <mutalisk/psp/pspXcompile.h>
+
+#include <mutant/mutant.h>
+#include <mutant/writer.h>
+#include <mutant/io_factory.h>
 
 #include <effects/library.h>
 
@@ -666,26 +666,12 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 			asFloat[i++] = mesh.vertices[q].pos[2]* 100.0f;
 			asFloat[i++] = mesh.vertices[q].pos[0]* 100.0f;
 			asFloat[i++] = mesh.vertices[q].pos[1]* 100.0f;
-			asFloat[i++] = mesh.vertices[q].normal[0]* 1.0f;
-			asFloat[i++] = mesh.vertices[q].normal[1]* 1.0f;
-			asFloat[i++] = mesh.vertices[q].normal[2]* 1.0f;
-			if(mesh.hasVertexColor)
-				asDword[i++] = mesh.vertices[q].color;
-			asFloat[i++] = mesh.vertices[q].uvw[0];
-			asFloat[i++] = mesh.vertices[q].uvw[1];
 		}
 		else
 		{
 			asFloat[i++] = mesh.vertices[q].pos[0];
 			asFloat[i++] = mesh.vertices[q].pos[1];
 			asFloat[i++] = mesh.vertices[q].pos[2];
-			asFloat[i++] = mesh.vertices[q].normal[0];
-			asFloat[i++] = mesh.vertices[q].normal[1];
-			asFloat[i++] = mesh.vertices[q].normal[2];
-			if(mesh.hasVertexColor)
-				asDword[i++] = mesh.vertices[q].color;
-			asFloat[i++] = mesh.vertices[q].uvw[0];
-			asFloat[i++] = mesh.vertices[q].uvw[1];
 		}
 
 		size_t weightsPerVertex = data.skinInfo->weightsPerVertex;
@@ -707,12 +693,21 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 			asDword[i] |= ((0xff & boneIndex) << (w * 8));
 		}
 		++i;
+
+		asFloat[i++] = mesh.vertices[q].normal[0];
+		asFloat[i++] = mesh.vertices[q].normal[1];
+		asFloat[i++] = mesh.vertices[q].normal[2];
+		if(mesh.hasVertexColor)
+			asDword[i++] = mesh.vertices[q].color;
+		asFloat[i++] = mesh.vertices[q].uvw[0];
+		asFloat[i++] = mesh.vertices[q].uvw[1];
 	}
 }
 
 void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 {
 	size_t weightsPerVertex = getWeightsPerVertex(mesh);
+	assert(weightsPerVertex <= 4);
 
 	data.vertexCount = mesh.vertices.size();
 	data.vertexDecl = 
@@ -2293,6 +2288,22 @@ std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode
 					deg2rad(rz(curTime)));
 			}
 
+			KFbxXMatrix preRotation;
+			{
+				KFbxVector4 lTmpVector;		
+				lTmpVector = pNode->GetPreRotation(KFbxNode::eSOURCE_SET);
+
+				KFbxVector4 rotateAroundX(lTmpVector[0], 0, 0);
+				KFbxVector4 rotateAroundY(0, lTmpVector[1], 0);
+				KFbxVector4 rotateAroundZ(0, 0, lTmpVector[2]);
+
+				KFbxXMatrix r[3];
+				r[0].SetR(rotateAroundX);
+				r[1].SetR(rotateAroundY);
+				r[2].SetR(rotateAroundZ);
+				preRotation = r[2] * r[1] * r[0];
+			}
+
 			KFbxVector4 rotateAroundX(rx(curTime), 0, 0);
 			KFbxVector4 rotateAroundY(0, ry(curTime), 0);
 			KFbxVector4 rotateAroundZ(0, 0, rz(curTime));
@@ -2329,6 +2340,7 @@ std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode
 					fbxRotationMatrix = fbxRotationAroundAxis[0] * fbxRotationAroundAxis[1] * fbxRotationAroundAxis[2];
 				break;
 			}
+			fbxRotationMatrix = preRotation * fbxRotationMatrix;
 
 			KFbxQuaternion quatRotation = fbxRotationMatrix.GetQ();
 			quat.x = static_cast<float>(quatRotation[0]);
