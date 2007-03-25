@@ -1,2 +1,2 @@
-start usbhostfs_pc ../Code/Tests Data
+start usbhostfs_pc -d ../Code/Tests Data
 pcterm -p 10000 localhost

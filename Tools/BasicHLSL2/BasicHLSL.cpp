@@ -30,12 +30,6 @@
 #include <player/ScenePlayer.h>
 #include <player/dx9/dx9ScenePlayer.h>
 
-//#include "Transform.h"
-//#include "animator/Animators.h"
-//#include "animator/AnimatorAlgos.h"
-
-//#include "ScenePlayer.h"
-
 
 struct ScenePlayerApp
 {
@@ -43,7 +37,6 @@ struct ScenePlayerApp
 	{
 		renderContext.device = &device;	
 		renderContext.defaultEffect = &defaultEffect;
-//		renderContext.viewProjMatrix = CTransform::identity().matrix();
 		D3DXMatrixIdentity(&renderContext.viewProjMatrix);
 		D3DXMatrixIdentity(&renderContext.projMatrix);
 
@@ -161,17 +154,8 @@ private:
 	RunningScripts	mScripts;
 };
 
-/*
-	mCurrFrame = static_cast<unsigned>(floor(t * FramesPerSecond));
-	mCurrTime = t;
-*/
-
 class BaseDemoPlayer
 {
-/*public:
-	// system interface
-	virtual void doFrame(float t);*/
-
 public:
 	struct Scene
 	{
