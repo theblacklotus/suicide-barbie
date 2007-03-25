@@ -2,6 +2,9 @@
 #define MUTALISK__TIMELINE_H_
 
 #include "cfg.h"
+#include <vector>
+#include <utility>
+#include <math.h>
 
 namespace mutalisk
 {
@@ -12,7 +15,7 @@ namespace mutalisk
 	class Timeline
 	{
 	public:
-		typename typedef void (Context::*TimelineFuncT)();
+		typedef void (Context::*TimelineFuncT)();
 		struct Item
 		{
 			enum nFlags { EachFrame = 0x00, Once = 0x01, AutoClear = 0x02,
@@ -26,6 +29,13 @@ namespace mutalisk
 			: func(func_), flags(flags_) { startFrame = (frame >= 0)? sec*FramesPerSecond + frame: ~0U; }
 		};
 
+	private:
+		typedef std::vector<Item>							ScriptT;
+		typedef std::vector<std::pair<ScriptT, unsigned> >	RunningScripts;
+
+		RunningScripts	mScripts;
+
+	public:
 		void addScript(Item items[])
 		{
 			unsigned itemCount = 0;
@@ -41,7 +51,7 @@ namespace mutalisk
 
 		void update(Context& ctx, unsigned frame)
 		{
-			for(RunningScripts::iterator it = mScripts.begin(); it != mScripts.end(); ++it)
+			for(typename RunningScripts::iterator it = mScripts.begin(); it != mScripts.end(); ++it)
 			{
 				unsigned& currScriptIt = it->second;
 				if(currScriptIt == it->first.size())
@@ -67,12 +77,6 @@ namespace mutalisk
 				(ctx.*func)();
 			}
 		}
-
-	private:
-		typedef std::vector<Item>							ScriptT;
-		typedef std::vector<std::pair<ScriptT, unsigned> >	RunningScripts;
-
-		RunningScripts	mScripts;
 	};
 
 } // namespace mutalisk

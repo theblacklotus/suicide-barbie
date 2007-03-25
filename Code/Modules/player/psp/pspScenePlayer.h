@@ -13,6 +13,9 @@
 #include "animator/Animators.h"
 #include "animator/AnimatorAlgos.h"
 
+namespace mutalisk
+{
+
 #ifndef AP
 #define AP_DEFINED_LOCALY
 #define AP std::auto_ptr
@@ -68,5 +71,6 @@ void render(RenderContext& rc, RenderableScene const& scene, int maxActors = -1)
 #ifdef AP_DEFINED_LOCALY
 #undef AP
 #endif
+} // namespace mutalisk
 
 #endif // NEWAGE_PSP_SCENEPLAYER_H_

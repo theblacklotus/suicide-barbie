@@ -3,8 +3,6 @@
 
 #include "cfg.h"
 #include "platform.h"
-#include "ScenePlayer.h"
-#include "dx9/dx9ScenePlayer.h"
 #include <mutalisk/mutalisk.h>
 
 namespace mutalisk
@@ -15,17 +13,19 @@ namespace mutalisk
 		struct Scene
 		{
 			std::auto_ptr<mutalisk::data::scene>	blueprint;
-			mutable Dx9RenderableScene*				renderable;
+			mutable RenderableSceneT*				renderable;
 			mutable float							startTime;
 		};
 
 	public:
+		virtual ~BaseDemoPlayer() {}
+
 		// script interface
 		void clear();
 		void clearZ();
 		void clearColor();
 
-		Scene load(std::string const& sceneName);
+		Scene const& load(Scene& scene, std::string const& sceneName);
 		void draw(Scene const& scene);
 		void pause(Scene const& scene) {}
 		void restart(Scene const& scene) {}
@@ -40,17 +40,23 @@ namespace mutalisk
 	public:
 		// system interface
 		void setTime(float t);
+		void setPath(std::string const& pathPrefix);
+#if defined(MUTALISK_DX9)
 		void platformSetup(IDirect3DDevice9& device, ID3DXEffect& defaultEffect);
+#elif defined(MUTALISK_PSP)
+		void platformSetup();
+#endif
 		void start() { onStart(); }
 
 	protected:
 		virtual void onStart() = 0;
 
 	protected:
-		RenderContext	renderContext;
+		RenderContextT	renderContext;
 	private:
 		float			mCurrTime;
 		unsigned		mCurrFrame;
+		std::string		mPathPrefix;
 	};
 
 } // namespace mutalisk

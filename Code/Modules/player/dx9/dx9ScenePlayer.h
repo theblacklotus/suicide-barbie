@@ -7,7 +7,6 @@
 #include <d3dx9.h>
 #include <dxerr.h>
 
-#include "dx9Platform.h"
 #include <mutalisk/mutalisk.h>
 
 #include "animator/Animators.h"
@@ -15,11 +14,12 @@
 
 #include "../ScenePlayer.h"
 
+namespace mutalisk
+{
 #ifndef AP
 #define AP_DEFINED_LOCALY
 #define AP std::auto_ptr
 #endif
-
 
 struct RenderContext
 {
@@ -74,9 +74,9 @@ void update(Dx9RenderableScene& scene, float deltaTime);
 void process(Dx9RenderableScene& scene);
 void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors = -1);
 
-
 #ifdef AP_DEFINED_LOCALY
 #undef AP
 #endif
+} // namespace mutalisk
 
 #endif // NEWAGE_DX9_SCENEPLAYER_H_

@@ -194,10 +194,10 @@ struct sortRenderBlocks
 	{
 		bool operator()(T const& l, T const& r) const
 		{
-			if(l.slice > r.slice)
+			if(l.slice < r.slice)
 				return true;
 			if(l.slice == r.slice)
-				return (l.cameraDistanceSq > r.cameraDistanceSq);
+				return (l.cameraDistanceSq < r.cameraDistanceSq);
 			return false;
 		}
 	};
@@ -206,10 +206,10 @@ struct sortRenderBlocks
 	{
 		bool operator()(T const& l, T const& r) const
 		{
-			if(l.slice < r.slice)
+			if(l.slice > r.slice)
 				return true;
 			if(l.slice == r.slice)
-				return (l.cameraDistanceSq < r.cameraDistanceSq);
+				return (l.cameraDistanceSq > r.cameraDistanceSq);
 			return false;
 		}
 	};

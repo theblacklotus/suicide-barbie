@@ -545,6 +545,19 @@ void blitMesh(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 	blitBaseMesh(mesh, data);
 }
 
+namespace {
+	size_t guVertexSize(unsigned int vertexDecl, unsigned weights = 0)
+	{
+		unsigned elements = 0;
+		if(vertexDecl & GU_VERTEX_32BITF) elements += 3;
+		if(vertexDecl & GU_NORMAL_32BITF) elements += 3;
+		if(vertexDecl & GU_TEXTURE_32BITF) elements += 2;
+		if(vertexDecl & GU_COLOR_8888) elements += 1;
+		if(vertexDecl & GU_WEIGHT_32BITF) elements += weights;
+		return elements * sizeof(float);
+	}
+}
+
 void blitMesh(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 {
 	data.vertexDecl =
@@ -553,7 +566,7 @@ void blitMesh(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 		((mesh.hasVertexColor)? GU_COLOR_8888: 0) |
 		GU_TEXTURE_32BITF
 		;
-	data.vertexStride = sizeof(float) * (3+3+2);
+	data.vertexStride = guVertexSize(data.vertexDecl);
 	data.skinInfo = 0;
 
 //	blitBaseMesh(mesh, data);
@@ -724,7 +737,7 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 	//	float x,y,z;
 	// };
 	
-	data.vertexStride = sizeof(float) * 6 + sizeof(float) * weightsPerVertex;
+	data.vertexStride = guVertexSize(data.vertexDecl, weightsPerVertex);
 	data.vertexDataSize = data.vertexCount * data.vertexStride;
 	data.vertexData = new byte[data.vertexDataSize];
 

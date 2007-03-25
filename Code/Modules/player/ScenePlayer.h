@@ -14,6 +14,8 @@
 #include "animator/Animators.h"
 #include "animator/AnimatorAlgos.h"
 
+namespace mutalisk
+{
 #ifndef AP
 #define AP_DEFINED_LOCALY
 #define AP std::auto_ptr
@@ -242,7 +244,7 @@ static AP<mutant::anim_character_set> loadResource(std::string fileName)
 template <>
 static AP<mutalisk::data::texture> loadResource(std::string fileName)
 {
-	AP<mutant::binary_input> input = AP<mutant::binary_input>(new file_input(fileName));
+	AP<mutant::binary_input> input = AP<mutant::binary_input>(new file_input(getResourcePath() + fileName));
 	AP<mutant::mutant_reader> reader(new mutant::mutant_reader(input));
 	reader->enableLog(false);
 
@@ -256,5 +258,6 @@ static AP<mutalisk::data::texture> loadResource(std::string fileName)
 #ifdef AP_DEFINED_LOCALY
 #undef AP
 #endif
+} // namespace mutalisk
 
 #endif // NEWAGE_SCENEPLAYER_H_

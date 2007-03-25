@@ -6,9 +6,11 @@
 #include <effects/Library.h>
 #include <effects/BaseEffect.h>
 
-using namespace mutalisk;
-using namespace mutalisk::effects;
+namespace mutalisk
+{
+	using namespace effects;
 
+////////////////////////////////////////////////
 
 struct Settings
 {
@@ -763,7 +765,7 @@ void render(RenderContext& rc, Dx9RenderableScene const& scene, int maxActors)
 	blastInstanceInputs(scene, camera) (visibleActors, instanceInputs);
 	blastSurfaceInputs(scene, 0) (visibleActors, surfaceInputs);
 	blastRenderBlocks(scene, cameraPos) (visibleActors, bgRenderBlocks, opaqueRenderBlocks, transparentRenderBlocks, fgRenderBlocks);
-	sortRenderBlocks()(transparentRenderBlocks, false);
+	sortRenderBlocks()(transparentRenderBlocks);
 	if(instanceInputs.empty() || surfaceInputs.empty())
 	{
 		ASSERT(visibleActors.empty());
@@ -904,3 +906,4 @@ void CSkinnedAlgos::processSkinMesh(RenderableMesh& mesh, BoneMapT const& boneMa
 	DX_MSG("unlock vertex buffer") = mesh.mNative->UnlockVertexBuffer();
 
 }
+} //namespace mutalisk

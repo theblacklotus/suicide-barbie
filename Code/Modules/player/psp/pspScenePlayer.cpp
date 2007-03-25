@@ -6,8 +6,9 @@
 #include <effects/Library.h>
 #include <effects/BaseEffect.h>
 
-using namespace mutalisk;
-using namespace mutalisk::effects;
+namespace mutalisk
+{
+	using namespace effects;
 
 ////////////////////////////////////////////////
 std::auto_ptr<RenderableTexture> prepare(RenderContext& rc, mutalisk::data::texture const& data)
@@ -35,7 +36,7 @@ std::auto_ptr<RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene 
 	}
 	for(size_t q = 0; q < data.textureIds.size(); ++q)
 	{
-		printf("¤¤ texture = %x\n", scene->mResources.textures[q].blueprint.get());
+		printf("¤¤ texture = %x\n", (unsigned)scene->mResources.textures[q].blueprint.get());
 	}
 	scene->mResources.animCharSet = loadResource<mutant::anim_character_set>(pathPrefix + data.animCharId);
 
@@ -720,3 +721,5 @@ void CSkinnedAlgos::processSkinMesh(RenderableMesh& mesh, BoneMapT const& boneMa
 
 		*mesh.mBlueprint.skinInfo, boneMap, matrices);
 }
+
+} // namespace mutalisk

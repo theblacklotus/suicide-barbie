@@ -1,5 +1,6 @@
 #include "ScenePlayer.h"
 
+namespace mutalisk {
 ////////////////////////////////////////////////
 std::string gResourcePath = "";
 void setResourcePath(std::string const& path)
@@ -124,3 +125,4 @@ void CSkinnedAlgos::processSkinMesh(Vec3 const* srcPositions, Vec3 const* srcNor
 		dstNormals = reinterpret_cast<Vec3*>(dstNormalsRaw);
 	}
 }
+} // namespace mutalisk
