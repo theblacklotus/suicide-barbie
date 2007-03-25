@@ -33,9 +33,16 @@ extern "C" {
 	#include <Base/Math/Quat.h>
 }
 
+#include <pspsdk.h>
+void streamWaveFile(char *file);
+void streamWaveNudge(int offset);
+extern "C" {
+void streamAT3File(char *file);
+}
+
 //#include "Skin.h"
 
-PSP_MODULE_INFO("MutaliskTest", 0x1000, 1, 1);
+PSP_MODULE_INFO("MutaliskTest", PSP_MODULE_USER, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
 static unsigned int __attribute__((aligned(16))) list[262144];
@@ -340,6 +347,19 @@ int main(int argc, char* argv[])
 
 
 ;;peekTime();
+
+	SceUID thid1 = pspSdkLoadStartModule("flash0:/kd/audiocodec.prx", PSP_MEMORY_PARTITION_KERNEL);
+	SceUID thid2 = pspSdkLoadStartModule("flash0:/kd/libatrac3plus.prx", PSP_MEMORY_PARTITION_USER);
+	if (thid1 < 0 || thid2 < 0)
+	{
+		printf("unable to load kernel modules\n");
+		printf("thid1 = %x\n", thid1);
+		printf("thid2 = %x\n", thid2);
+	}
+
+//	streamWaveFile("host1:/dumpa_mig.wav");
+//	streamAT3File("host1:/dumpa_mig.at3");
+
 
 	while(running())
 	{
