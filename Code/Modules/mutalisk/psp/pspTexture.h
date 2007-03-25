@@ -53,11 +53,11 @@ inline template <typename In> In& operator>> (In& i, psp_texture& texture)
 		printf("い height = %i\n", texture.height);
 		printf("い format = %i\n", texture.format);
 		printf("い stride = %i\n", texture.stride);
-		printf("い alloc = %x\n", texture.data);
+		printf("い alloc = %x\n", (unsigned int)texture.data);
 		printf("い size = %i\n", header.vramAllocationSize);
 		printf("い clut? = %i\n", texture.clutFormat);
 		printf("い clut# = %i\n", texture.clutEntries);
-		printf("い clut@ = %x\n", texture.clut);
+		printf("い clut@ = %x\n", (unsigned int)texture.clut);
 
 //		i.readArray((u32*)texture.data, header.vramAllocationSize/4);
 		i.readData(texture.data, header.vramAllocationSize);
