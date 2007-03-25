@@ -35,6 +35,7 @@ elf: libs
 	@$(MAKE) $(MAKEFLAGS) -C Tests/MutaliskTest ELF
 	@$(MAKE) $(MAKEFLAGS) -C Tests/PSPStubTest ELF
 	@$(MAKE) $(MAKEFLAGS) -C Tests/ScreenTest ELF
+	@$(MAKE) $(MAKEFLAGS) -C Tests/WavTest ELF
 
 clean:
 	rm -rf ../Build ../Output
