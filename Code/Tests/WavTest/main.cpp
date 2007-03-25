@@ -1,17 +1,6 @@
 #include <pspsdk.h>
 #include <pspkernel.h>
-#include <pspdebug.h>
-#include <pspaudiolib.h>
-#include <pspaudio.h>
-#include <pspdisplay.h>
 #include <pspctrl.h>
-
-#include <psputilsforkernel.h>
-
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <limits.h>
 #include <stdio.h>
 
 PSP_MODULE_INFO("WavTest", 0, 1, 1);
@@ -19,13 +8,14 @@ PSP_MODULE_INFO("WavTest", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
 
 int setupCallbacks(void);
-int wav_streamer(SceSize args, void *argp);
-void wav_streamer_nudge(int offset);
+
+void streamWaveFile(char *file);
+void streamWaveNudge(int offset);
 
 int main(void)
 {
 	pspDebugScreenInit();
-	setupCallbacks();
+	SceUID thid = setupCallbacks();
 	sceCtrlSetSamplingCycle(0);
 	sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
 
@@ -38,17 +28,7 @@ int main(void)
 		printf("thid2 = %x\n", thid2);
 	}
 
-	char* file = {"host1:/dumpa_mig.wav"};
-	SceUID playth = sceKernelCreateThread("wav_streamer", wav_streamer, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
-
-	if (playth < 0)
-	{
-		printf("Error creating play_thread.\n");
-		return 0;
-	}
-
-	sceKernelStartThread(playth, strlen(file)+1, file);
-
+	streamWaveFile("host1:/dumpa_mig.wav");
 
 	while(1)
 	{
@@ -82,10 +62,10 @@ int main(void)
 		}
 
 		int pos = (int)(frequency*20*1024);
-		wav_streamer_nudge(pos);
+		streamWaveNudge(pos);
 	}
 
-	sceKernelWaitThreadEnd(playth, 0);
+	sceKernelWaitThreadEnd(thid, 0);
 
 	return 0;
 }

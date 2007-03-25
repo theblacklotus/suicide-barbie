@@ -1,14 +1,40 @@
 #include <pspkernel.h>
 #include <pspaudio.h>
 #include <stdio.h>
+#include <string.h>
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-#define printf	pspDebugScreenPrintf
 
 #define INPUTBUF_SIZE	(16*1024)
 #define BUF_COUNT		(4)
 static char inputBuf[BUF_COUNT][INPUTBUF_SIZE] __attribute__((aligned(64)));
+
+int wav_streamer(SceSize args, void *argp);
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+void streamWaveFile(char *file)
+{
+	SceUID playth = sceKernelCreateThread("wav_streamer", wav_streamer, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
+
+	if (playth < 0)
+	{
+		printf("Error creating play_thread.\n");
+		return;
+	}
+
+	sceKernelStartThread(playth, strlen(file)+1, file);
+}
+
+static int nudgeOffset = 0;
+
+void streamWaveNudge(int offset)
+{
+	nudgeOffset = offset;			// possible race condition :)
+}
+
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#define printf	pspDebugScreenPrintf
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -80,13 +106,6 @@ static bool seekChunk(int fd, int size, u32 id)
 	}
 
 	return false;
-}
-
-static int nudgeOffset = 0;
-
-void wav_streamer_nudge(int offset)
-{
-	nudgeOffset = offset;			// possible race condition :)
 }
 
 int wav_streamer(SceSize args, void *argp)
