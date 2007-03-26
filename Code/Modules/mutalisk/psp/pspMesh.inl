@@ -26,6 +26,11 @@ inline template <typename In> In& operator>> (In& i, psp_mesh& mesh)
 			mesh.skinInfo = new skin_info;
 			i >> *mesh.skinInfo;
 
+			mesh.weightStride = i.readDword();
+			mesh.weightDataSize = i.readDword();
+			mesh.weightData = new unsigned char[mesh.weightDataSize];
+			i.readArray(mesh.weightData, mesh.weightDataSize);
+
 			mesh.boneIndexStride = i.readDword();
 			mesh.boneIndexDataSize = i.readDword();
 			mesh.boneIndexData = new unsigned char[mesh.boneIndexDataSize];
@@ -64,6 +69,10 @@ inline template <typename Out> Out& operator<< (Out& o, psp_mesh& mesh)
 		if( mesh.skinInfo )
 		{
 			o << *mesh.skinInfo;
+
+			o.writeDword(mesh.weightStride);
+			o.writeDword(mesh.weightDataSize);
+			o.writeData (mesh.weightData, mesh.weightDataSize);
 
 			o.writeDword(mesh.boneIndexStride);
 			o.writeDword(mesh.boneIndexDataSize);

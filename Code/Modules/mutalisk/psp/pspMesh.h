@@ -8,12 +8,15 @@ namespace mutalisk { namespace data
 {
 	struct psp_mesh : public parent<base_mesh>
 	{
-		enum { Version = 0x0102 };
+		enum { Version = 0x0103 };
 
 		unsigned int vertexDecl;
 		unsigned int primitiveType;
 		
 		skin_info* skinInfo;			// $HACK
+		unsigned int weightStride;
+		unsigned int weightDataSize;
+		byte* weightData;
 		unsigned int boneIndexStride;
 		unsigned int boneIndexDataSize;
 		byte* boneIndexData;

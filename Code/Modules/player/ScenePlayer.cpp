@@ -69,9 +69,9 @@ void CSkinnedAlgos::processSkinMesh(Vec3 const* srcPositions, Vec3 const* srcNor
 		worldMatrices[i] = am * itm;
 	}
 
+	unsigned lastI = i;
 	while( i < worldMatrices.size() )
 		Mat34_setIdentity( &worldMatrices[i++] );
-
 
 	Mat34 identityM;
 	Mat34_setIdentity( &identityM );
@@ -94,6 +94,8 @@ void CSkinnedAlgos::processSkinMesh(Vec3 const* srcPositions, Vec3 const* srcNor
 		for( size_t w = 0; w < skinInfo.weightsPerVertex; ++w )
 		{
 			unsigned char boneId = boneIndices[w];
+			ASSERT(boneId < worldMatrices.size());
+			ASSERT(boneId <= lastI);
 			float boneWeight = weights[w];
 			accumWeight += boneWeight;
 /*			if( w != skinInfo.weightsPerVertex - 1 )

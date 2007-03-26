@@ -112,6 +112,7 @@ int main(int argc, char** argv)
 			targetPlatform = mutalisk::Platform::PSP;
 		else if(target == "all")
 			targetAllPlatforms = true;
+		mutalisk::setPlatform(targetPlatform);
 	}
 	if(argc > 1)
 	{

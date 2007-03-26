@@ -561,10 +561,10 @@ namespace {
 void blitMesh(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 {
 	data.vertexDecl =
-		GU_VERTEX_32BITF |
-		GU_NORMAL_32BITF |
+		GU_TEXTURE_32BITF |
 		((mesh.hasVertexColor)? GU_COLOR_8888: 0) |
-		GU_TEXTURE_32BITF
+		GU_NORMAL_32BITF |
+		GU_VERTEX_32BITF
 		;
 	data.vertexStride = guVertexSize(data.vertexDecl);
 	data.skinInfo = 0;
@@ -632,6 +632,9 @@ std::pair<BaseSkinnedMesh::Vertex::BoneIndexT, float> getBoneWeight(OutputSkinne
 
 void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 {
+	size_t weightsPerVertex = getWeightsPerVertex(mesh);
+	assert(weightsPerVertex <= 4);
+
 	data.vertexCount = mesh.vertices.size();
 	data.fvfVertexDecl = 
 		D3DFVF_XYZB5 |
@@ -659,7 +662,7 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::dx9_mesh& data)
 	data.vertexData = new byte[data.vertexDataSize];
 
 	data.skinInfo = new mutalisk::data::skin_info;
-	data.skinInfo->weightsPerVertex = getWeightsPerVertex(mesh);
+	data.skinInfo->weightsPerVertex = weightsPerVertex;
 	data.skinInfo->bones.resize(mesh.bones.size());
 	for(size_t q = 0; q < data.skinInfo->bones.size(); ++q)
 	{
@@ -724,22 +727,19 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 
 	data.vertexCount = mesh.vertices.size();
 	data.vertexDecl = 
-		(GU_WEIGHT_32BITF|GU_WEIGHTS(weightsPerVertex)) | 
-		GU_VERTEX_32BITF | 
-		GU_NORMAL_32BITF | 
+		GU_TEXTURE_32BITF |
 		((mesh.hasVertexColor)? GU_COLOR_8888: 0) |
-		GU_TEXTURE_32BITF
+		GU_NORMAL_32BITF | 
+		GU_VERTEX_32BITF
 		;
-	// struct VERTEXPOSITION
-	// {
-	//	float skinWeight[WEIGHTS_PER_VERTEX];
-	//  ... other attributes goes here
-	//	float x,y,z;
-	// };
 	
-	data.vertexStride = guVertexSize(data.vertexDecl, weightsPerVertex);
+	data.vertexStride = guVertexSize(data.vertexDecl);
 	data.vertexDataSize = data.vertexCount * data.vertexStride;
 	data.vertexData = new byte[data.vertexDataSize];
+
+	data.weightStride = sizeof(float) * weightsPerVertex;
+	data.weightDataSize = data.vertexCount * data.weightStride;
+	data.weightData = new byte[data.weightDataSize];
 
 	data.boneIndexStride = sizeof(byte) * weightsPerVertex;
 	data.boneIndexDataSize = data.vertexCount * data.boneIndexStride;
@@ -759,20 +759,21 @@ void blitSkinned(OutputSkinnedMesh const& mesh, mutalisk::data::psp_mesh& data)
 	{
 		float* asFloat = reinterpret_cast<float*>(data.vertexData + q * data.vertexStride);
 		DWORD* asDword = reinterpret_cast<DWORD*>(data.vertexData + q * data.vertexStride);
+
+		float* asFloatW = reinterpret_cast<float*>(data.weightData + q * data.weightStride);
 		byte* asByte = reinterpret_cast<byte*>(data.boneIndexData + q * data.boneIndexStride);
 
-		size_t w = 0;
-		for(; w < weightsPerVertex; ++w)
+		for(size_t w = 0; w < weightsPerVertex; ++w)
 		{
 			float weight = getBoneWeight(mesh, q, w).second; // weight
 			unsigned short boneIndex = getBoneWeight(mesh, q, w).first;	// boneIndex	
 
-			asFloat[w] = weight;
+			asFloatW[w] = weight;
 			assert(boneIndex < 256);
-			asByte[w] = static_cast<byte>(boneIndex);				
+			asByte[w] = static_cast<byte>(boneIndex);
 		}
 
-		w = weightsPerVertex;
+		w = 0;
 		if(gLWMode)
 		{
 			asFloat[w++] = mesh.vertices[q].uvw[0];
@@ -1896,11 +1897,22 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 					}
 
 					assert(lControlPointIndex < (kInt)result.vertices.size());
-					result.vertices[lControlPointIndex].color = mutalisk::data::colorRGBAtoDWORD(
-						static_cast<float>(color.mBlue),
-						static_cast<float>(color.mGreen),
-						static_cast<float>(color.mRed),
-						static_cast<float>(color.mAlpha));
+					if(gPlatform == Platform::DX9)
+					{
+						result.vertices[lControlPointIndex].color = mutalisk::data::colorRGBAtoDWORD(
+							static_cast<float>(color.mBlue),
+							static_cast<float>(color.mGreen),
+							static_cast<float>(color.mRed),
+							static_cast<float>(color.mAlpha));
+					}
+					else
+					{
+						result.vertices[lControlPointIndex].color = mutalisk::data::colorRGBAtoDWORD(
+							static_cast<float>(color.mRed),
+							static_cast<float>(color.mGreen),
+							static_cast<float>(color.mBlue),
+							static_cast<float>(color.mAlpha));
+					}
 				}
 			}
 		}

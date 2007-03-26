@@ -56,8 +56,12 @@ namespace {
 			return 2U;
 		else if(weightBits == GU_WEIGHT_32BITF)
 			return 4U;
-		ASSERT(!"no weights found");
 		return 0U;
+	}
+	size_t vertexElementInfo(unsigned int vertexDecl, unsigned int elementBits, size_t* elementSize = 0)
+	{
+		//MUTALISK_NOT_IMPLEMENTED("vertexElementInfo");
+		return 0;
 	}
 }
 
@@ -69,12 +73,13 @@ std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh co
 		;;printf("has skinInfo \n");
 		// for CPU skinning remove weights from the vertex buffer
 
-		size_t skipOffset = singleWeightSize(data.vertexDecl) * data.skinInfo->weightsPerVertex;
+		size_t skipOffset = 0;//singleWeightSize(data.vertexDecl) * data.skinInfo->weightsPerVertex;
 		size_t newVertexStride = data.vertexStride - skipOffset;
-		mesh->mAmplifiedVertexData = new unsigned char[newVertexStride * data.vertexCount];
+		mesh->mAmplifiedVertexData[0] = new unsigned char[newVertexStride * data.vertexCount];
 		mesh->mAmplifiedVertexDecl = data.vertexDecl & (~(GU_WEIGHTS_BITS|GU_WEIGHT_BITS));
+		mesh->mAmplifiedVertexStride = newVertexStride;
 
-		unsigned char* dst = mesh->mAmplifiedVertexData;
+		unsigned char* dst = mesh->mAmplifiedVertexData[0];
 		unsigned char const* src = data.vertexData + skipOffset;
 		for(size_t q = 0; q < data.vertexCount; ++q)
 		{
@@ -83,6 +88,12 @@ std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh co
 			dst += newVertexStride;
 			src += data.vertexStride;
 		}
+
+		mesh->mAmplifiedVertexData[1] = new unsigned char[newVertexStride * data.vertexCount];
+		memcpy(mesh->mAmplifiedVertexData[1], mesh->mAmplifiedVertexData[0], newVertexStride * data.vertexCount);
+		mesh->mAmplifiedVertexData[0] = new unsigned char[newVertexStride * data.vertexCount];
+		mesh->mAmplifiedBufferIndex = 0;
+
 		;;printf("skinInfo processed\n");
 	}
 
@@ -363,9 +374,9 @@ namespace {
 		unsigned char* vertexData = mesh.mBlueprint.vertexData;
 		int vertexFlag = mesh.mBlueprint.vertexDecl;
 
-		if(mesh.mAmplifiedVertexData)
+		if(mesh.mAmplifiedVertexData[1-mesh.mAmplifiedBufferIndex])
 		{
-			vertexData = mesh.mAmplifiedVertexData;
+			vertexData = mesh.mAmplifiedVertexData[1-mesh.mAmplifiedBufferIndex];
 			vertexFlag = mesh.mAmplifiedVertexDecl;
 		}
 
@@ -687,7 +698,6 @@ void render(RenderContext& rc, RenderableScene const& scene, int maxActors)
 }
 
 ////////////////////////////////////////////////
-
 void CSkinnedAlgos::processSkinMesh(RenderableMesh& mesh, BoneMapT const& boneMap, CTransform::t_matrix const* matrices)
 {
 	assert(mesh.mBlueprint.skinInfo);
@@ -695,28 +705,35 @@ void CSkinnedAlgos::processSkinMesh(RenderableMesh& mesh, BoneMapT const& boneMa
 
 	// $HACK: hardcoded offsets
 	// $TBD: calc offsets using vertexDecl
-	size_t weightsOffset = 0U;
-	size_t normalsOffset = weightsOffset + singleWeightSize(mesh.mBlueprint.vertexDecl)*mesh.mBlueprint.skinInfo->weightsPerVertex;
+	
+	size_t offset = 
+		(((mesh.mBlueprint.vertexDecl & GU_TEXTURE_32BITF) == GU_TEXTURE_32BITF)? 8U: 0U) +
+		(((mesh.mBlueprint.vertexDecl & GU_COLOR_8888) == GU_COLOR_8888)? 4U: 0U);
+	size_t normalsOffset = offset;
 	size_t positionsOffset = normalsOffset + sizeof(Vec3);
+	size_t weightsOffset = 0U;
 	size_t boneIndicesOffset = 0U;
 
-	unsigned char* dstRaw = mesh.mAmplifiedVertexData;
+	mesh.mAmplifiedBufferIndex = 1 - mesh.mAmplifiedBufferIndex;
+	unsigned char* dstRaw = mesh.mAmplifiedVertexData[mesh.mAmplifiedBufferIndex];
 	unsigned char const* srcRaw = mesh.mBlueprint.vertexData;
+	unsigned char const* srcBoneWeights = mesh.mBlueprint.weightData;
 	unsigned char const* srcBoneIndices = mesh.mBlueprint.boneIndexData;
 
 	processSkinMesh(
 		reinterpret_cast<Vec3 const*>(srcRaw + positionsOffset),
 		reinterpret_cast<Vec3 const*>(srcRaw + normalsOffset),
-		reinterpret_cast<float const*>(srcRaw + weightsOffset),
+		reinterpret_cast<float const*>(srcBoneWeights + weightsOffset),
 		reinterpret_cast<unsigned char const*>(srcBoneIndices + boneIndicesOffset),
 
-		reinterpret_cast<Vec3*>(dstRaw + sizeof(Vec3)),							// dstPositions
-		reinterpret_cast<Vec3*>(dstRaw ),										// dstNormals
+		reinterpret_cast<Vec3*>(dstRaw + positionsOffset),						// dstPositions
+		reinterpret_cast<Vec3*>(dstRaw + normalsOffset),						// dstNormals
 
 		mesh.mBlueprint.vertexStride,											// srcVertexStride
-		mesh.mBlueprint.vertexStride,											// srcWeightStride
+		mesh.mBlueprint.weightStride,											// srcWeightStride
 		mesh.mBlueprint.boneIndexStride,										// srcBoneIndexStride
-		sizeof(Vec3)*2,															// dstVertexStride
+
+		mesh.mAmplifiedVertexStride,											// dstVertexStride
 		mesh.mBlueprint.vertexCount,
 
 		*mesh.mBlueprint.skinInfo, boneMap, matrices);

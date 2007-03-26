@@ -75,8 +75,8 @@ struct ScenePlayerApp
 	Scene					scene;
 };
 std::auto_ptr<ScenePlayerApp> scenePlayerApp;
-std::string gSceneFileName = "telephone_s1.msk";
-std::string gPathPrefix = "host1:DemoTest/telephone_s1/psp/";//"ms0:PSP/TESTDATA/";
+std::string gSceneFileName = "flower.msk";
+std::string gPathPrefix = "host1:DemoTest/flower/psp/";//"ms0:PSP/TESTDATA/";
 
 
 struct Texture
@@ -229,7 +229,7 @@ int main(int argc, char* argv[])
 
 			// clear screen
 
-			sceGuClearColor(0xff00ff00);
+			sceGuClearColor(0xff000000);
 			sceGuClearDepth(0xffff);
 			sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
 
