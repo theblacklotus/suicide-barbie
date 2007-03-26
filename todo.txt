@@ -1,3 +1,20 @@
+_Demo_
+.	'visibility' tracks
+.	add audio to TimelineViewerPSP
+.	add time control to TimelineViewerPSP/ScenePlayerPSP
+.	clear color from camera
+.	blockReads for sequential containers
+.	audio support for dx9
+.	fix UV export
+.	release on PSP
+.	memory load on PSP
+.	envmap on PSP
+.	shadows
+.	mirror
+.	face
+
+
+
 _RunTime_
 .	frustum culling
 ~	material support
@@ -28,7 +45,7 @@ _RunTime_
  .	 render-to-cube									[dx9: only]
  .	 cube-to-SH									[dx9: only]
  .	 per-vertex SH lighting
-.	fix psp skinning
++	fix psp skinning
 ~       timeline
 ~   	timeline helper functions (show_scene, clear_framebuffer, clear_zbuffer, apply_postprocess, blink, ...) 
 .	alpha-ref
