@@ -6,8 +6,8 @@
 namespace mutalisk
 {
 
-float gTickFrequency = 0;
-float gTickResolution = 0;
+float gTickFrequency = -1.f;
+float gTickResolution = 0.f;
 
 void initTickFrequency()
 {
@@ -27,7 +27,7 @@ TimeBlock::TimeBlock()
 
 void TimeBlock::peek()
 {
-	ASSERT(gTickFrequency == 0);
+	ASSERT(gTickFrequency >= 0.f);
 	prevTick = currTick;
 	sceRtcGetCurrentTick(&currTick);
 }
