@@ -107,11 +107,6 @@ namespace mutant
 			mInput->read( &d, sizeof(d), 0 );
 		}
 
-		void readData( void* ptr, int size)
-		{
-			mInput->read( ptr, size, 0 );
-		}
-
 /*_		template<>
 		void readType<std::string>( std::string& d )*/
 		void readType( std::string& d )
@@ -121,6 +116,11 @@ namespace mutant
 
 		std::auto_ptr<binary_input> release_input() {
 			return std::auto_ptr<binary_input>( mInput.release() );
+		}
+
+		void readOpaqueData( void* ptr, int size)
+		{
+			mInput->read( ptr, size, 0 );
 		}
 
 	private:
@@ -153,10 +153,10 @@ namespace mutant
 		void readHierarchy( anim_hierarchy& hier );
 
 		template<typename _T>
-		void readVector( _T& v, int count )
+		void readVector(_T& v, int count)
 		{
 			typename _T::value_type data;
-			v.reserve( v.size() + count );
+			v.resize(v.size() + count);
 			while( count-- )
 			{
 				readType( data );
@@ -164,19 +164,45 @@ namespace mutant
 			}
 		}
 		template<typename _T>
-		void readArray( _T* v, int count )
+		void readArray(_T* v, int count)
 		{
-			for( int q = 0; q < count; ++q )
-				readType( v[q] );
+			for(int q = 0; q < count; ++q)
+				readType(v[q]);
 		}
 		template<typename _I>
+		void readArray(_I from, _I end)
+		{
+			for(; from != end; ++from)
+				readType(*from);
+		}
+		template<typename _T>
+		void readData(_T* v, int count)
+		{
+			readOpaqueData(&v[0], sizeof(_T) * count);
+		}
+		template<typename _I>
+		void readData(_I from, _I end)
+		{
+			readOpaqueData(&(*from), sizeof(typename _I::value_type) * std::distance(from, end));
+		}
+
+/*		template<typename _I>
 		void readArray( _I from, _I end )
 		{
-			while( from != end )
-			{
-				readType( *from ); ++from;
-			}
+			readData(&(*from), sizeof(_I::value_type) * std::distance(from, end));
 		}
+
+		template<typename _T>
+		void readVector( std::vector<_T>& v, int count )
+		{
+			v.resize(v.size() + count);
+			readData( &v[0], sizeof(_T) * count);
+		}
+		template<typename _T>
+		void readArray(typename std::vector<_T>::iterator from, typename std::vector<_T>::iterator end )
+		{
+			readData(&(*from), sizeof(_T) * std::distance(from, end));
+		}*/
 
 		void enableLog( bool enabled = true ) { mutlog.setEnabled( enabled ); }
 

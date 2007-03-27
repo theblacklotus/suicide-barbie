@@ -45,7 +45,7 @@ inline template <typename In> In& operator>> (In& i, scene& data)
 {
 	try
 	{
-		ASSERT(data.Version == i.readDword());
+		unsigned versionCheck = (data.Version == i.readDword()); ASSERT(versionCheck);
 
 		// meshes
 		data.meshIds.resize(i.readDword());

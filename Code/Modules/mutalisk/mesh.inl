@@ -17,12 +17,12 @@ inline template <typename In> In& operator>> (In& i, base_mesh& mesh)
 		mesh.vertexDataSize = i.readDword();
 		mesh.vertexStride = i.readDword();
 		mesh.vertexData = new unsigned char[mesh.vertexDataSize];
-		i.readArray( mesh.vertexData, mesh.vertexDataSize );
+		i.readData(mesh.vertexData, mesh.vertexDataSize);
 
 		mesh.indexCount = i.readDword();
 		mesh.indexSize = i.readDword();
 		mesh.indexData = new unsigned char[mesh.indexCount * mesh.indexSize];
-		i.readArray( mesh.indexData, mesh.indexCount * mesh.indexSize );
+		i.readData(mesh.indexData, mesh.indexCount * mesh.indexSize);
 
 		mesh.subsets.resize(i.readDword());
 		for( size_t q = 0; q < mesh.subsets.size(); ++q )

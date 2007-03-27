@@ -141,17 +141,23 @@ struct RenderableScene
 
 		void process(SharedResources& sharedResources)	
 		{
+//;;printf("process -- 0\n");
 			ASSERT(this->hierarchy);
+//;;printf("process -- 1\n");
 			CAnimatorAlgos::transformHierarchy(
 				this->matrices.begin(), this->matrices.end(),
 				this->transforms.begin(), *this->hierarchy );
+//;;printf("process -- 2\n");
 
 			for(size_t q = 0; q < this->bone2XformIndex.size(); ++q)
 				if( !this->bone2XformIndex[q].empty() )
 				{
+//;;printf("process -- processSkinMesh0\n");
 					ASSERT(sharedResources.meshes[q].renderable.get());
 					CSkinnedAlgos::processSkinMesh(*sharedResources.meshes[q].renderable, this->bone2XformIndex[q], &this->matrices[0]);
+//;;printf("process -- processSkinMesh0\n");
 				}
+//;;printf("process -- 3\n");
 		}
 
 	};

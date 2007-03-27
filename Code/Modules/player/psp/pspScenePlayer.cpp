@@ -157,7 +157,7 @@ namespace {
 	}
 	Vec3 const& getTranslation(Vec3& translation, ScePspFMatrix4 const& nativeMatrix)
 	{
-		translation.z = nativeMatrix.w.x;
+		translation.x = nativeMatrix.w.x;
 		translation.y = nativeMatrix.w.y;
 		translation.z = nativeMatrix.w.z;
 		return translation;
@@ -573,8 +573,7 @@ void render(RenderContext& rc, RenderableScene const& scene, int maxActors)
 	static bool animatedCamera = true;//gSettings.forceAnimatedCamera;
 
 //;;printf("$render\n");
-
-	Vec3 cameraPos;
+	Vec3 cameraPos; cameraPos.x = cameraPos.y = cameraPos.z = 0.0f;
 	{
 		MatrixT nativeMatrix;
 		if(scene.mBlueprint.defaultClipIndex == ~0U)

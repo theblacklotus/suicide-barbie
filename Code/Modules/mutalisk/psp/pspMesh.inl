@@ -7,42 +7,42 @@ namespace mutalisk { namespace data
 
 // psp_mesh
 //
-inline template <typename In> In& operator>> (In& i, psp_mesh& mesh)
+inline template <typename In> In& operator>> (In& i, psp_mesh& data)
 {
-	clear(mesh);
+	clear(data);
 
 	try
 	{
-		assert(mesh.Version == i.readDword());
+		unsigned versionCheck = (data.Version == i.readDword()); ASSERT(versionCheck);
 
 		// base_mesh
-		i >> mesh.base();
+		i >> data.base();
 
 		// psp_mesh
-		mesh.vertexDecl = i.readDword();
-		mesh.primitiveType = i.readDword();
+		data.vertexDecl = i.readDword();
+		data.primitiveType = i.readDword();
 		if( i.readBool() )
 		{
-			mesh.skinInfo = new skin_info;
-			i >> *mesh.skinInfo;
+			data.skinInfo = new skin_info;
+			i >> *data.skinInfo;
 
-			mesh.weightStride = i.readDword();
-			mesh.weightDataSize = i.readDword();
-			mesh.weightData = new unsigned char[mesh.weightDataSize];
-			i.readArray(mesh.weightData, mesh.weightDataSize);
+			data.weightStride = i.readDword();
+			data.weightDataSize = i.readDword();
+			data.weightData = new unsigned char[data.weightDataSize];
+			i.readArray(data.weightData, data.weightDataSize);
 
-			mesh.boneIndexStride = i.readDword();
-			mesh.boneIndexDataSize = i.readDword();
-			mesh.boneIndexData = new unsigned char[mesh.boneIndexDataSize];
-			i.readArray(mesh.boneIndexData, mesh.boneIndexDataSize);
+			data.boneIndexStride = i.readDword();
+			data.boneIndexDataSize = i.readDword();
+			data.boneIndexData = new unsigned char[data.boneIndexDataSize];
+			i.readArray(data.boneIndexData, data.boneIndexDataSize);
 		}
 		else
 		{	
-			mesh.skinInfo = 0;
+			data.skinInfo = 0;
 
-			mesh.boneIndexStride = 0;
-			mesh.boneIndexDataSize = 0;
-			mesh.boneIndexData = 0;
+			data.boneIndexStride = 0;
+			data.boneIndexDataSize = 0;
+			data.boneIndexData = 0;
 		}
 	} catch( EIoEof& ) {
 		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
@@ -52,31 +52,31 @@ inline template <typename In> In& operator>> (In& i, psp_mesh& mesh)
 	return i;
 }
 
-inline template <typename Out> Out& operator<< (Out& o, psp_mesh& mesh)
+inline template <typename Out> Out& operator<< (Out& o, psp_mesh& data)
 {
 	try
 	{
-		o.writeDword(mesh.Version);
+		o.writeDword(data.Version);
 
 		// base_mesh
-		o << mesh.base();
+		o << data.base();
 
 		// psp_mesh
-		o.writeDword(mesh.vertexDecl);
-		o.writeDword(mesh.primitiveType);
+		o.writeDword(data.vertexDecl);
+		o.writeDword(data.primitiveType);
 
-		o.writeBool((mesh.skinInfo != 0));
-		if( mesh.skinInfo )
+		o.writeBool((data.skinInfo != 0));
+		if( data.skinInfo )
 		{
-			o << *mesh.skinInfo;
+			o << *data.skinInfo;
 
-			o.writeDword(mesh.weightStride);
-			o.writeDword(mesh.weightDataSize);
-			o.writeData (mesh.weightData, mesh.weightDataSize);
+			o.writeDword(data.weightStride);
+			o.writeDword(data.weightDataSize);
+			o.writeData (data.weightData, data.weightDataSize);
 
-			o.writeDword(mesh.boneIndexStride);
-			o.writeDword(mesh.boneIndexDataSize);
-			o.writeData (mesh.boneIndexData, mesh.boneIndexDataSize);
+			o.writeDword(data.boneIndexStride);
+			o.writeDword(data.boneIndexDataSize);
+			o.writeData (data.boneIndexData, data.boneIndexDataSize);
 		}
 
 	} catch( EIoEof& ) {

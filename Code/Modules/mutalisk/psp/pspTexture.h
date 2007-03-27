@@ -60,7 +60,7 @@ inline template <typename In> In& operator>> (In& i, psp_texture& texture)
 		printf("¤¤ clut@ = %x\n", (unsigned int)texture.clut);
 
 //		i.readArray((u32*)texture.data, header.vramAllocationSize/4);
-		i.readData(texture.data, header.vramAllocationSize);
+		i.readOpaqueData(texture.data, header.vramAllocationSize);
 /*
 		// base_mesh
 		i >> mesh.base();

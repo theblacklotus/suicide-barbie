@@ -204,6 +204,7 @@ namespace mutant
 					break;
 				}
 			};
+			return 0.0f;
 		}
 
 	private:

@@ -3,10 +3,10 @@ _Demo_
 .	add audio to TimelineViewerPSP
 .	add time control to TimelineViewerPSP/ScenePlayerPSP
 .	clear color from camera
-.	blockReads for sequential containers
++	blockReads for sequential containers
 .	audio support for dx9
 .	fix UV export
-.	release on PSP
++	release on PSP
 .	memory load on PSP
 .	envmap on PSP
 .	shadows

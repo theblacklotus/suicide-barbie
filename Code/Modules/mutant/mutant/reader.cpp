@@ -281,8 +281,10 @@ void mutant_reader::readHierarchy( anim_hierarchy& hier )
 		node.name = readString();
 
 		unsigned child_count = readDword();
-		node.children.reserve( child_count );
-		readVector( node.children, child_count );
+		node.children.resize( child_count );
+		//readVector( node.children, child_count );
+		//readData(node.children.begin(), node.children.end());
+		readArray(node.children.begin(), node.children.end());
 	}
 
 	if( hier.size() > 0 )
@@ -345,11 +347,13 @@ void mutant_reader::readAnimation( anim_bundle& bundle, anim_clip& clip )
 			std::auto_ptr<float_values_vec_t> keys( new float_values_vec_t );
 			std::auto_ptr<float_values_vec_t> values( new float_values_vec_t );
 
-			keys->reserve( key_count );
-			values->reserve( key_count * component_size );
+			keys->resize( key_count );
+			values->resize( key_count * component_size );
 
-			readVector( *keys, key_count );
-			readVector( *values, key_count * component_size );
+			//readVector( *keys, key_count );
+			//readVector( *values, key_count * component_size );
+			readData(keys->begin(), keys->end());
+			readData(values->begin(), values->end());
 
 			bundle.insertData(
 				anim_type,
@@ -366,11 +370,12 @@ void mutant_reader::readAnimation( anim_bundle& bundle, anim_clip& clip )
 			std::auto_ptr<float_values_vec_t> keys( new float_values_vec_t );
 			std::auto_ptr<string_values_vec_t> values( new string_values_vec_t );
 
-			keys->reserve( key_count );
-			values->reserve( key_count * component_size );
+			keys->resize( key_count );
+			values->resize( key_count * component_size );
 
-			readVector( *keys, key_count );
-			readVector( *values, key_count * component_size );
+			//readVector( *keys, key_count );
+			readData(keys->begin(), keys->end());
+			readVector(*values, key_count * component_size);
 
 			bundle.insertData(
 				anim_type,

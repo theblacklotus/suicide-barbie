@@ -7,27 +7,27 @@ namespace mutalisk { namespace data
 
 // dx9_mesh
 //
-inline template <typename In> In& operator>> (In& i, dx9_mesh& mesh)
+inline template <typename In> In& operator>> (In& i, dx9_mesh& data)
 {
-	clear(mesh);
+	clear(data);
 
 	try
 	{
-		ASSERT(mesh.Version == i.readDword());
+		unsigned versionCheck = (data.Version == i.readDword()); ASSERT(versionCheck);
 
 		// base_mesh
-		i >> mesh.base();
+		i >> data.base();
 
 		// dx9_mesh
-		mesh.fvfVertexDecl = i.readDword();
-		mesh.primitiveType = static_cast<D3DPRIMITIVETYPE>(i.readDword());
+		data.fvfVertexDecl = i.readDword();
+		data.primitiveType = static_cast<D3DPRIMITIVETYPE>(i.readDword());
 		if( i.readBool() )
 		{
-			mesh.skinInfo = new skin_info;
-			i >> *mesh.skinInfo;
+			data.skinInfo = new skin_info;
+			i >> *data.skinInfo;
 		}
 		else
-			mesh.skinInfo = 0;
+			data.skinInfo = 0;
 
 	} catch( EIoEof& ) {
 		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );
@@ -37,22 +37,22 @@ inline template <typename In> In& operator>> (In& i, dx9_mesh& mesh)
 	return i;
 }
 
-inline template <typename Out> Out& operator<< (Out& o, dx9_mesh& mesh)
+inline template <typename Out> Out& operator<< (Out& o, dx9_mesh& data)
 {
 	try
 	{
 		o.writeDword(mesh.Version);
 
 		// base_mesh
-		o << mesh.base();
+		o << data.base();
 		
 		// dx9_mesh
-		o.writeDword( mesh.fvfVertexDecl );
-		o.writeDword( mesh.primitiveType );
+		o.writeDword( data.fvfVertexDecl );
+		o.writeDword( data.primitiveType );
 
-		o.writeBool( (mesh.skinInfo != 0) );
-		if( mesh.skinInfo )
-			o << *mesh.skinInfo;
+		o.writeBool( (data.skinInfo != 0) );
+		if( data.skinInfo )
+			o << *data.skinInfo;
 
 	} catch( EIoEof& ) {
 		mutant_throw( "Unexpected end-of-file (file may be corrupted)" );

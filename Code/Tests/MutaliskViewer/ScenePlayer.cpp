@@ -75,8 +75,8 @@ struct ScenePlayerApp
 	Scene					scene;
 };
 std::auto_ptr<ScenePlayerApp> scenePlayerApp;
-std::string gSceneFileName = "flower.msk";
-std::string gPathPrefix = "host1:DemoTest/flower/psp/";//"ms0:PSP/TESTDATA/";
+std::string gSceneFileName = "walk01.msk";
+std::string gPathPrefix = "host1:DemoTest/walk01/psp/";//"ms0:PSP/TESTDATA/";
 
 
 struct Texture
@@ -200,9 +200,11 @@ int main(int argc, char* argv[])
 
 
 ;;peekTime();
+//;;printf("main -- 0\n");
 
 	while(running())
 	{
+//;;printf("main -- while_running\n");
 		SceCtrlData pad;
 		if(sceCtrlPeekBufferPositive(&pad, 1))
 		{
@@ -219,8 +221,9 @@ int main(int argc, char* argv[])
 			}
 			oldPad = pad;*/
 		}
-;;peekTime();
+//;;peekTime();
 		sceGuStart(GU_DIRECT,list);
+//;;printf("main -- guStart\n");
 
 		//if(0)
 		{
@@ -238,6 +241,8 @@ int main(int argc, char* argv[])
 
 			ScePspFMatrix4 projMatrix;
 			gumLoadIdentity(&projMatrix);
+
+//;;printf("main -- projMatrix0\n");
 
 			float fovy = 45.0f;
 			float aspect = 16.0f/9.0f;
@@ -259,11 +264,16 @@ int main(int argc, char* argv[])
 
 				gumMultMatrix(&projMatrix,&projMatrix,&t);
 			}
+//;;printf("main -- projMatrix1\n");
 
 			scenePlayerApp->setProjMatrix(projMatrix);
+//;;printf("main -- setProjMatrix\n");
 			scenePlayerApp->update(getTime());
+//;;printf("main -- update\n");
 			scenePlayerApp->process();
+//;;printf("main -- process\n");
 			scenePlayerApp->render();
+//;;printf("main -- render\n");
 		}
 
 		pspDebugScreenSetOffset((int)mainRenderTarget.vramAddr);
@@ -274,8 +284,11 @@ int main(int argc, char* argv[])
 		pspDebugScreenPrintf("\n");
 ///		pspDebugScreenPrintf("skin: %d, %d, %d, %d\n", skin->vertexCount, skin->indexCount, skin->boneCount, skin->weightsPerVertex);
 
+//;;printf("main -- guFinish0\n");
 		sceGuFinish();
+//;;printf("main -- guFinish1\n");
 		sceGuSync(0,0);
+//;;printf("main -- guSync\n");
 
 ;;pspDebugScreenPrintf("renderTime: %f", peekTime()/1000.0f);
 

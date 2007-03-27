@@ -25,7 +25,7 @@ inline template <typename In> In& operator>> (In& i, shader_fixed& data)
 {
 	try
 	{
-		ASSERT(data.Version == i.readDword());
+		unsigned versionCheck = (data.Version == i.readDword()); ASSERT(versionCheck);
 
 		i.readType(data.ambient);
 		i.readType(data.diffuse);
@@ -90,7 +90,7 @@ inline template <typename In> In& operator>> (In& i, shader& data)
 {
 	try
 	{
-		ASSERT(data.Version == i.readDword());
+		unsigned versionCheck = (data.Version == i.readDword()); ASSERT(versionCheck);
 
 		// indices
 		i >> data.indices.textures;
