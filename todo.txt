@@ -1,7 +1,6 @@
 _Demo_
-.	'visibility' tracks
 .	add audio to TimelineViewerPSP
-.	add time control to TimelineViewerPSP/ScenePlayerPSP
++	add time control to TimelineViewerPSP/ScenePlayerPSP
 .	clear color from camera
 +	blockReads for sequential containers
 .	audio support for dx9
@@ -13,6 +12,7 @@ _Demo_
 .	mirror
 .	face
 +	simple time profiling for PSP
+.	'visibility' tracks
 
 
 
