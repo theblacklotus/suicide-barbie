@@ -37,9 +37,10 @@ CC_FLAGS=\
 	-Wno-unknown-pragmas\
 
 SRCS=\
-	ScenePlayer.cpp\
 	callbacks.c\
 	TestDemo.cpp\
+	TimeBlock.cpp\
+	TimelinePlayer.cpp\
 	vram.c\
 
 include ../../build.mak

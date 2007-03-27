@@ -29,6 +29,8 @@ extern "C" {
 #include <player/ScenePlayer.h>
 #include <player/psp/pspScenePlayer.h>
 
+#include "TimeBlock.h"
+
 PSP_MODULE_INFO("ScenePlayer", 0x1000, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
@@ -100,62 +102,17 @@ void setRenderTarget(Texture& renderTarget)
 	gViewportHeight = renderTarget.height;
 }
 
-
-u64 gTick = 0;
 u64 gStartTick = 0;
-float gTickFrequency = 0;
-float gTickResolution = 0;
-
-void initTickFrequency()
+void startTime()
 {
-	gTickResolution = sceRtcGetTickResolution();
-	printf("TickResolution: %f", gTickResolution);
-	gTickFrequency = gTickResolution / (1000 * 1000);
-	gTickFrequency = 1.0f / gTickFrequency;
-	printf("TickFrequency: %f\n", gTickFrequency);
-
 	sceRtcGetCurrentTick(&gStartTick);
-	gTick = gStartTick;
 }
 
-struct TimeBlock
-{
-	TimeBlock() : currTick(0), prevTick(0) {}
-	void peek()
-	{
-		ASSERT(gTickFrequency == 0);
-		prevTick = currTick;
-		sceRtcGetCurrentTick(&currTick);
-	}
-	float ms()
-	{
-		return static_cast<float>((currTick - prevTick) * gTickFrequency) / 1000.0f;
-	}
-
-	u64 currTick;
-	u64 prevTick;
-};
-
-/*float peekTime(u64& tickData)
-{
-	if(gTickFrequency == 0)
-		initTickFrequency();
-
-	u64 prevTick = tickData;
-	sceRtcGetCurrentTick(&tickData);
-
-	return static_cast<float>(tickData - prevTick) * gTickFrequency;
-}
-*/
 float getTime()
 {
-	if(gTickFrequency == 0)
-		initTickFrequency();
-
 	u64 currTick;
 	sceRtcGetCurrentTick(&currTick);
-
-	return static_cast<float>(currTick - gStartTick) / gTickResolution;
+	return static_cast<float>(currTick - gStartTick) / mutalisk::tickResolution();
 }
 
 int main(int argc, char* argv[])
@@ -217,8 +174,12 @@ int main(int argc, char* argv[])
 	sceCtrlSetSamplingMode(0); 
 
 
-;;initTickFrequency();
+	mutalisk::initTickFrequency();
+	startTime();
+;;printf("tickResolution: %f, tickFrequency: %f\n", mutalisk::tickResolution(), mutalisk::tickFrequency());
+
 //;;printf("main -- 0\n");
+
 
 	while(running())
 	{
@@ -239,7 +200,7 @@ int main(int argc, char* argv[])
 			}
 			oldPad = pad;*/
 		}
-TimeBlock updateTime, processTime, renderTime, loopTime, finishAndSyncTime;
+mutalisk::TimeBlock updateTime, processTime, renderTime, loopTime, finishAndSyncTime;
 
 ;;loopTime.peek();
 		sceGuStart(GU_DIRECT,list);
@@ -311,7 +272,7 @@ TimeBlock updateTime, processTime, renderTime, loopTime, finishAndSyncTime;
 //;;printf("main -- guSync\n");
 
 ;;loopTime.peek();
-;;static TimeBlock frameTime; frameTime.peek();
+;;static mutalisk::TimeBlock frameTime; frameTime.peek();
 		pspDebugScreenSetOffset((int)mainRenderTarget.vramAddr);
 		pspDebugScreenSetXY(0,0);
 		pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
