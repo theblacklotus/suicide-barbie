@@ -200,8 +200,7 @@ int main(int argc, char* argv[])
 			}
 			oldPad = pad;*/
 		}
-mutalisk::TimeBlock updateTime, processTime, renderTime, loopTime, finishAndSyncTime;
-
+;;mutalisk::TimeBlock updateTime, processTime, renderTime, loopTime, finishAndSyncTime;
 ;;loopTime.peek();
 		sceGuStart(GU_DIRECT,list);
 //;;printf("main -- guStart\n");

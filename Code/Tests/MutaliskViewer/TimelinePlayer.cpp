@@ -26,6 +26,8 @@ extern "C" {
 	#include <Base/Math/Quat.h>
 }
 
+#include <player/TimeControl.h>
+
 PSP_MODULE_INFO("TimelineViewer", 0x1000, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
@@ -65,18 +67,17 @@ void setRenderTarget(Texture& renderTarget)
 	gViewportHeight = renderTarget.height;
 }
 
-u64 gStartTick = 0;
-void startTime()
-{
-	sceRtcGetCurrentTick(&gStartTick);
-}
-
-float getTime()
+u64 gPrevTick = 0;
+float getDeltaTime()
 {
 	u64 currTick;
 	sceRtcGetCurrentTick(&currTick);
-	return static_cast<float>(currTick - gStartTick) / mutalisk::tickResolution();
+	u64 delta = currTick - gPrevTick;
+	gPrevTick = currTick;
+	return static_cast<float>((delta) * mutalisk::tickFrequency()) / (1000.0f * 1000.0f);
 }
+
+mutalisk::TimeControl gTimeControl;
 
 int main(int argc, char* argv[])
 {
@@ -141,26 +142,42 @@ int main(int argc, char* argv[])
 	sceCtrlSetSamplingMode(0); 
 
 
-	mutalisk::initTickFrequency();
-	startTime();
+	mutalisk::initTickFrequency(); getDeltaTime();
 ;;printf("tickResolution: %f, tickFrequency: %f\n", mutalisk::tickResolution(), mutalisk::tickFrequency());
 
+	gTimeControl.restart(true);
 	while(running())
 	{
 		SceCtrlData pad;
 		if(sceCtrlPeekBufferPositive(&pad, 1))
 		{
-
+			float speedModifier = 1.0f;
 			//if (pad.Buttons != oldPad.Buttons)
 			{
-/*				if (pad.Buttons & PSP_CTRL_UP)
-				if (pad.Buttons & PSP_CTRL_DOWN)
-				if (pad.Buttons & PSP_CTRL_LEFT)
-				if (pad.Buttons & PSP_CTRL_RIGHT)
-				if (pad.Buttons & PSP_CTRL_LTRIGGER)
-				if (pad.Buttons & PSP_CTRL_RTRIGGER)*/
 				if (pad.Buttons & PSP_CTRL_CROSS)
-					startTime();
+					speedModifier = 0.25;
+
+				if (pad.Buttons & PSP_CTRL_UP)
+					gTimeControl.restart(true);
+				if (pad.Buttons & PSP_CTRL_DOWN)
+					gTimeControl.resetKeys();
+
+				if (pad.Buttons & PSP_CTRL_CIRCLE)
+					gTimeControl.restart(false);
+
+				if (pad.Buttons & PSP_CTRL_SQUARE)
+					gTimeControl.from(gTimeControl.time());
+				if (pad.Buttons & PSP_CTRL_TRIANGLE)				
+					gTimeControl.to(gTimeControl.time());
+
+				if (pad.Buttons & PSP_CTRL_LEFT)
+					gTimeControl.scroll(-5.0f * speedModifier);
+				if (pad.Buttons & PSP_CTRL_RIGHT)
+					gTimeControl.scroll(5.0f * speedModifier);
+				if (pad.Buttons & PSP_CTRL_LTRIGGER)
+					gTimeControl.scroll(-0.5f * speedModifier);
+				if (pad.Buttons & PSP_CTRL_RTRIGGER)
+					gTimeControl.scroll(0.5f * speedModifier);
 			}
 			oldPad = pad;
 		}
@@ -209,7 +226,7 @@ int main(int argc, char* argv[])
 			}
 
 ;;updateTime.peek();
-			gDemo->doFrame(getTime());
+			gDemo->doFrame(gTimeControl.update(getDeltaTime()));
 ;;updateTime.peek();
 		}
 
@@ -225,7 +242,7 @@ int main(int argc, char* argv[])
 		pspDebugScreenSetXY(0,0);
 		pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
 		pspDebugScreenPrintf("\n");
-		pspDebugScreenPrintf("mutalisk: update(%f)", updateTime.ms());
+		pspDebugScreenPrintf("mutalisk: update(%f) sceneTime(%f)", updateTime.ms(), gTimeControl.time());
 
 		sceDisplayWaitVblankStart();
 		mainRenderTarget2.vramAddr = mainRenderTarget.vramAddr;
