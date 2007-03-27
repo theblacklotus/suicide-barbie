@@ -40,7 +40,7 @@ struct ScenePlayerApp
 		D3DXMatrixIdentity(&renderContext.viewProjMatrix);
 		D3DXMatrixIdentity(&renderContext.projMatrix);
 
-		scene.blueprint = loadResource<mutalisk::data::scene>(sceneName);
+		scene.blueprint = mutalisk::loadResource<mutalisk::data::scene>(sceneName);
 		scene.renderable = prepare(renderContext, *scene.blueprint);
 	}
 
@@ -55,17 +55,17 @@ struct ScenePlayerApp
 	}
 
 
-	void update(float time) { ::update(*scene.renderable, time); }
-	void process() { ::process(*scene.renderable); }
-	void render(int maxActors = -1) { ::render(renderContext, *scene.renderable, maxActors); }
+	void update(float time) { mutalisk::update(*scene.renderable, time); }
+	void process() { mutalisk::process(*scene.renderable); }
+	void render(int maxActors = -1) { mutalisk::render(renderContext, *scene.renderable, maxActors); }
 
 	struct Scene
 	{
 		std::auto_ptr<mutalisk::data::scene> blueprint;
-		std::auto_ptr<Dx9RenderableScene> renderable;
+		std::auto_ptr<mutalisk::Dx9RenderableScene> renderable;
 	};
 	
-	RenderContext	renderContext;
+	mutalisk::RenderContext	renderContext;
 	Scene			scene;
 };
 std::auto_ptr<ScenePlayerApp> scenePlayerApp;
@@ -160,7 +160,7 @@ public:
 	struct Scene
 	{
 		std::auto_ptr<mutalisk::data::scene>	blueprint;
-		mutable Dx9RenderableScene*				renderable;
+		mutable mutalisk::Dx9RenderableScene*				renderable;
 		mutable float							startTime;
 	};
 
@@ -206,7 +206,7 @@ public:
 	}
 
 protected:
-	RenderContext	renderContext;
+	mutalisk::RenderContext	renderContext;
 };
 
 void splitFilename(std::string const& fullPath, std::string& path, std::string& fileName)
@@ -232,10 +232,10 @@ BaseDemoPlayer::Scene BaseDemoPlayer::load(std::string const& sceneName)
 {
 	std::string path, fileName;
 	splitFilename(sceneName, path, fileName);
-	setResourcePath(path);
+	mutalisk::setResourcePath(path);
 
 	Scene scene;
-	scene.blueprint = loadResource<mutalisk::data::scene>(fileName);
+	scene.blueprint = mutalisk::loadResource<mutalisk::data::scene>(fileName);
 	scene.renderable = prepare(renderContext, *scene.blueprint).release();
 	scene.startTime = -1.0f;
 	return scene;
@@ -253,9 +253,9 @@ void BaseDemoPlayer::draw(Scene const& scene)
 		scene.startTime = time();
 
 	ASSERT(scene.renderable);
-	::update(*scene.renderable, time() - scene.startTime);
-	::process(*scene.renderable);
-	::render(renderContext, *scene.renderable);
+	mutalisk::update(*scene.renderable, time() - scene.startTime);
+	mutalisk::process(*scene.renderable);
+	mutalisk::render(renderContext, *scene.renderable);
 }
 
 void BaseDemoPlayer::clearZ()
