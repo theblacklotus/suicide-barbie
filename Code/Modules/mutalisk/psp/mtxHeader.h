@@ -18,7 +18,7 @@ struct MtxHeader
 {
 	enum
 	{
-		Signature_CurrentVersion = '0XTM', // "MTX0" in little endian format
+		Signature_CurrentVersion = '1XTM', // "MTX1" in little endian format
 
 		MaxMipLevels = 7
 	};
@@ -37,6 +37,15 @@ struct MtxHeader
 		u16	clutFormat;
 		u16 clutEntries;
 		u32 paletteOffset;
+
+		union
+		{
+			u32 bitfield;
+			struct
+			{
+				u32 swizzle:1;
+			};
+		};
 
 	// mips are not supported for now..
 //		u16 mipOffsets[MaxMipLevels];	// Offset from end of MtxHeader, divided by 16

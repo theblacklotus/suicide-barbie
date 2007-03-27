@@ -16,6 +16,7 @@ namespace mutalisk { namespace data
 		int clutFormat;
 		int clutEntries;
 		void* clut;
+		bool swizzled;
 
 		// memory management
 		psp_texture(); ~psp_texture();
@@ -49,6 +50,8 @@ inline template <typename In> In& operator>> (In& i, psp_texture& texture)
 		texture.data = malloc(header.vramAllocationSize);
 		texture.clut = (void*)(header.paletteOffset + (int)texture.data);
 		
+		texture.swizzled = header.swizzle;
+
 		printf("い width = %i\n", texture.width);
 		printf("い height = %i\n", texture.height);
 		printf("い format = %i\n", texture.format);
@@ -58,6 +61,7 @@ inline template <typename In> In& operator>> (In& i, psp_texture& texture)
 		printf("い clut? = %i\n", texture.clutFormat);
 		printf("い clut# = %i\n", texture.clutEntries);
 		printf("い clut@ = %x\n", (unsigned int)texture.clut);
+		printf("い swizzled = %s\n", texture.swizzled ? "yes" : "no");
 
 //		i.readArray((u32*)texture.data, header.vramAllocationSize/4);
 		i.readOpaqueData(texture.data, header.vramAllocationSize);

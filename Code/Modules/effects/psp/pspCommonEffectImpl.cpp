@@ -254,7 +254,7 @@ void CommonEffectImpl::setupSurface(BaseEffect::Input const& input)
 				sceGuClutMode(texture.clutFormat,0,0xff,0);
 				sceGuClutLoad(texture.clutEntries,texture.clut);
 			}
-			sceGuTexMode(texture.format,0,0,0);
+			sceGuTexMode(texture.format,0,0,texture.swizzled);
 			sceGuTexImage(texture.mipmap,texture.width,texture.height,texture.stride,texture.data);
 			sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 			sceGuTexFilter(GU_LINEAR_MIPMAP_NEAREST, GU_LINEAR_MIPMAP_NEAREST);
