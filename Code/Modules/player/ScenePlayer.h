@@ -228,9 +228,9 @@ AP<mutant::mutant_reader> createFileReader(std::string const& fileName);
 template <typename ResourceType>
 static AP<ResourceType> loadResource(std::string fileName)
 {
+	;;printf("loadResource<>: $ %s\n", fileName.c_str());
 	AP<mutant::mutant_reader> reader = createFileReader(fileName);
 	AP<ResourceType> resource(new ResourceType);
-	;;printf("loadResource<>: $ %s\n", fileName.c_str());
 	*reader >> *resource;
 	;;printf("loadResource<>: ! %s\n", fileName.c_str());
 	return resource;
@@ -239,9 +239,9 @@ static AP<ResourceType> loadResource(std::string fileName)
 template <>
 static AP<mutant::anim_character_set> loadResource(std::string fileName)
 {
+	;;printf("loadResource<anim_character_set>: $ %s\n", fileName.c_str());
 	AP<mutant::mutant_reader> reader = createFileReader(fileName);
 	AP<mutant::anim_character_set> resource(new mutant::anim_character_set);
-	;;printf("loadResource<anim_character_set>: $ %s\n", fileName.c_str());
 	reader->read(*resource);
 	;;printf("loadResource<anim_character_set>: ! %s\n", fileName.c_str());
 	return resource;
@@ -250,12 +250,12 @@ static AP<mutant::anim_character_set> loadResource(std::string fileName)
 template <>
 static AP<mutalisk::data::texture> loadResource(std::string fileName)
 {
+	;;printf("loadResource<mutalisk::data::texture>: $ %s\n", fileName.c_str());
 	AP<mutant::binary_input> input = AP<mutant::binary_input>(new file_input(getResourcePath() + fileName));
 	AP<mutant::mutant_reader> reader(new mutant::mutant_reader(input));
 	reader->enableLog(false);
 
 	AP<mutalisk::data::texture> resource(new mutalisk::data::texture);
-	;;printf("loadResource<mutalisk::data::texture>: $ %s\n", fileName.c_str());
 	*reader >> *resource;
 	;;printf("loadResource<mutalisk::data::texture>: ! %s\n", fileName.c_str());
 	return resource;
