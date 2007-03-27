@@ -75,8 +75,8 @@ struct ScenePlayerApp
 	Scene					scene;
 };
 std::auto_ptr<ScenePlayerApp> scenePlayerApp;
-std::string gSceneFileName = "walk01.msk";
-std::string gPathPrefix = "host1:DemoTest/walk01/psp/";//"ms0:PSP/TESTDATA/";
+std::string gSceneFileName = "flower.msk";
+std::string gPathPrefix = "host1:DemoTest/flower/psp/";//"ms0:PSP/TESTDATA/";
 
 
 struct Texture
@@ -118,17 +118,35 @@ void initTickFrequency()
 	gTick = gStartTick;
 }
 
-float peekTime()
+struct TimeBlock
+{
+	TimeBlock() : currTick(0), prevTick(0) {}
+	void peek()
+	{
+		ASSERT(gTickFrequency == 0);
+		prevTick = currTick;
+		sceRtcGetCurrentTick(&currTick);
+	}
+	float ms()
+	{
+		return static_cast<float>((currTick - prevTick) * gTickFrequency) / 1000.0f;
+	}
+
+	u64 currTick;
+	u64 prevTick;
+};
+
+/*float peekTime(u64& tickData)
 {
 	if(gTickFrequency == 0)
 		initTickFrequency();
 
-	u64 prevTick = gTick;
-	sceRtcGetCurrentTick(&gTick);
+	u64 prevTick = tickData;
+	sceRtcGetCurrentTick(&tickData);
 
-	return static_cast<float>(gTick - prevTick) * gTickFrequency;
+	return static_cast<float>(tickData - prevTick) * gTickFrequency;
 }
-
+*/
 float getTime()
 {
 	if(gTickFrequency == 0)
@@ -199,7 +217,7 @@ int main(int argc, char* argv[])
 	sceCtrlSetSamplingMode(0); 
 
 
-;;peekTime();
+;;initTickFrequency();
 //;;printf("main -- 0\n");
 
 	while(running())
@@ -221,7 +239,9 @@ int main(int argc, char* argv[])
 			}
 			oldPad = pad;*/
 		}
-//;;peekTime();
+TimeBlock updateTime, processTime, renderTime, loopTime, finishAndSyncTime;
+
+;;loopTime.peek();
 		sceGuStart(GU_DIRECT,list);
 //;;printf("main -- guStart\n");
 
@@ -268,29 +288,35 @@ int main(int argc, char* argv[])
 
 			scenePlayerApp->setProjMatrix(projMatrix);
 //;;printf("main -- setProjMatrix\n");
+;;updateTime.peek();
 			scenePlayerApp->update(getTime());
+;;updateTime.peek();
 //;;printf("main -- update\n");
+;;processTime.peek();
 			scenePlayerApp->process();
+;;processTime.peek();
 //;;printf("main -- process\n");
+;;renderTime.peek();
 			scenePlayerApp->render();
+;;renderTime.peek();
 //;;printf("main -- render\n");
 		}
 
-		pspDebugScreenSetOffset((int)mainRenderTarget.vramAddr);
-		pspDebugScreenSetXY(0,0);
-		pspDebugScreenPrintf("Hello world!");
-		pspDebugScreenPrintf("Cubbie is rotating");
-
-		pspDebugScreenPrintf("\n");
-///		pspDebugScreenPrintf("skin: %d, %d, %d, %d\n", skin->vertexCount, skin->indexCount, skin->boneCount, skin->weightsPerVertex);
-
 //;;printf("main -- guFinish0\n");
+;;finishAndSyncTime.peek();
 		sceGuFinish();
 //;;printf("main -- guFinish1\n");
 		sceGuSync(0,0);
+;;finishAndSyncTime.peek();
 //;;printf("main -- guSync\n");
 
-;;pspDebugScreenPrintf("renderTime: %f", peekTime()/1000.0f);
+;;loopTime.peek();
+;;static TimeBlock frameTime; frameTime.peek();
+		pspDebugScreenSetOffset((int)mainRenderTarget.vramAddr);
+		pspDebugScreenSetXY(0,0);
+		pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
+		pspDebugScreenPrintf("\n");
+		pspDebugScreenPrintf("mutalisk: update(%f) process(%f) render(%f)", updateTime.ms(), processTime.ms(), renderTime.ms());
 
 		sceDisplayWaitVblankStart();
 		mainRenderTarget2.vramAddr = mainRenderTarget.vramAddr;
