@@ -122,7 +122,7 @@ struct ScenePlayerApp
 		renderContext.viewProjMatrix = identityMatrix;
 		renderContext.projMatrix = identityMatrix;
 
-		scene.blueprint = loadResource<mutalisk::data::scene>(pathPrefix + sceneName);
+		scene.blueprint = mutalisk::loadResource<mutalisk::data::scene>(pathPrefix + sceneName);
 		scene.renderable = prepare(renderContext, *scene.blueprint, pathPrefix);
 	}
 
@@ -136,15 +136,15 @@ struct ScenePlayerApp
 	void process() { scene.renderable->process(); }
 	void render(int maxActors = -1, int maxLights = -1) { 
 //		::render(renderContext, *scene.renderable, true, true, maxActors, maxLights); }
-		::render(renderContext, *scene.renderable, maxActors); }
+		mutalisk::render(renderContext, *scene.renderable, maxActors); }
 
 	struct Scene
 	{
 		std::auto_ptr<mutalisk::data::scene> blueprint;
-		std::auto_ptr<RenderableScene> renderable;
+		std::auto_ptr<mutalisk::RenderableScene> renderable;
 	};
 	
-	RenderContext	renderContext;
+	mutalisk::RenderContext	renderContext;
 	Scene			scene;
 };
 std::auto_ptr<ScenePlayerApp> scenePlayerApp;
