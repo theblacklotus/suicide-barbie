@@ -31,6 +31,27 @@
 #include <player/dx9/dx9ScenePlayer.h>
 
 
+namespace {
+void splitFilename(std::string const& fullPath, std::string& path, std::string& fileName)
+{
+	size_t offset0 = fullPath.find_last_of('/');
+	size_t offset1 = fullPath.find_last_of('\\');
+
+	size_t offset = max(offset0, offset1);
+	if(offset == std::string::npos)
+		offset = min(offset0, offset1);
+
+	path = "";
+	fileName = fullPath;
+	if(offset == std::string::npos)
+		return;
+
+	++offset;
+	path = fullPath.substr(0, offset);
+	fileName = fullPath.substr(offset);
+}
+}
+
 struct ScenePlayerApp
 {
 	ScenePlayerApp(std::string const& sceneName, IDirect3DDevice9& device, ID3DXEffect& defaultEffect)
@@ -40,7 +61,11 @@ struct ScenePlayerApp
 		D3DXMatrixIdentity(&renderContext.viewProjMatrix);
 		D3DXMatrixIdentity(&renderContext.projMatrix);
 
-		scene.blueprint = mutalisk::loadResource<mutalisk::data::scene>(sceneName);
+		std::string path, fileName;
+		splitFilename(sceneName, path, fileName);
+		mutalisk::setResourcePath(path);
+
+		scene.blueprint = mutalisk::loadResource<mutalisk::data::scene>(fileName);
 		scene.renderable = prepare(renderContext, *scene.blueprint);
 	}
 
@@ -80,7 +105,7 @@ static bool gEnableAnimations = true;
 static bool gRenderDebugSkeleton = true;
 
 
-std::string gSceneFileName = "test_baked.msk";
+std::string gSceneFileName = "logo\\dx9\\logo.msk";
 
 //--------------------------------------------------------------------------------------
 //
@@ -208,25 +233,6 @@ public:
 protected:
 	mutalisk::RenderContext	renderContext;
 };
-
-void splitFilename(std::string const& fullPath, std::string& path, std::string& fileName)
-{
-	size_t offset0 = fullPath.find_last_of('/');
-	size_t offset1 = fullPath.find_last_of('\\');
-
-	size_t offset = max(offset0, offset1);
-	if(offset == std::string::npos)
-		offset = min(offset0, offset1);
-
-	path = "";
-	fileName = fullPath;
-	if(offset == std::string::npos)
-		return;
-
-	++offset;
-	path = fullPath.substr(0, offset);
-	fileName = fullPath.substr(offset);
-}
 
 BaseDemoPlayer::Scene BaseDemoPlayer::load(std::string const& sceneName)
 {
@@ -690,11 +696,7 @@ HRESULT CALLBACK OnCreateDevice( IDirect3DDevice9* pd3dDevice, const D3DSURFACE_
 
 //---
 
-//	scenePlayerApp.reset(new ScenePlayerApp(gSceneFileName, *pd3dDevice, *g_pEffect));
-	gDemo.reset(new TestDemo());
-	gDemo->platformSetup(*pd3dDevice, *g_pEffect);
-	gDemo->start();
-
+	scenePlayerApp.reset(new ScenePlayerApp(gSceneFileName, *pd3dDevice, *g_pEffect));
 	scenePlayerTime = 0.0;
 
     return S_OK;
@@ -976,13 +978,12 @@ void CALLBACK OnFrameRender( IDirect3DDevice9* pd3dDevice, double fTime, float f
 		if(scenePlayerTime - fElapsedTime < scenePlayerKey[1] && scenePlayerTime >= scenePlayerKey[1])
 			scenePlayerTime = scenePlayerKey[0];
 
-/*		scenePlayerApp->setViewMatrix(mView);
+		scenePlayerApp->setViewMatrix(mView);
 		scenePlayerApp->setProjMatrix(mProj);
 		scenePlayerApp->update(static_cast<float>(scenePlayerTime));
 		scenePlayerApp->process();
 		static int maxActors = -1;
-		scenePlayerApp->render(maxActors);*/
-		gDemo->doFrame(scenePlayerTime);
+		scenePlayerApp->render(maxActors);
 
 
 #if 0

@@ -1,18 +1,21 @@
 _Demo_
-.	add audio to TimelineViewerPSP
++	add audio to TimelineViewerPSP
 +	add time control to TimelineViewerPSP/ScenePlayerPSP
 .	clear color from camera
 +	blockReads for sequential containers
 .	audio support for dx9
-.	fix UV export
++	fix UV export
+.	fix per-vertex normals
 +	release on PSP
 .	memory load on PSP
 .	envmap on PSP
 .	shadows
 .	mirror
 .	face
+.	blur/bloom (+10%) on PSP only
 +	simple time profiling for PSP
 .	'visibility' tracks
+?	mutalisk::array still suspicious (UV fails when used)
 
 
 

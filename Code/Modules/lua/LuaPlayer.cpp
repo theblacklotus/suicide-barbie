@@ -208,8 +208,8 @@ void LuaPlayer::garbageCollect()
 	luaopen_string( L );
 	luaopen_table( L );
 	luaopen_math( L );
-	luaopen_io( L );
-	luaopen_debug( L );
+//	luaopen_io( L );
+//	luaopen_debug( L );
 
 	CLuaPathTrack::registerFunc( L );
 }

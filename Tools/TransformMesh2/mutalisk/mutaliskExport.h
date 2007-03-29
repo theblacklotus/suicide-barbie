@@ -51,7 +51,7 @@ double const ANIM_SAMPLING_FREQ = 1.0f / 30.0;
 #include <lua/Properties.h>
 
 #include <d3d9.h>
-#include <d3dx9.h>
+#include <d3dx9.h>	
 
 namespace mutalisk
 {
@@ -170,9 +170,9 @@ struct OutputScene
 
 		typedef std::map<std::string, std::string,
 			CaseInsensitiveCompare<std::string> >		StringPropertyMapT;
-		typedef std::map<std::string, array<double>,
+		typedef std::map<std::string, std::vector<double>,
 			CaseInsensitiveCompare<std::string> >		VectorPropertyMapT;
-		typedef std::map<std::string, array<KFCurve*>,
+		typedef std::map<std::string, std::vector<KFCurve*>,
 			CaseInsensitiveCompare<std::string> >		CurvePropertyMapT;
 
 		bool hasString(std::string const& byName) const { return (strings.find(byName) != strings.end()); }
@@ -1481,10 +1481,27 @@ void processProperties(KFbxNode const* pObject, OutputScene::Properties& propert
 void processLuaProperties(mutalisk::lua::Properties const& src, OutputScene::Properties& dst)
 {
 	for(mutalisk::lua::Properties::StringsT::const_iterator i = src.strings.begin(); i != src.strings.end(); ++i)
+	{
 		dst.strings[i->first] = i->second;
+	}
 
 	for(mutalisk::lua::Properties::VectorsT::const_iterator i = src.vectors.begin(); i != src.vectors.end(); ++i)
 	{
+/*		size_t size = 12;//i->second.size();
+		std::string name = i->first;
+
+		printf("Moo::::: %s %i\n", name.c_str(), size);
+		mutalisk::array<double>& v = dst.vectors[name];
+		printf("Moo::::: %i %x\n", v.size(), &v.front());
+		v.resize(size);
+		printf("Moo::::: %i %x\n", v.size(), &v.front());
+		v.resize(0);
+		printf("Moo::::: %i %x\n", v.size(), &v.front());
+		v.resize(size);
+		printf("Moo::::: %i %x\n", v.size(), &v.front());
+		mutalisk::array<double> a(8);
+		v = a;
+		printf("Moo::::: %i %x\n", v.size(), &v.front());*/
 		dst.vectors[i->first].resize(i->second.size());
 		std::copy(i->second.begin(), i->second.end(), dst.vectors[i->first].begin());
 	}
@@ -1566,7 +1583,7 @@ namespace
 fbxDouble3 readColorFromProperties(OutputScene::Properties& properties, std::string const& propName)
 {
 	fbxDouble3 color;
-	if(properties.hasVector(propName))
+	if(properties.hasVector(propName) && !properties.vectors[propName].empty())
 	{
 		assert(properties.vectors[propName].size() >= 3);
 		color[0] = properties.vectors[propName][0];
@@ -2512,11 +2529,8 @@ void beginScene(char const* sceneFileName)
 	// LUA test
 	std::string sceneProperties = mutalisk::fileName2SceneName(std::string(sceneFileName)) + ".props";
 	mutalisk::lua::LuaPlayer::getInstance().exec(sceneProperties);
-	//mutalisk::lua::LuaPlayer::getInstance().exec("test.lua");
-
-	//mutalisk::lua::Properties prop;
-	//mutalisk::lua::PropertiesByNameT props;
 	mutalisk::lua::readFromResult(gProperties);
+	mutalisk::lua::LuaPlayer::getInstance().garbageCollect();
 	// \LUA test
 
 	gOutputScene.source = sceneFileName;

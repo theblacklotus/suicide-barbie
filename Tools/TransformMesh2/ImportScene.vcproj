@@ -48,7 +48,7 @@
 				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;K_PLUGIN;K_FBXSDK;K_NODLL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="0"
+				RuntimeLibrary="2"
 				PrecompiledHeaderFile=".\..\..\obj\release\ImportScene/ImportScene.pch"
 				AssemblerListingLocation=".\..\..\obj\release\ImportScene/"
 				ObjectFile=".\..\..\obj\release\ImportScene/"
@@ -71,7 +71,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="zlib_mt.lib fbxsdk_mt.lib wininet.lib d3d9.lib d3dx9.lib shlwapi.lib"
+				AdditionalDependencies="d3d9.lib d3dx9.lib fbxsdk_md2005.lib zlib_md.lib shlwapi.lib lua5.1.lib"
 				OutputFile="..\..\bin\ImportScene.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"

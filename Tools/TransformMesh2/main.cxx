@@ -116,8 +116,8 @@ int main(int argc, char** argv)
 	}
 	if(argc > 1)
 	{
-		printf("\n\nPlatform: %s\n", targetPlatform.name);
-		printf("Target dir: %s\n", targetPlatform.targetDir);
+		printf("\n\nPlatform: %s\n", targetPlatform.name.c_str());
+		printf("Target dir: %s\n", targetPlatform.targetDir.c_str());
 		printf("File: %s\n\n", argv[argc-1]);
 		lResult = LoadScene(lSdkManager, lScene, argv[argc-1]);
 	}

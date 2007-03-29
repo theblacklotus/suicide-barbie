@@ -155,8 +155,8 @@ namespace mutalisk {
             std::copy(rhs.begin(),rhs.end(), begin());
             return *this;
         }
-        template <typename T2>
-        array<T>& operator= (const array<T2>& rhs) {
+        //template <typename T2>
+        array<T>& operator= (const array<T>& rhs) {
 			return assignArray(rhs);
         }
 
