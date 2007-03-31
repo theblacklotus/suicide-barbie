@@ -5,7 +5,7 @@ _Demo_
 +	blockReads for sequential containers
 .	audio support for dx9
 +	fix UV export
-.	fix per-vertex normals
++	fix per-vertex normals
 +	release on PSP
 .	memory load on PSP
 .	envmap on PSP

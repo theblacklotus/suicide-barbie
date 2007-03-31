@@ -1,4 +1,4 @@
-@call logo/goPsp.bat
-@call flower/goPsp.bat
-@call telephone_s1/goPsp.bat
-@call walk01/goPsp.bat
+@call buildScenePsp.bat logo
+@call buildScenePsp.bat flower
+@call buildScenePsp.bat telephone_s1
+@call buildScenePsp.bat walk01

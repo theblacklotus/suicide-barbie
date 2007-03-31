@@ -85,15 +85,16 @@ struct BaseSkinnedMesh
 	struct Vertex
 	{
 		typedef unsigned short BoneIndexT;
-		typedef DWORD Color;
+		typedef std::vector<
+			std::pair<BoneIndexT, float> > WeightsT;
+		typedef DWORD ColorT;
 
 		Vec3 pos;
 		Vec3 normal;
 		Vec3 uvw;
-		Color color;
+		ColorT color;
 
-		std::vector<
-			std::pair<BoneIndexT, float> > weights;
+		WeightsT weights;
 	};
 	typedef unsigned short IndexT;
 	struct Subset
@@ -246,8 +247,10 @@ CurvesT gCurves;
 unsigned short processIndex(kInt srcIndex);
 void processMatrix(float* dstMatrix, KFbxXMatrix const& srcMatrix);
 void processMesh(KFbxNode* pNode);
-void processMaterials(KFbxMesh* pMesh, OutputScene::MaterialsT& materials, OutputSkinnedMesh::SubsetsT* subsets = 0);
-void processSubsets(KFbxMesh* pMesh, OutputSkinnedMesh::SubsetsT& subsets);
+void processMaterials(KFbxMesh* pMesh, std::vector<OutputSkinnedMesh::IndexT> const& indices, 
+					  OutputScene::MaterialsT& materials, OutputSkinnedMesh::SubsetsT* subsets = 0);
+void processSubsets(KFbxMesh* pMesh, std::vector<OutputSkinnedMesh::IndexT> const& indices,
+					OutputSkinnedMesh::SubsetsT& subsets);
 void processProperties(KFbxNode const* pObject, OutputScene::Properties& properties);
 void processLuaProperties(mutalisk::lua::Properties const& src, OutputScene::Properties& dst);
 void processAnimatedProperties(KFbxNode* pNode, OutputScene::Properties& properties);
@@ -420,7 +423,7 @@ std::string outputFileName(std::string fileName)
 template <typename Data>
 void save(std::string dstName, Data& data)
 {
-	mutant::mutant_writer mutWriter(mutant::writer_factory::createOutput(outputFileName(dstName)));
+	mutant::mutant_writer mutWriter(mutant::writer_factory::createOutput(outputFileName(dstName), writer_factory::PLAIN));
 	mutWriter << data;
 }
 
@@ -945,6 +948,7 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 		// node
 		data.lights[q].id = q;
 		data.lights[q].nodeName = name;
+		data.lights[q].active = true;
 		processMatrix(data.lights[q].worldMatrix.data, (*i)->GetNode()->GetGlobalFromDefaultTake());
 
 		// properties
@@ -1035,6 +1039,7 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 		char const* name = (*i)->GetNode()->GetName();
 		data.cameras[q].id = q;
 		data.cameras[q].nodeName = name;
+		data.cameras[q].active = true;
 		processMatrix(data.cameras[q].worldMatrix.data, (*i)->GetNode()->GetGlobalFromDefaultTake());
 
 		// camera
@@ -1226,13 +1231,13 @@ void processMatrix(float* dstMatrix, KFbxXMatrix const& srcMatrix_)
 	dstMatrix[14] *= gGlobalScale;
 }
 
-void processSubsets(KFbxMesh* pMesh, OutputSkinnedMesh::SubsetsT& subsets)
+void processSubsets(KFbxMesh* pMesh, std::vector<OutputSkinnedMesh::IndexT> const& indices, OutputSkinnedMesh::SubsetsT& subsets)
 {
 	OutputScene::MaterialsT tmpMaterials;
-	processMaterials(pMesh, tmpMaterials, &subsets);
+	processMaterials(pMesh, indices, tmpMaterials, &subsets);
 }
 
-void processMaterials(KFbxMesh* pMesh, OutputScene::MaterialsT& materials, OutputSkinnedMesh::SubsetsT* subsets)
+void processMaterials(KFbxMesh* pMesh, std::vector<OutputSkinnedMesh::IndexT> const& indices, OutputScene::MaterialsT& materials, OutputSkinnedMesh::SubsetsT* subsets)
 {
 	// NOTE: use only 1st layer for subset splitting
 	kInt const MAX_LAYER_COUNT = 1;
@@ -1338,8 +1343,10 @@ void processMaterials(KFbxMesh* pMesh, OutputScene::MaterialsT& materials, Outpu
 					assert(pMesh->GetPolygonSize(i) <= POLY_SIZE);
 					for (kInt j = 0; j < min(POLY_SIZE, pMesh->GetPolygonSize(i)); j++)
 					{
-						kInt lControlPointIndex = pMesh->GetPolygonVertex(i, j);
-						(*subsets)[combIndex].indices.push_back(processIndex(lControlPointIndex));
+						OutputSkinnedMesh::IndexT index = indices[i*POLY_SIZE + j];
+						(*subsets)[combIndex].indices.push_back(index);
+						//kInt lControlPointIndex = pMesh->GetPolygonVertex(i, j);
+						//(*subsets)[combIndex].indices.push_back(processIndex(lControlPointIndex));
 					}
 				}
 			}
@@ -1371,7 +1378,7 @@ void processMesh(KFbxNode* pNode)
 
 			OutputScene::Actor newActor;
 			newActor.mesh = &processMeshResource(layer, nodeBaseName(nodeName) + layerName);
-			processMaterials(pMesh, newActor.materials);	// $TBD: support multiple layers
+			processMaterials(pMesh, newActor.mesh->indices, newActor.materials);	// $TBD: support multiple layers
 			assertWarning(newActor.mesh->subsets.size() == newActor.materials.size(), "Mesh subset count and actor material count doesn't match.");
 			processProperties(pNode, newActor.properties);
 			newActor.node = pNode;
@@ -1384,7 +1391,7 @@ void processMesh(KFbxNode* pNode)
 	{
 		OutputScene::Actor newActor;
 		newActor.mesh = &processMeshResource(pNode);
-		processMaterials(pMesh, newActor.materials);
+		processMaterials(pMesh, newActor.mesh->indices, newActor.materials);
 		assertWarning(newActor.mesh->subsets.size() == newActor.materials.size(), "Mesh subset count and actor material count doesn't match.");
 		processProperties(pNode, newActor.properties);
 		newActor.node = pNode;
@@ -1712,6 +1719,233 @@ std::string processShaderResource(KFbxSurfaceMaterial* pMaterial)
 	return resourceName;
 }
 
+namespace
+{
+	void samplePosition(OutputSkinnedMesh::Vec3& outPos, KFbxMesh& mesh, int i, int j, int vertexId)
+	{
+		kInt controlPointIndex = mesh.GetPolygonVertex(i, j);
+		KFbxVector4* lControlPoints = mesh.GetControlPoints();
+
+		for(int w = 0; w < 3; ++w)
+			outPos[w] = static_cast<float>(lControlPoints[controlPointIndex][w]) * gGlobalScale;
+	}
+	void sampleNormal(OutputSkinnedMesh::Vec3& outNormal, KFbxMesh& mesh, KFbxLayerElementNormal* leVtxn, int i, int j, int vertexId)
+	{
+		int tmpId = -1;
+		kInt controlPointIndex = mesh.GetPolygonVertex(i, j);
+
+		KFbxVector4 normal(0, 1, 0);
+		if(leVtxn && leVtxn->GetMappingMode() == KFbxLayerElement::eBY_CONTROL_POINT)
+		{
+			switch (leVtxn->GetReferenceMode())
+			{
+			case KFbxLayerElement::eDIRECT:
+				normal = leVtxn->GetDirectArray().GetAt(controlPointIndex);
+				break;
+			case KFbxLayerElement::eINDEX_TO_DIRECT:
+				tmpId = leVtxn->GetIndexArray().GetAt(controlPointIndex);
+				assert(tmpId >= 0);
+				normal = leVtxn->GetDirectArray().GetAt(tmpId);
+				break;
+			default:
+				break; // other reference modes not shown here!
+			}
+		}
+		else
+			mesh.GetPolygonVertexNormal(i, j, normal);
+
+		for(int w = 0; w < 3; ++w)
+			outNormal[w] = static_cast<float>(normal[w]);
+	}
+	void sampleUv(OutputSkinnedMesh::Vec3& outUv, KFbxMesh& mesh, KFbxLayerElementUV* leUV, int i, int j, int vertexId)
+	{
+		int tmpId = -1;
+		kInt controlPointIndex = mesh.GetPolygonVertex(i, j);
+		kInt textureUVIndex = mesh.GetTextureUVIndex(i, j);
+
+		KFbxVector2 uv; uv[0] = 0.0; uv[1] = 0.0;
+		if(leUV)
+		{
+			switch (leUV->GetMappingMode())
+			{
+			case KFbxLayerElement::eBY_CONTROL_POINT:
+				switch (leUV->GetReferenceMode())
+				{
+				case KFbxLayerElement::eDIRECT:
+					uv = leUV->GetDirectArray().GetAt(controlPointIndex);
+					break;
+				case KFbxLayerElement::eINDEX_TO_DIRECT:
+					tmpId = leUV->GetIndexArray().GetAt(controlPointIndex);
+					assert(tmpId >= 0);
+					uv = leUV->GetDirectArray().GetAt(tmpId);
+					break;
+				default:
+					break; // other reference modes not shown here!
+				}
+				break;
+
+			case KFbxLayerElement::eBY_POLYGON_VERTEX:
+				assert(textureUVIndex >= 0);
+				switch (leUV->GetReferenceMode())
+				{
+				case KFbxLayerElement::eDIRECT:
+					uv = leUV->GetDirectArray().GetAt(textureUVIndex);
+					break;
+				case KFbxLayerElement::eINDEX_TO_DIRECT:
+					//tmpId = leUV->GetIndexArray().GetAt(textureUVIndex);
+					//uv = leUV->GetDirectArray().GetAt(tmpId);
+					uv = leUV->GetDirectArray().GetAt(textureUVIndex);
+					break;
+				default:
+					break; // other reference modes not shown here!
+				}
+				break;
+
+			case KFbxLayerElement::eBY_POLYGON: // doesn't make much sense for UVs
+			case KFbxLayerElement::eALL_SAME:   // doesn't make much sense for UVs
+			case KFbxLayerElement::eNONE:       // doesn't make much sense for UVs
+				break;
+
+			}
+		}
+
+		outUv[0] = static_cast<float>(uv[0]);
+		outUv[1] = static_cast<float>(1.0 - uv[1]);
+		outUv[2] = 0.0f;
+	}
+	void sampleColor(OutputSkinnedMesh::Vertex::ColorT& outColor, KFbxMesh& mesh, KFbxLayerElementVertexColor* leVtxc, int i, int j, int vertexId)
+	{
+		int tmpId = -1;
+		kInt controlPointIndex = mesh.GetPolygonVertex(i, j);
+		
+		KFbxColor color(1.0, 1.0, 1.0);
+		if(leVtxc)
+		{
+			switch (leVtxc->GetMappingMode())
+			{
+			case KFbxLayerElement::eBY_CONTROL_POINT:
+				switch (leVtxc->GetReferenceMode())
+				{
+				case KFbxLayerElement::eDIRECT:
+					color = leVtxc->GetDirectArray().GetAt(controlPointIndex);
+					break;
+				case KFbxLayerElement::eINDEX_TO_DIRECT:
+					tmpId = leVtxc->GetIndexArray().GetAt(controlPointIndex);
+					assert(tmpId >= 0);
+					color = leVtxc->GetDirectArray().GetAt(tmpId);
+					break;
+				default:
+					break; // other reference modes not shown here!
+				}
+				break;
+
+			case KFbxLayerElement::eBY_POLYGON_VERTEX:
+				switch (leVtxc->GetReferenceMode())
+				{
+				case KFbxLayerElement::eDIRECT:
+					color = leVtxc->GetDirectArray().GetAt(i * 3 + j);
+					break;
+				case KFbxLayerElement::eINDEX_TO_DIRECT:
+					tmpId = leVtxc->GetIndexArray().GetAt(i * 3 + j);
+					color = leVtxc->GetDirectArray().GetAt(tmpId);
+					break;
+				default:
+					break; // other reference modes not shown here!
+				}
+				break;
+
+			case KFbxLayerElement::eBY_POLYGON: // doesn't make much sense for Colors
+			case KFbxLayerElement::eALL_SAME:   // doesn't make much sense for Colors
+			case KFbxLayerElement::eNONE:       // doesn't make much sense for Colors
+				break;
+
+			}
+		}
+
+		if(gPlatform == Platform::DX9)
+		{
+			 outColor = mutalisk::data::colorRGBAtoDWORD(
+				static_cast<float>(color.mBlue),
+				static_cast<float>(color.mGreen),
+				static_cast<float>(color.mRed),
+				static_cast<float>(color.mAlpha));
+		}
+		else
+		{
+			outColor = mutalisk::data::colorRGBAtoDWORD(
+				static_cast<float>(color.mRed),
+				static_cast<float>(color.mGreen),
+				static_cast<float>(color.mBlue),
+				static_cast<float>(color.mAlpha));
+		}
+	}
+	void sampleWeights(OutputSkinnedMesh::Vertex::WeightsT& outWeights, KFbxMesh& mesh, int i, int j, int vertexId)
+	{
+		kInt lControlPointIndex = mesh.GetPolygonVertex(i, j);
+
+		kInt lLinkCount = mesh.GetLinkCount();
+		for(unsigned short q = 0; q < lLinkCount; ++q)
+		{
+			KFbxLink* lLink = mesh.GetLink(q);
+			assert(lLink);
+			assert(lLink->GetLink());
+
+			kInt lIndexCount = lLink->GetControlPointIndicesCount();
+			kInt* lIndices = lLink->GetControlPointIndices();
+			kDouble* lWeights = lLink->GetControlPointWeights();
+
+			for(int w = 0; w < lIndexCount; w++)
+			{
+				if(lControlPointIndex != lIndices[w])
+					continue;
+
+				unsigned short boneId = q;
+				float boneWeight = static_cast<float>(lWeights[w]);
+				if(boneWeight <= WEIGHT_EPSILON )
+					continue;
+
+				outWeights.push_back(std::make_pair(boneId, boneWeight));
+			}
+		}
+	}
+
+struct compareVertex
+	: public std::binary_function<OutputSkinnedMesh::Vertex, OutputSkinnedMesh::Vertex, bool>
+{
+	bool operator()(const OutputSkinnedMesh::Vertex& a, const OutputSkinnedMesh::Vertex& b) const
+	{
+		// compare everything except bone weights
+		return (memcmp(&a, &b, 
+			sizeof(OutputSkinnedMesh::Vertex) - sizeof(OutputSkinnedMesh::Vertex::WeightsT)) < 0);
+	}
+};
+
+typedef std::map<OutputSkinnedMesh::Vertex, kInt, compareVertex>	VertexMapT;
+typedef std::vector<
+	std::pair<OutputSkinnedMesh::Vertex, kInt> >					VertexMapT2;
+
+	kInt insertVertexInMap(VertexMapT& vertexMap, kInt& uniqueId, OutputSkinnedMesh::Vertex const& v)
+	{
+		kInt index = 0;
+		VertexMapT::const_iterator vIt = vertexMap.find(v);
+		if(vIt == vertexMap.end())
+		{
+			index = uniqueId;
+			vertexMap.insert(std::make_pair(v, uniqueId++));
+		}
+		else
+			index = vIt->second;
+
+		return index;
+	}
+	kInt insertVertexInMap(VertexMapT2& vertexMap, kInt& uniqueId, OutputSkinnedMesh::Vertex const& v)
+	{
+		kInt index = uniqueId;
+		vertexMap.push_back(std::make_pair(v, uniqueId++));
+		return index;
+	}
+}
+
 OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 {
 	assert(pNode);
@@ -1724,23 +1958,85 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 
 	// fill result
 	KFbxMesh* pMesh = (KFbxMesh*) pNode->GetNodeAttribute();
+
+	static bool forceComputeVertexNormals = false;
+	if(forceComputeVertexNormals)
+		pMesh->ComputeVertexNormals();
+
 	assert(gFbxGeomConverter);
 	// mesh triangulized => can safely assume that all polys == triangles
 	KFbxMesh* pMeshTriangulated = gFbxGeomConverter->TriangulateMesh(pMesh);
+//	KFbxMesh* pMeshTriangulated = pMesh;
 
 	assert(pMesh->GetLayerCount() == pMeshTriangulated->GetLayerCount());
 
-	kInt lControlPointsCount = pMesh->GetControlPointsCount();
 	kInt lPolygonCount = pMeshTriangulated->GetPolygonCount();
 	kInt lLinkCount = pMesh->GetLinkCount();
 
 	result.clear();
 	result.source = resourceName;
 	result.name = nodeBaseName(resourceName);
-	result.vertices.resize(lControlPointsCount);
 	result.indices.resize(lPolygonCount*3);
 	result.bones.resize(lLinkCount);
 
+	typedef VertexMapT	VertexMap;
+	VertexMap vertexMap;
+	// [FBX gather] mesh
+	{
+		// $TBD: support multiple layers
+		KFbxLayerElementNormal* leVtxn = 0;
+		KFbxLayerElementVertexColor* leVtxc = 0;
+		KFbxLayerElementUV* leUV = 0;
+		if(pMeshTriangulated->GetLayerCount() > 0)
+		{
+			leVtxn = pMeshTriangulated->GetLayer(0)->GetNormals();
+			leVtxc = pMeshTriangulated->GetLayer(0)->GetVertexColors();
+			leUV = pMeshTriangulated->GetLayer(0)->GetUVs();
+		}
+
+		if(leVtxc)
+			result.hasVertexColor = true;
+
+		kInt vertexId = 0;
+		kInt uniqueId = 0;
+
+		kInt const POLY_SIZE = 3;
+		// $NOTE: assume only 1 subset
+		// $TBD: support multiple subsets
+		for (kInt i = 0; i < lPolygonCount; i++)
+		{
+			for (kInt j = 0; j < POLY_SIZE; ++j)
+			{
+				assert(i*POLY_SIZE + j < (kInt)result.indices.size());
+				result.indices[i*POLY_SIZE + j] = 0;
+			}
+
+			kInt lPolygonSize = pMeshTriangulated->GetPolygonSize(i);
+			assert(lPolygonSize <= POLY_SIZE);
+			for (kInt j = 0; j < min(POLY_SIZE, lPolygonSize); j++, vertexId++)
+			{
+				OutputSkinnedMesh::Vertex v;
+				samplePosition(v.pos,	*pMeshTriangulated, i, j			, vertexId);
+				sampleNormal(v.normal,	*pMeshTriangulated, leVtxn, i, j	, vertexId);
+				sampleUv(v.uvw,			*pMeshTriangulated, leUV, i, j		, vertexId);
+				sampleColor(v.color,	*pMeshTriangulated, leVtxc, i, j	, vertexId);
+				sampleWeights(v.weights,*pMeshTriangulated, i, j			, vertexId);
+
+				kInt index = insertVertexInMap(vertexMap, uniqueId, v);
+
+				assert(i*POLY_SIZE + j < (int)result.indices.size());
+				result.indices[i*POLY_SIZE + j] = processIndex(index);
+			}
+		}
+
+		result.vertices.resize(vertexMap.size());
+		for(VertexMap::const_iterator vIt = vertexMap.begin(); vIt != vertexMap.end(); ++vIt)
+			result.vertices[processIndex(vIt->second)] = vIt->first;
+
+	} // \[FBX gather] mesh
+
+
+#if 0
 	// [FBX gather] vertices & normals
 	{
 		// $TBD: extract vertex colors from layer
@@ -1753,6 +2049,22 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 				assert(i < (kInt)result.vertices.size());
 				result.vertices[i].pos[w] = static_cast<float>(lControlPoints[i][w]) * gGlobalScale;
 				result.vertices[i].normal[w] = static_cast<float>(lNormals[i][w]);
+			}
+		}
+
+		if(!forceComputeVertexNormals)
+		{
+			for (kInt i = 0; i < pMesh->GetPolygonCount(); i++)
+			{
+				for (kInt j = 0; j < pMesh->GetPolygonSize(i); j++)
+				{
+					kInt lControlPointIndex = pMesh->GetPolygonVertex(i, j);
+
+					KFbxVector4 normal(0, 1, 0);
+					pMesh->GetPolygonVertexNormal(i, j, normal);
+					for(int w = 0; w < 3; ++w)
+						result.vertices[lControlPointIndex].normal[w] = static_cast<float>(normal[w]);
+				}
 			}
 		}
 	} // \[FBX gather] vertices & normals
@@ -1769,6 +2081,9 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 			KFbxLayerElementUV* leUV = pMeshWithUv->GetLayer(l)->GetUVs();
 			if (!leUV)
 				continue;
+
+			size_t dsize = leUV->GetDirectArray().GetCount();
+			size_t isize = leUV->GetIndexArray().GetCount();
 
 			for (kInt i = 0; i < pMeshWithUv->GetPolygonCount(); i++)
 			{
@@ -1810,6 +2125,7 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 //							tmpId = leUV->GetIndexArray().GetAt(tmpTextureUVIndex);
 //							uv = leUV->GetDirectArray().GetAt(tmpId);
 							uv = leUV->GetDirectArray().GetAt(tmpTextureUVIndex);
+
 							break;
 						default:
 							break; // other reference modes not shown here!
@@ -1984,10 +2300,11 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 			}
 		}
 	} // \[FBX gather] indices
+#endif
 
 	// [FBX gather] subsets
 	{
-		processSubsets(pMeshTriangulated, result.subsets);
+		processSubsets(pMeshTriangulated, result.indices, result.subsets);
 	} // \[FBX gather] subsets
 
 	// [FBX gather] bones

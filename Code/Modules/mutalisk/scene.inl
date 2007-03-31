@@ -173,7 +173,7 @@ inline template <typename Out> Out& operator<< (Out& o, scene const& data)
 				o.writeDword(data.actors[q].materials[w].shaderIndex);
 				//o.writeDword(data.actors[q].materials[w].inputIndex);
 				o << data.actors[q].materials[w].shaderInput;
-			}
+			}	
 			o.writeDword(data.actors[q].slice);
 		}
 

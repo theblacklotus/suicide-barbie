@@ -6,9 +6,18 @@ namespace mutalisk { namespace data
 // shader_fixed
 //
 shader_fixed::shader_fixed()
-:	frameBufferOp(fboReplace),
-	zBufferOp(zboReadWrite)
+:	diffuseTexture(~0U)
+,	envmapTexture(~0U)
+,	uOffset(0.0f)
+,	vOffset(0.0f)
+,	transparency(0.0f)
+,	frameBufferOp(fboReplace)
+,	zBufferOp(zboReadWrite)
 {
+	ambient.r = ambient.g = ambient.b = ambient.a = 0.0f;
+	diffuse.r = diffuse.g = diffuse.b = diffuse.a = 0.0f;
+	specular.r = specular.g = specular.b = specular.a = 0.0f;
+	emissive.r = emissive.g = emissive.b = emissive.a = 0.0f;
 }
 // shader
 //

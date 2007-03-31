@@ -23,7 +23,7 @@ struct MtxHeader
 		MaxMipLevels = 7
 	};
 
-	struct
+/*	struct
 	{
 		u32 signature;
 
@@ -52,21 +52,21 @@ struct MtxHeader
 //		u16 paletteOffset;				// Offset from end of MtxHeader, divided by 16
 
 
-/*
-		u32 alphaBlendEnable;			// 1 if this texture should be rendered with alphablend enabled; 0 otherwise
 
-		int format;
-		int mipmap;
-		int width, height, stride;
-		void* data;
-		void* vramAddr;
+//		u32 alphaBlendEnable;			// 1 if this texture should be rendered with alphablend enabled; 0 otherwise
+//
+//		int format;
+//		int mipmap;
+//		int width, height, stride;
+//		void* data;
+//		void* vramAddr;
+//
+//		alpha blend func
+//		alpha test ref
+//		wrap
+//		clamp
 
-		alpha blend func
-		alpha test ref
-		wrap
-		clamp
-*/
-	};
+	};*/
 };
 
 } // namespace data 
