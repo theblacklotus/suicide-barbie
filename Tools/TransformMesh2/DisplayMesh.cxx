@@ -223,6 +223,13 @@ void DisplayPolygons(KFbxMesh* pMesh)
 					case KFbxLayerElement::eBY_POLYGON_VERTEX:
 						{
 						int lTextureUVIndex = pMesh->GetTextureUVIndex(i, j);
+
+						// MODIFIED BY: ReJ
+						// NOTE: bail-out on negative indices, shouldn't ever happen
+						// however original FBX sample seems to be a little bit borken, when it comes to UV processing
+						if(lTextureUVIndex < 0)	break;
+						// \MODIFIED BY
+
 						switch (leUV->GetReferenceMode())
 						{
 						case KFbxLayerElement::eDIRECT:
