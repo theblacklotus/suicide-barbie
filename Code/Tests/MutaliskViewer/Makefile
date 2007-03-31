@@ -1,6 +1,7 @@
 ########################################################
 PROJECT = SuicideBarbie
 
+LCFILE = stripped.ld
 LIBS=\
 	$(PSPDEV)/psp/lib/libstdc++.a\
 	$(PSPDEV)/psp/lib/libm.a\
@@ -42,5 +43,17 @@ SRCS=\
 	TimeBlock.cpp\
 	TimelinePlayer.cpp\
 	vram.c\
+
+LD_FLAGS=\
+	-T $(LCFILE)\
+	-fno-exceptions\
+	-Wl,-Map="$(OUTDIR)/$(PROJECT).txt"\
+	-L$(PSPDEV)/psp/sdk/lib\
+	-lpspuser\
+	-lpspkernel\
+	-Wl,-s\
+	-Wl,-x\
+	-Wl,--gc-sections\
+	-Wl,--defsym,sceNetInetGetsockopt=0,--defsym,sceNetInetGetErrno=0,--defsym,sceNetInetSetsockopt=0\
 
 include ../../build.mak
