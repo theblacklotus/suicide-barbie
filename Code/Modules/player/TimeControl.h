@@ -20,9 +20,15 @@ namespace mutalisk
 
 		float time() const { return static_cast<float>(currentTime); }
 
+		void pause(int pause);
+
+		float getDiscontinuity();
+
 	private:
 		float currentTime;
 		float timeKey[2];
+		bool isPaused;
+		float discontinuity;
 	};
 } // namespace mutalisk
 
