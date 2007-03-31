@@ -12,9 +12,12 @@ static char inputBuf[BUF_COUNT][INPUTBUF_SIZE] __attribute__((aligned(64)));
 int wav_streamer(SceSize args, void *argp);
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+static SceUID playth;
+
 void streamWaveFile(char *file)
 {
-	SceUID playth = sceKernelCreateThread("wav_streamer", wav_streamer, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
+	playth = sceKernelCreateThread("wav_streamer", wav_streamer, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
 
 	if (playth < 0)
 	{
@@ -25,7 +28,18 @@ void streamWaveFile(char *file)
 	sceKernelStartThread(playth, strlen(file)+1, file);
 }
 
-static int nudgeOffset = 0;
+static volatile int nudgeOffset = 0;
+static volatile int isPaused = 0;
+
+void streamWavePause(int pause)
+{
+	if (isPaused != pause && !pause)
+	{
+		sceKernelWakeupThread(playth);
+	}
+	isPaused = pause;
+}
+
 
 void streamWaveNudge(int offset)
 {
@@ -216,6 +230,8 @@ int wav_streamer(SceSize args, void *argp)
 
 		pspDebugScreenSetXY(0,2);
 		printf("offset = 0x%x (%3.1f%%)\n", offset, 100.f * offset/size);
+		if (isPaused)
+			sceKernelSleepThread();
 	}
 	while(offset != size);
 	sceIoClose(fd);

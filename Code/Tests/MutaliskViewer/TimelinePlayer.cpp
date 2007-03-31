@@ -28,7 +28,14 @@ extern "C" {
 
 #include <player/TimeControl.h>
 
-PSP_MODULE_INFO("TimelineViewer", 0x1000, 1, 1);
+#include <pspsdk.h>
+void streamWaveFile(char *file);
+void streamWavePause(int pause);
+void streamWaveNudge(int offset);
+void streamAT3File(char *file);
+
+
+PSP_MODULE_INFO("TimelineViewer", PSP_MODULE_USER, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
 static unsigned int __attribute__((aligned(16))) list[262144];
@@ -145,6 +152,20 @@ int main(int argc, char* argv[])
 	mutalisk::initTickFrequency(); getDeltaTime();
 ;;printf("tickResolution: %f, tickFrequency: %f\n", mutalisk::tickResolution(), mutalisk::tickFrequency());
 
+
+	SceUID thid1 = pspSdkLoadStartModule("flash0:/kd/audiocodec.prx", PSP_MEMORY_PARTITION_KERNEL);
+	SceUID thid2 = pspSdkLoadStartModule("flash0:/kd/libatrac3plus.prx", PSP_MEMORY_PARTITION_USER);
+	if (thid1 < 0 || thid2 < 0)
+	{
+		printf("unable to load kernel modules\n");
+		printf("thid1 = %x\n", thid1);
+		printf("thid2 = %x\n", thid2);
+	}
+
+	streamWaveFile("host1:/dumpa_mig.wav");
+//	streamAT3File("host1:/dumpa_mig.at3");
+
+
 	gTimeControl.restart(true);
 	while(running())
 	{
@@ -170,6 +191,17 @@ int main(int argc, char* argv[])
 				if (pad.Buttons & PSP_CTRL_TRIANGLE)				
 					gTimeControl.to(gTimeControl.time());
 
+				if (pad.Buttons & PSP_CTRL_SELECT)
+				{
+					gTimeControl.pause(true);
+					streamWavePause(true);
+				}
+				if (pad.Buttons & PSP_CTRL_START)
+				{
+					gTimeControl.pause(false);
+					streamWavePause(false);
+				}
+
 				if (pad.Buttons & PSP_CTRL_LEFT)
 					gTimeControl.scroll(-5.0f * speedModifier);
 				if (pad.Buttons & PSP_CTRL_RIGHT)
@@ -181,7 +213,11 @@ int main(int argc, char* argv[])
 			}
 			oldPad = pad;
 		}
-
+		float d = gTimeControl.getDiscontinuity();
+		if (d != 0.f)
+		{
+			streamWaveNudge((int)(d /*seconds*/ * 44100 /*samples per sec*/ * 4/*bytes per sample*/ * 4));
+		}
 ;;mutalisk::TimeBlock updateTime, /*processTime, renderTime,*/ loopTime, finishAndSyncTime;
 ;;loopTime.peek();
 
