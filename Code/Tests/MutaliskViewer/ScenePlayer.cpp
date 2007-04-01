@@ -107,255 +107,6 @@ float getDeltaTime()
 	return static_cast<float>((delta) * mutalisk::tickFrequency()) / (1000.0f * 1000.0f);
 }
 
-
-
-/******************************************************************************************/
-/*                                                                                        */
-/******************************************************************************************/
-#if 0
-std::vector<int> gStateStack;
-void pushState()
-{
-	gStateStack.push_back(sceGuGetAllStatus());
-}
-
-void popState()
-{
-	sceGuSetAllStatus(gStateStack.back());
-	gStateStack.pop_back();
-}
-
-struct Sampler
-{
-	int addressU;
-	int addressV;
-	int minFilter;
-	int magFilter;
-};
-
-struct Region
-{
-	ScePspFVector2 offset;
-	ScePspFVector2 scale;
-};
-
-void setTexture(Texture const& texture)
-{
-	sceGuTexMode(texture.format,0,0,0);
-	sceGuTexImage(texture.mipmap,texture.width,texture.height,texture.stride,texture.data);
-}
-
-void setSampler(Sampler const& sampler)
-{
-	sceGuTexFilter(sampler.minFilter,sampler.magFilter);
-	sceGuTexWrap(sampler.addressU,sampler.addressV);
-}
-
-void drawFullscreenQuad(unsigned int color, unsigned int vertexElements = 0)
-{
-	struct QuadVertex
-	{
-		unsigned short x,y,z;
-	};
-	struct QuadVertexTex
-	{
-		float u, v;
-		float x,y,z;
-	};
-
-	static QuadVertexTex fsQuadVerticesTex[4] = {
-		{0, 0, -1, 1, -1}, // 0
-		{1, 0,  1, 1, -1}, // 3
-		{0, 1, -1,-1, -1}, // 1
-		{1, 1,  1,-1, -1}, // 2
-	};
-
-	sceGumMatrixMode(GU_PROJECTION);
-	sceGumLoadIdentity();
-	sceGumOrtho(-1.0f,1.0f,-1.0f,1.0f, 0.5f,1000.0f);
-
-	sceGumMatrixMode(GU_VIEW);
-	sceGumLoadIdentity();
-
-	sceGumMatrixMode(GU_MODEL);
-	sceGumLoadIdentity();
-
-	sceGuColor(color);
-
-	sceGuDisable(GU_LIGHTING);
-	sceGuDisable(GU_DEPTH_TEST);
-	sceGuDepthMask(1);
-
-	// draw quad
-	if(vertexElements & GU_TEXTURE_32BITF)
-		sceGumDrawArray(GU_TRIANGLE_STRIP,GU_TEXTURE_32BITF|GU_VERTEX_32BITF|GU_TRANSFORM_3D,4,0,fsQuadVerticesTex);
-	else
-	{
-		QuadVertex* vertices = reinterpret_cast<QuadVertex*>(sceGuGetMemory(2 * 32 * sizeof(QuadVertex)));
-
-		short sx = 0;
-		short sliceW = 32;
-		int vertexCount = 0;
-		for(; sx < gViewportWidth; sx += sliceW)
-		{
-			if(sx + sliceW > gViewportWidth)
-				sliceW = gViewportWidth - sx;
-
-			vertices[vertexCount].x = sx;
-			vertices[vertexCount].y = 0;
-			vertices[vertexCount].z = 0;
-			++vertexCount;
-			vertices[vertexCount].x = sx + sliceW;
-			vertices[vertexCount].y = gViewportHeight;
-			vertices[vertexCount].z = 0;
-			++vertexCount;
-		}
-		sceGuDrawArray(GU_SPRITES,GU_VERTEX_16BIT|GU_TRANSFORM_2D,vertexCount,0,vertices);
-	}
-	sceGuDepthMask(0);
-}
-
-void drawFullscreenQuad(Texture const& texture, Sampler const& sampler, Region const& uvRegion, unsigned int color)
-{
-	struct QuadVertexTex
-	{
-		float u, v;
-		short x,y,z;
-	};
-
-	// setup texture
-	setTexture(texture);
-	setSampler(sampler);
-	sceGuTexFunc(GU_TFX_MODULATE,GU_TCC_RGB);
-	sceGuTexScale(1.0f,1.0f);
-	sceGuEnable(GU_TEXTURE_2D);
-
-	// draw quad
-	sceGuColor(color);
-	sceGuDisable(GU_LIGHTING);
-	sceGuDisable(GU_DEPTH_TEST);
-	sceGuDepthMask(1);
-	
-	QuadVertexTex* vertices = reinterpret_cast<QuadVertexTex*>(sceGuGetMemory(2 * sizeof(QuadVertexTex)));
-	vertices[0].u = 0 + uvRegion.offset.x; vertices[0].v = 0 + uvRegion.offset.y;
-	vertices[0].x = 0; vertices[0].y = 0; vertices[0].z = 0;
-
-	vertices[1].u = texture.width * uvRegion.scale.x + uvRegion.offset.x;
-	vertices[1].v = texture.height * uvRegion.scale.y + uvRegion.offset.y;
-	vertices[1].x = gViewportWidth; vertices[1].y = gViewportHeight; vertices[1].z = 0;
-
-	sceGuDrawArray(GU_SPRITES,GU_TEXTURE_32BITF|GU_VERTEX_16BIT|GU_TRANSFORM_2D,2,0,vertices);
-
-	sceGuDepthMask(0);
-}
-
-void drawFullscreenQuad(Texture const& texture, Sampler const& sampler, ScePspFVector2 offset, unsigned int color)
-{
-	Region uvRegion;
-	uvRegion.offset = offset;
-	uvRegion.scale.x = uvRegion.scale.y = 1;
-	drawFullscreenQuad(texture, sampler, uvRegion, color);
-}
-
-void drawFullscreenQuad(Texture const& texture, Sampler const& sampler, ScePspFVector2 offset)
-{
-	Region uvRegion;
-	uvRegion.offset = offset;
-	uvRegion.scale.x = uvRegion.scale.y = 1;
-	drawFullscreenQuad(texture, sampler, uvRegion, 0xffffffff);
-}
-
-void drawFullscreenQuad(Texture const& texture, Sampler const& sampler, Region const& uvRegion)
-{
-	drawFullscreenQuad(texture, sampler, uvRegion, 0xffffffff);
-}
-
-void drawFullscreenQuad(Texture const& texture, Sampler const& sampler)
-{
-	Region uvRegion;
-	uvRegion.offset.x = uvRegion.offset.y = 0;
-	uvRegion.scale.x = uvRegion.scale.y = 1;
-	drawFullscreenQuad(texture, sampler, uvRegion, 0xffffffff);
-}
-
-void gpuBlur(float blur, Texture& srcRenderTarget, Texture& dstRenderTarget)
-{
-	float halfPixelW = 0.5f;
-	float halfPixelH = 0.5f;
-	float offsetW = halfPixelW;
-	float offsetH = halfPixelH;
-
-	float offsets[] = {
-		 1.0f,
-		 3.0f,
-		 5.0f,
-		 7.0f,
-		-1.0f,
-		-3.0f,
-		-5.0f,
-		-7.0f,
-	};
-	float const offsetScaler = blur * 2.0f;// 1.9f;
-
-	Sampler sampler;
-	sampler.addressU = GU_CLAMP;
-	sampler.addressV = GU_CLAMP;
-	sampler.minFilter = GU_LINEAR;
-	sampler.magFilter = GU_LINEAR;
-
-	unsigned int quadCount = sizeof(offsets) / sizeof(float);
-	unsigned int blendMultiplier = GU_ARGB(0, 0x100 / quadCount, 0x100 / quadCount, 0x100 / quadCount);
-	for(int q = 0; q < 2; ++q)
-	{
-		{
-			setRenderTarget(dstRenderTarget);
-
-			sceGuDisable(GU_BLEND);
-			drawFullscreenQuad(0);
-
-			sceGuEnable(GU_BLEND);
-			sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, blendMultiplier, 0xffffffff);
-
-			for(unsigned int w = 0; w < quadCount; ++w)
-			{
-				ScePspFVector2 uvOffsetsW = { offsetW * offsets[w] * offsetScaler, 0.0f };
-				drawFullscreenQuad(srcRenderTarget, sampler, uvOffsetsW);
-			}
-
-			sceGuDisable(GU_BLEND);
-		}
-
-		if(1)
-		{
-			setRenderTarget(srcRenderTarget);
-
-			sceGuDisable(GU_BLEND);
-			drawFullscreenQuad(0);
-
-			sceGuEnable(GU_BLEND);
-			sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, blendMultiplier, 0xffffffff);
-
-			for(unsigned int w = 0; w < quadCount; ++w)
-			{
-				ScePspFVector2 uvOffsetH = { 0.0f, offsetH * offsets[w] * offsetScaler};
-				drawFullscreenQuad(dstRenderTarget, sampler, uvOffsetH);
-			}
-
-			sceGuDisable(GU_BLEND);
-		}
-	}
-
-	std::swap(srcRenderTarget, dstRenderTarget);
-}
-
-#endif
-
-/******************************************************************************************/
-/*                                                                                        */
-/******************************************************************************************/
-
-
-
 mutalisk::TimeControl gTimeControl;
 
 int main(int argc, char* argv[])
@@ -380,22 +131,8 @@ int main(int argc, char* argv[])
 	// Post process render targets
 	std::auto_ptr<mutalisk::Texture> renderTarget;
 	std::auto_ptr<mutalisk::Texture> renderTarget2;
-
 	allocPostProcessTargets(GU_PSM_8888, 128, 128, renderTarget, renderTarget2);
 
-	/**
-	renderTarget.format = GU_PSM_8888;
-	renderTarget.mipmap = 0;
-	renderTarget.width = 128;
-	renderTarget.height = 128;
-	renderTarget.stride = 128;
-	renderTarget.vramAddr = getStaticVramBuffer(renderTarget.stride,renderTarget.height,renderTarget.format);
-	renderTarget.data = mapVramBufferToTexture(renderTarget.vramAddr);
-
-	Texture renderTarget2 = renderTarget;
-	renderTarget2.vramAddr = getStaticVramBuffer(renderTarget2.stride,renderTarget2.height,renderTarget2.format);
-	renderTarget2.data = mapVramBufferToTexture(renderTarget2.vramAddr);
-	*/
 
 	pspDebugScreenInit();
 	sceGuInit();
@@ -453,8 +190,8 @@ int main(int argc, char* argv[])
 
 		bool doBlur = true;
 		static float blurStrength = 0.2f;
-		static unsigned blurThreshold = 100;
-		static int blurSrcModifier = 255;
+		static unsigned blurThreshold = 114;
+		static int blurSrcModifier = 200;
 		static int blurDstModifier = 160;
 		SceCtrlData pad;
 		if(sceCtrlPeekBufferPositive(&pad, 1))
@@ -577,27 +314,21 @@ int main(int argc, char* argv[])
 
 				mutalisk::Region uvRegion;
 				uvRegion.offset.x = uvRegion.offset.y = 0;
-				uvRegion.scale.x = 480.0f/512.0f;
-				uvRegion.scale.y = 272.0f/512.0f;
+				uvRegion.scale.x = (float)SCR_WIDTH/(float)BUF_WIDTH;
+				uvRegion.scale.y = (float)SCR_HEIGHT/(float)BUF_WIDTH;
 
 				mutalisk::pushState();
-				sceGuEnable(GU_BLEND);
-				sceGuBlendFunc(GU_SUBTRACT, GU_FIX, GU_FIX, 0xffffffff, 0xffffffff);
-				drawFullscreenQuad(mainRenderTargetAsSource, sampler, uvRegion);
-				sceGuDisable(GU_BLEND);
-				mutalisk::popState();
+					sceGuEnable(GU_BLEND);
+					sceGuBlendFunc(GU_SUBTRACT, GU_FIX, GU_FIX, 0xffffffff, 0xffffffff);
+					drawFullscreenQuad(mainRenderTargetAsSource, sampler, uvRegion);
+					sceGuDisable(GU_BLEND);
 
-				mutalisk::pushState();
-				mutalisk::gpuBlur(*renderTarget, *renderTarget2, blurStrength);
+					mutalisk::gpuBlur(*renderTarget, *renderTarget2, blurStrength);
 				mutalisk::popState();
 			}
 
 			{
 				mutalisk::setRenderTarget(mainRenderTarget);
-
-//				sceGuClearColor(0xffff00ff);
-//				sceGuClearDepth(0xffff);
-//				sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
 
 				mutalisk::Sampler sampler;
 				sampler.addressU = GU_CLAMP;
@@ -605,19 +336,13 @@ int main(int argc, char* argv[])
 				sampler.minFilter = GU_LINEAR;
 				sampler.magFilter = GU_LINEAR;
 
-	//			sampler.minFilter = GU_NEAREST;
-	//			sampler.magFilter = GU_NEAREST;
-				
 				mutalisk::pushState();
-//				scenePlayerApp->render();
-
-				sceGuEnable(GU_BLEND);
-				unsigned int blendValue = 0x40;
-				unsigned int srcFix = GU_ARGB(0, blurSrcModifier, blurSrcModifier, blurSrcModifier);
-				unsigned int dstFix = GU_ARGB(0, blurDstModifier, blurDstModifier, blurDstModifier);
-				sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, srcFix, dstFix);
-				mutalisk::drawFullscreenQuad(*renderTarget, sampler);
-				sceGuDisable(GU_BLEND);
+					sceGuEnable(GU_BLEND);
+					unsigned int srcFix = GU_ARGB(0, blurSrcModifier, blurSrcModifier, blurSrcModifier);
+					unsigned int dstFix = GU_ARGB(0, blurDstModifier, blurDstModifier, blurDstModifier);
+					sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, srcFix, dstFix);
+					mutalisk::drawFullscreenQuad(*renderTarget, sampler);
+					sceGuDisable(GU_BLEND);
 				mutalisk::popState();
 			}
 		}
