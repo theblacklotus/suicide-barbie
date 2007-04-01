@@ -39,6 +39,7 @@ CC_FLAGS=\
 
 SRCS=\
 	callbacks.c\
+	PostProcess.cpp\
 	TestDemo.cpp\
 	TimeBlock.cpp\
 	TimelinePlayer.cpp\

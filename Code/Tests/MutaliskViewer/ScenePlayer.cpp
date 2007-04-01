@@ -31,6 +31,7 @@ extern "C" {
 #include <player/psp/pspScenePlayer.h>
 
 #include "TimeBlock.h"
+#include "PostProcess.h"
 
 PSP_MODULE_INFO("ScenePlayer", 0x1000, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
@@ -82,27 +83,6 @@ std::string gSceneFileName = "telephone_s1.msk";
 std::string gPathPrefix = "host1:DemoTest/telephone_s1/psp/";//"ms0:PSP/TESTDATA/";
 
 
-struct Texture
-{
-	int format;
-	int mipmap;
-	int width, height, stride;
-	void* data;
-	void* vramAddr;
-};
-
-int gViewportWidth;
-int gViewportHeight;
-void setRenderTarget(Texture& renderTarget)
-{
-	sceGuDrawBufferList(renderTarget.format,renderTarget.vramAddr,renderTarget.stride);
-	sceGuOffset(2048 - (renderTarget.width/2),2048 - (renderTarget.height/2));
-	sceGuViewport(2048,2048,renderTarget.width,renderTarget.height);
-	sceGuScissor(0,0,renderTarget.width,renderTarget.height);
-
-	gViewportWidth = renderTarget.width;
-	gViewportHeight = renderTarget.height;
-}
 
 u64 gStartTick = 0;
 void startTime()
@@ -129,10 +109,10 @@ float getDeltaTime()
 
 
 
-
 /******************************************************************************************/
 /*                                                                                        */
 /******************************************************************************************/
+#if 0
 std::vector<int> gStateStack;
 void pushState()
 {
@@ -368,6 +348,8 @@ void gpuBlur(float blur, Texture& srcRenderTarget, Texture& dstRenderTarget)
 	std::swap(srcRenderTarget, dstRenderTarget);
 }
 
+#endif
+
 /******************************************************************************************/
 /*                                                                                        */
 /******************************************************************************************/
@@ -381,7 +363,7 @@ int main(int argc, char* argv[])
 	setupCallbacks();
 
 	// setup GU
-	Texture mainRenderTarget;
+	mutalisk::Texture mainRenderTarget;
 	mainRenderTarget.format = GU_PSM_8888;
 	mainRenderTarget.mipmap = 0;
 	mainRenderTarget.width = SCR_WIDTH;
@@ -390,14 +372,18 @@ int main(int argc, char* argv[])
 	mainRenderTarget.vramAddr = getStaticVramBuffer(mainRenderTarget.stride,mainRenderTarget.height,mainRenderTarget.format);
 	mainRenderTarget.data = 0;
 
-	Texture mainRenderTarget2 = mainRenderTarget;
+	mutalisk::Texture mainRenderTarget2 = mainRenderTarget;
 	mainRenderTarget2.vramAddr = getStaticVramBuffer(mainRenderTarget2.stride,mainRenderTarget2.height,mainRenderTarget2.format);
 
 	void* zbp = getStaticVramBuffer(BUF_WIDTH,SCR_HEIGHT,GU_PSM_4444);
 
+	// Post process render targets
+	std::auto_ptr<mutalisk::Texture> renderTarget;
+	std::auto_ptr<mutalisk::Texture> renderTarget2;
 
-	/**************************************************************************************/
-	Texture renderTarget;
+	allocPostProcessTargets(GU_PSM_8888, 128, 128, renderTarget, renderTarget2);
+
+	/**
 	renderTarget.format = GU_PSM_8888;
 	renderTarget.mipmap = 0;
 	renderTarget.width = 128;
@@ -409,8 +395,7 @@ int main(int argc, char* argv[])
 	Texture renderTarget2 = renderTarget;
 	renderTarget2.vramAddr = getStaticVramBuffer(renderTarget2.stride,renderTarget2.height,renderTarget2.format);
 	renderTarget2.data = mapVramBufferToTexture(renderTarget2.vramAddr);
-	/**************************************************************************************/
-
+	*/
 
 	pspDebugScreenInit();
 	sceGuInit();
@@ -467,10 +452,10 @@ int main(int argc, char* argv[])
 ;;loopTime.peek();
 
 		bool doBlur = true;
-		static float blurStrength = 0.5f;
-		static unsigned blurThreshold = 0xa0;
-		static int blurSrcModifier = 0x40;
-		static int blurDstModifier = 0xb0;
+		static float blurStrength = 0.2f;
+		static unsigned blurThreshold = 100;
+		static int blurSrcModifier = 255;
+		static int blurDstModifier = 160;
 		SceCtrlData pad;
 		if(sceCtrlPeekBufferPositive(&pad, 1))
 		{
@@ -511,7 +496,7 @@ int main(int argc, char* argv[])
 //;;printf("main -- guStart\n");
 
 		{
-			setRenderTarget(mainRenderTarget);
+			mutalisk::setRenderTarget(mainRenderTarget);
 			//setRenderTarget(renderTarget);
 
 			// clear screen
@@ -570,52 +555,51 @@ int main(int argc, char* argv[])
 		if(doBlur)
 		{
 			{
-				setRenderTarget(renderTarget);
+				mutalisk::setRenderTarget(*renderTarget);
 
-//				sceGuClearColor(0xff000000);
 				unsigned clearWithBlurThreshold = 0xff000000 |
 					(blurThreshold << 16) | (blurThreshold << 8) | blurThreshold;
 				sceGuClearColor(clearWithBlurThreshold);
 				sceGuClearDepth(0xffff);
 				sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
 
-				Texture mainRenderTargetAsSource;
+				mutalisk::Texture mainRenderTargetAsSource;
 				mainRenderTargetAsSource = mainRenderTarget;
 				mainRenderTargetAsSource.width = mainRenderTarget.stride;
 				mainRenderTargetAsSource.height = mainRenderTarget.stride;
 				mainRenderTargetAsSource.data = mapVramBufferToTexture(mainRenderTarget.vramAddr);
 
-				Sampler sampler;
+				mutalisk::Sampler sampler;
 				sampler.addressU = GU_CLAMP;
 				sampler.addressV = GU_CLAMP;
 				sampler.minFilter = GU_NEAREST;
 				sampler.magFilter = GU_NEAREST;
 
-				Region uvRegion;
+				mutalisk::Region uvRegion;
 				uvRegion.offset.x = uvRegion.offset.y = 0;
 				uvRegion.scale.x = 480.0f/512.0f;
 				uvRegion.scale.y = 272.0f/512.0f;
 
-				pushState();
+				mutalisk::pushState();
 				sceGuEnable(GU_BLEND);
 				sceGuBlendFunc(GU_SUBTRACT, GU_FIX, GU_FIX, 0xffffffff, 0xffffffff);
 				drawFullscreenQuad(mainRenderTargetAsSource, sampler, uvRegion);
 				sceGuDisable(GU_BLEND);
-				popState();
+				mutalisk::popState();
 
-				pushState();
-				gpuBlur(blurStrength, renderTarget, renderTarget2);
-				popState();
+				mutalisk::pushState();
+				mutalisk::gpuBlur(*renderTarget, *renderTarget2, blurStrength);
+				mutalisk::popState();
 			}
 
 			{
-				setRenderTarget(mainRenderTarget);
+				mutalisk::setRenderTarget(mainRenderTarget);
 
 //				sceGuClearColor(0xffff00ff);
 //				sceGuClearDepth(0xffff);
 //				sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
 
-				Sampler sampler;
+				mutalisk::Sampler sampler;
 				sampler.addressU = GU_CLAMP;
 				sampler.addressV = GU_CLAMP;
 				sampler.minFilter = GU_LINEAR;
@@ -624,7 +608,7 @@ int main(int argc, char* argv[])
 	//			sampler.minFilter = GU_NEAREST;
 	//			sampler.magFilter = GU_NEAREST;
 				
-				pushState();
+				mutalisk::pushState();
 //				scenePlayerApp->render();
 
 				sceGuEnable(GU_BLEND);
@@ -632,9 +616,9 @@ int main(int argc, char* argv[])
 				unsigned int srcFix = GU_ARGB(0, blurSrcModifier, blurSrcModifier, blurSrcModifier);
 				unsigned int dstFix = GU_ARGB(0, blurDstModifier, blurDstModifier, blurDstModifier);
 				sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, srcFix, dstFix);
-				drawFullscreenQuad(renderTarget, sampler);
+				mutalisk::drawFullscreenQuad(*renderTarget, sampler);
 				sceGuDisable(GU_BLEND);
-				popState();
+				mutalisk::popState();
 			}
 		}
 
