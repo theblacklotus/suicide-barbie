@@ -26,6 +26,7 @@ extern "C" {
 	#include <Base/Math/Quat.h>
 }
 
+#include <player/TimeControl.h>
 #include <player/ScenePlayer.h>
 #include <player/psp/pspScenePlayer.h>
 
@@ -77,8 +78,8 @@ struct ScenePlayerApp
 	Scene					scene;
 };
 std::auto_ptr<ScenePlayerApp> scenePlayerApp;
-std::string gSceneFileName = "flower.msk";
-std::string gPathPrefix = "host1:DemoTest/flower/psp/";//"ms0:PSP/TESTDATA/";
+std::string gSceneFileName = "telephone_s1.msk";
+std::string gPathPrefix = "host1:DemoTest/telephone_s1/psp/";//"ms0:PSP/TESTDATA/";
 
 
 struct Texture
@@ -97,6 +98,7 @@ void setRenderTarget(Texture& renderTarget)
 	sceGuDrawBufferList(renderTarget.format,renderTarget.vramAddr,renderTarget.stride);
 	sceGuOffset(2048 - (renderTarget.width/2),2048 - (renderTarget.height/2));
 	sceGuViewport(2048,2048,renderTarget.width,renderTarget.height);
+	sceGuScissor(0,0,renderTarget.width,renderTarget.height);
 
 	gViewportWidth = renderTarget.width;
 	gViewportHeight = renderTarget.height;
@@ -114,6 +116,265 @@ float getTime()
 	sceRtcGetCurrentTick(&currTick);
 	return static_cast<float>(currTick - gStartTick) / mutalisk::tickResolution();
 }
+
+u64 gPrevTick = 0;
+float getDeltaTime()
+{
+	u64 currTick;
+	sceRtcGetCurrentTick(&currTick);
+	u64 delta = currTick - gPrevTick;
+	gPrevTick = currTick;
+	return static_cast<float>((delta) * mutalisk::tickFrequency()) / (1000.0f * 1000.0f);
+}
+
+
+
+
+/******************************************************************************************/
+/*                                                                                        */
+/******************************************************************************************/
+std::vector<int> gStateStack;
+void pushState()
+{
+	gStateStack.push_back(sceGuGetAllStatus());
+}
+
+void popState()
+{
+	sceGuSetAllStatus(gStateStack.back());
+	gStateStack.pop_back();
+}
+
+struct Sampler
+{
+	int addressU;
+	int addressV;
+	int minFilter;
+	int magFilter;
+};
+
+struct Region
+{
+	ScePspFVector2 offset;
+	ScePspFVector2 scale;
+};
+
+void setTexture(Texture const& texture)
+{
+	sceGuTexMode(texture.format,0,0,0);
+	sceGuTexImage(texture.mipmap,texture.width,texture.height,texture.stride,texture.data);
+}
+
+void setSampler(Sampler const& sampler)
+{
+	sceGuTexFilter(sampler.minFilter,sampler.magFilter);
+	sceGuTexWrap(sampler.addressU,sampler.addressV);
+}
+
+void drawFullscreenQuad(unsigned int color, unsigned int vertexElements = 0)
+{
+	struct QuadVertex
+	{
+		unsigned short x,y,z;
+	};
+	struct QuadVertexTex
+	{
+		float u, v;
+		float x,y,z;
+	};
+
+	static QuadVertexTex fsQuadVerticesTex[4] = {
+		{0, 0, -1, 1, -1}, // 0
+		{1, 0,  1, 1, -1}, // 3
+		{0, 1, -1,-1, -1}, // 1
+		{1, 1,  1,-1, -1}, // 2
+	};
+
+	sceGumMatrixMode(GU_PROJECTION);
+	sceGumLoadIdentity();
+	sceGumOrtho(-1.0f,1.0f,-1.0f,1.0f, 0.5f,1000.0f);
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+
+	sceGumMatrixMode(GU_MODEL);
+	sceGumLoadIdentity();
+
+	sceGuColor(color);
+
+	sceGuDisable(GU_LIGHTING);
+	sceGuDisable(GU_DEPTH_TEST);
+	sceGuDepthMask(1);
+
+	// draw quad
+	if(vertexElements & GU_TEXTURE_32BITF)
+		sceGumDrawArray(GU_TRIANGLE_STRIP,GU_TEXTURE_32BITF|GU_VERTEX_32BITF|GU_TRANSFORM_3D,4,0,fsQuadVerticesTex);
+	else
+	{
+		QuadVertex* vertices = reinterpret_cast<QuadVertex*>(sceGuGetMemory(2 * 32 * sizeof(QuadVertex)));
+
+		short sx = 0;
+		short sliceW = 32;
+		int vertexCount = 0;
+		for(; sx < gViewportWidth; sx += sliceW)
+		{
+			if(sx + sliceW > gViewportWidth)
+				sliceW = gViewportWidth - sx;
+
+			vertices[vertexCount].x = sx;
+			vertices[vertexCount].y = 0;
+			vertices[vertexCount].z = 0;
+			++vertexCount;
+			vertices[vertexCount].x = sx + sliceW;
+			vertices[vertexCount].y = gViewportHeight;
+			vertices[vertexCount].z = 0;
+			++vertexCount;
+		}
+		sceGuDrawArray(GU_SPRITES,GU_VERTEX_16BIT|GU_TRANSFORM_2D,vertexCount,0,vertices);
+	}
+	sceGuDepthMask(0);
+}
+
+void drawFullscreenQuad(Texture const& texture, Sampler const& sampler, Region const& uvRegion, unsigned int color)
+{
+	struct QuadVertexTex
+	{
+		float u, v;
+		short x,y,z;
+	};
+
+	// setup texture
+	setTexture(texture);
+	setSampler(sampler);
+	sceGuTexFunc(GU_TFX_MODULATE,GU_TCC_RGB);
+	sceGuTexScale(1.0f,1.0f);
+	sceGuEnable(GU_TEXTURE_2D);
+
+	// draw quad
+	sceGuColor(color);
+	sceGuDisable(GU_LIGHTING);
+	sceGuDisable(GU_DEPTH_TEST);
+	sceGuDepthMask(1);
+	
+	QuadVertexTex* vertices = reinterpret_cast<QuadVertexTex*>(sceGuGetMemory(2 * sizeof(QuadVertexTex)));
+	vertices[0].u = 0 + uvRegion.offset.x; vertices[0].v = 0 + uvRegion.offset.y;
+	vertices[0].x = 0; vertices[0].y = 0; vertices[0].z = 0;
+
+	vertices[1].u = texture.width * uvRegion.scale.x + uvRegion.offset.x;
+	vertices[1].v = texture.height * uvRegion.scale.y + uvRegion.offset.y;
+	vertices[1].x = gViewportWidth; vertices[1].y = gViewportHeight; vertices[1].z = 0;
+
+	sceGuDrawArray(GU_SPRITES,GU_TEXTURE_32BITF|GU_VERTEX_16BIT|GU_TRANSFORM_2D,2,0,vertices);
+
+	sceGuDepthMask(0);
+}
+
+void drawFullscreenQuad(Texture const& texture, Sampler const& sampler, ScePspFVector2 offset, unsigned int color)
+{
+	Region uvRegion;
+	uvRegion.offset = offset;
+	uvRegion.scale.x = uvRegion.scale.y = 1;
+	drawFullscreenQuad(texture, sampler, uvRegion, color);
+}
+
+void drawFullscreenQuad(Texture const& texture, Sampler const& sampler, ScePspFVector2 offset)
+{
+	Region uvRegion;
+	uvRegion.offset = offset;
+	uvRegion.scale.x = uvRegion.scale.y = 1;
+	drawFullscreenQuad(texture, sampler, uvRegion, 0xffffffff);
+}
+
+void drawFullscreenQuad(Texture const& texture, Sampler const& sampler, Region const& uvRegion)
+{
+	drawFullscreenQuad(texture, sampler, uvRegion, 0xffffffff);
+}
+
+void drawFullscreenQuad(Texture const& texture, Sampler const& sampler)
+{
+	Region uvRegion;
+	uvRegion.offset.x = uvRegion.offset.y = 0;
+	uvRegion.scale.x = uvRegion.scale.y = 1;
+	drawFullscreenQuad(texture, sampler, uvRegion, 0xffffffff);
+}
+
+void gpuBlur(float blur, Texture& srcRenderTarget, Texture& dstRenderTarget)
+{
+	float halfPixelW = 0.5f;
+	float halfPixelH = 0.5f;
+	float offsetW = halfPixelW;
+	float offsetH = halfPixelH;
+
+	float offsets[] = {
+		 1.0f,
+		 3.0f,
+		 5.0f,
+		 7.0f,
+		-1.0f,
+		-3.0f,
+		-5.0f,
+		-7.0f,
+	};
+	float const offsetScaler = blur * 2.0f;// 1.9f;
+
+	Sampler sampler;
+	sampler.addressU = GU_CLAMP;
+	sampler.addressV = GU_CLAMP;
+	sampler.minFilter = GU_LINEAR;
+	sampler.magFilter = GU_LINEAR;
+
+	unsigned int quadCount = sizeof(offsets) / sizeof(float);
+	unsigned int blendMultiplier = GU_ARGB(0, 0x100 / quadCount, 0x100 / quadCount, 0x100 / quadCount);
+	for(int q = 0; q < 2; ++q)
+	{
+		{
+			setRenderTarget(dstRenderTarget);
+
+			sceGuDisable(GU_BLEND);
+			drawFullscreenQuad(0);
+
+			sceGuEnable(GU_BLEND);
+			sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, blendMultiplier, 0xffffffff);
+
+			for(unsigned int w = 0; w < quadCount; ++w)
+			{
+				ScePspFVector2 uvOffsetsW = { offsetW * offsets[w] * offsetScaler, 0.0f };
+				drawFullscreenQuad(srcRenderTarget, sampler, uvOffsetsW);
+			}
+
+			sceGuDisable(GU_BLEND);
+		}
+
+		if(1)
+		{
+			setRenderTarget(srcRenderTarget);
+
+			sceGuDisable(GU_BLEND);
+			drawFullscreenQuad(0);
+
+			sceGuEnable(GU_BLEND);
+			sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, blendMultiplier, 0xffffffff);
+
+			for(unsigned int w = 0; w < quadCount; ++w)
+			{
+				ScePspFVector2 uvOffsetH = { 0.0f, offsetH * offsets[w] * offsetScaler};
+				drawFullscreenQuad(dstRenderTarget, sampler, uvOffsetH);
+			}
+
+			sceGuDisable(GU_BLEND);
+		}
+	}
+
+	std::swap(srcRenderTarget, dstRenderTarget);
+}
+
+/******************************************************************************************/
+/*                                                                                        */
+/******************************************************************************************/
+
+
+
+mutalisk::TimeControl gTimeControl;
 
 int main(int argc, char* argv[])
 {
@@ -133,6 +394,23 @@ int main(int argc, char* argv[])
 	mainRenderTarget2.vramAddr = getStaticVramBuffer(mainRenderTarget2.stride,mainRenderTarget2.height,mainRenderTarget2.format);
 
 	void* zbp = getStaticVramBuffer(BUF_WIDTH,SCR_HEIGHT,GU_PSM_4444);
+
+
+	/**************************************************************************************/
+	Texture renderTarget;
+	renderTarget.format = GU_PSM_8888;
+	renderTarget.mipmap = 0;
+	renderTarget.width = 128;
+	renderTarget.height = 128;
+	renderTarget.stride = 128;
+	renderTarget.vramAddr = getStaticVramBuffer(renderTarget.stride,renderTarget.height,renderTarget.format);
+	renderTarget.data = mapVramBufferToTexture(renderTarget.vramAddr);
+
+	Texture renderTarget2 = renderTarget;
+	renderTarget2.vramAddr = getStaticVramBuffer(renderTarget2.stride,renderTarget2.height,renderTarget2.format);
+	renderTarget2.data = mapVramBufferToTexture(renderTarget2.vramAddr);
+	/**************************************************************************************/
+
 
 	pspDebugScreenInit();
 	sceGuInit();
@@ -174,41 +452,67 @@ int main(int argc, char* argv[])
 	sceCtrlSetSamplingMode(0); 
 
 
-	mutalisk::initTickFrequency();
+	mutalisk::initTickFrequency(); getDeltaTime();
 	startTime();
 ;;printf("tickResolution: %f, tickFrequency: %f\n", mutalisk::tickResolution(), mutalisk::tickFrequency());
-
 //;;printf("main -- 0\n");
 
 
+	gTimeControl.restart(true);
 	while(running())
 	{
 //;;printf("main -- while_running\n");
+
+;;mutalisk::TimeBlock updateTime, processTime, renderTime, loopTime, finishAndSyncTime;
+;;loopTime.peek();
+
+		bool doBlur = true;
+		static float blurStrength = 0.5f;
+		static unsigned blurThreshold = 0xa0;
+		static int blurSrcModifier = 0x40;
+		static int blurDstModifier = 0xb0;
 		SceCtrlData pad;
 		if(sceCtrlPeekBufferPositive(&pad, 1))
 		{
-/*
-			//if (pad.Buttons != oldPad.Buttons)
+//			if (pad.Buttons != oldPad.Buttons)
 			{
-				if (pad.Buttons & PSP_CTRL_UP)
-				if (pad.Buttons & PSP_CTRL_DOWN)
-				if (pad.Buttons & PSP_CTRL_LEFT)
-				if (pad.Buttons & PSP_CTRL_RIGHT)
-				if (pad.Buttons & PSP_CTRL_LTRIGGER)
-				if (pad.Buttons & PSP_CTRL_RTRIGGER)
+				if (pad.Buttons & PSP_CTRL_SELECT && !(oldPad.Buttons & PSP_CTRL_SELECT))
+					gTimeControl.pause(!gTimeControl.isPaused());
 				if (pad.Buttons & PSP_CTRL_CROSS)
+					doBlur = !doBlur;
+				if (pad.Buttons & PSP_CTRL_UP && !(pad.Buttons & PSP_CTRL_TRIANGLE))
+					blurStrength += 0.01f;
+				if (pad.Buttons & PSP_CTRL_DOWN && !(pad.Buttons & PSP_CTRL_TRIANGLE))
+					blurStrength -= 0.05f;
+				if (pad.Buttons & PSP_CTRL_UP && (pad.Buttons & PSP_CTRL_TRIANGLE))
+					blurThreshold += 1;
+				if (pad.Buttons & PSP_CTRL_DOWN && (pad.Buttons & PSP_CTRL_TRIANGLE))
+					blurThreshold -= 1;
+
+				if ((pad.Buttons & PSP_CTRL_LEFT) && !(pad.Buttons & PSP_CTRL_TRIANGLE))
+					blurSrcModifier -= 2;
+				if ((pad.Buttons & PSP_CTRL_RIGHT) && !(pad.Buttons & PSP_CTRL_TRIANGLE))
+					blurSrcModifier += 2;
+				if ((pad.Buttons & PSP_CTRL_LEFT) && (pad.Buttons & PSP_CTRL_TRIANGLE))
+					blurDstModifier -= 2;
+				if ((pad.Buttons & PSP_CTRL_RIGHT) && (pad.Buttons & PSP_CTRL_TRIANGLE))
+					blurDstModifier += 2;
+
+				if(blurStrength < 0.0f) blurStrength = 0.0f;
+				if(blurThreshold < 1) blurThreshold = 1; if(blurThreshold > 0xff) blurThreshold = 0xff;
+				if(blurSrcModifier < 1) blurSrcModifier = 1; if(blurSrcModifier > 0xff) blurSrcModifier = 0xff;
+				if(blurDstModifier < 1) blurDstModifier = 1; if(blurDstModifier > 0xff) blurDstModifier = 0xff;
 			}
-			oldPad = pad;*/
+			oldPad = pad;
 		}
-;;mutalisk::TimeBlock updateTime, processTime, renderTime, loopTime, finishAndSyncTime;
-;;loopTime.peek();
+
+
 		sceGuStart(GU_DIRECT,list);
 //;;printf("main -- guStart\n");
 
-		//if(0)
 		{
-
 			setRenderTarget(mainRenderTarget);
+			//setRenderTarget(renderTarget);
 
 			// clear screen
 
@@ -218,6 +522,7 @@ int main(int argc, char* argv[])
 
 			sceGuAmbient(0x00101010);
 			sceGuColor(0xffffff);
+			sceGuDisable(GU_BLEND);
 
 			ScePspFMatrix4 projMatrix;
 			gumLoadIdentity(&projMatrix);
@@ -249,7 +554,7 @@ int main(int argc, char* argv[])
 			scenePlayerApp->setProjMatrix(projMatrix);
 //;;printf("main -- setProjMatrix\n");
 ;;updateTime.peek();
-			scenePlayerApp->update(getTime());
+			scenePlayerApp->update(gTimeControl.update(getDeltaTime()));
 ;;updateTime.peek();
 //;;printf("main -- update\n");
 ;;processTime.peek();
@@ -260,6 +565,77 @@ int main(int argc, char* argv[])
 			scenePlayerApp->render();
 ;;renderTime.peek();
 //;;printf("main -- render\n");
+		}
+
+		if(doBlur)
+		{
+			{
+				setRenderTarget(renderTarget);
+
+//				sceGuClearColor(0xff000000);
+				unsigned clearWithBlurThreshold = 0xff000000 |
+					(blurThreshold << 16) | (blurThreshold << 8) | blurThreshold;
+				sceGuClearColor(clearWithBlurThreshold);
+				sceGuClearDepth(0xffff);
+				sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
+
+				Texture mainRenderTargetAsSource;
+				mainRenderTargetAsSource = mainRenderTarget;
+				mainRenderTargetAsSource.width = mainRenderTarget.stride;
+				mainRenderTargetAsSource.height = mainRenderTarget.stride;
+				mainRenderTargetAsSource.data = mapVramBufferToTexture(mainRenderTarget.vramAddr);
+
+				Sampler sampler;
+				sampler.addressU = GU_CLAMP;
+				sampler.addressV = GU_CLAMP;
+				sampler.minFilter = GU_NEAREST;
+				sampler.magFilter = GU_NEAREST;
+
+				Region uvRegion;
+				uvRegion.offset.x = uvRegion.offset.y = 0;
+				uvRegion.scale.x = 480.0f/512.0f;
+				uvRegion.scale.y = 272.0f/512.0f;
+
+				pushState();
+				sceGuEnable(GU_BLEND);
+				sceGuBlendFunc(GU_SUBTRACT, GU_FIX, GU_FIX, 0xffffffff, 0xffffffff);
+				drawFullscreenQuad(mainRenderTargetAsSource, sampler, uvRegion);
+				sceGuDisable(GU_BLEND);
+				popState();
+
+				pushState();
+				gpuBlur(blurStrength, renderTarget, renderTarget2);
+				popState();
+			}
+
+			{
+				setRenderTarget(mainRenderTarget);
+
+//				sceGuClearColor(0xffff00ff);
+//				sceGuClearDepth(0xffff);
+//				sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
+
+				Sampler sampler;
+				sampler.addressU = GU_CLAMP;
+				sampler.addressV = GU_CLAMP;
+				sampler.minFilter = GU_LINEAR;
+				sampler.magFilter = GU_LINEAR;
+
+	//			sampler.minFilter = GU_NEAREST;
+	//			sampler.magFilter = GU_NEAREST;
+				
+				pushState();
+//				scenePlayerApp->render();
+
+				sceGuEnable(GU_BLEND);
+				unsigned int blendValue = 0x40;
+				unsigned int srcFix = GU_ARGB(0, blurSrcModifier, blurSrcModifier, blurSrcModifier);
+				unsigned int dstFix = GU_ARGB(0, blurDstModifier, blurDstModifier, blurDstModifier);
+				sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, srcFix, dstFix);
+				drawFullscreenQuad(renderTarget, sampler);
+				sceGuDisable(GU_BLEND);
+				popState();
+			}
 		}
 
 //;;printf("main -- guFinish0\n");
@@ -277,6 +653,8 @@ int main(int argc, char* argv[])
 		pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
 		pspDebugScreenPrintf("\n");
 		pspDebugScreenPrintf("mutalisk: update(%f) process(%f) render(%f)", updateTime.ms(), processTime.ms(), renderTime.ms());
+		pspDebugScreenPrintf("\n");
+		pspDebugScreenPrintf("blur: str(%f) thrshld(%d) src(%d) dst(%d)", blurStrength, (int)blurThreshold, (int)blurSrcModifier, (int)blurDstModifier);
 
 		sceDisplayWaitVblankStart();
 		mainRenderTarget2.vramAddr = mainRenderTarget.vramAddr;

@@ -7,15 +7,15 @@ _Demo_
 +	fix UV export
 +	fix per-vertex normals
 +	release on PSP
-.	memory load on PSP
 .	envmap on PSP
 .	shadows
 .	mirror
 .	face
-.	blur/bloom (+10%) on PSP only
++	blur/bloom (configurable) on PSP only
 +	simple time profiling for PSP
++	memory profiling for PSP
++	memory consumption by player/availability on PSP
 .	'visibility' tracks
-?	mutalisk::array still suspicious (UV fails when used)
 
 
 

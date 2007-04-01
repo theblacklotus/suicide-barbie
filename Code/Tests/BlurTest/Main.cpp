@@ -1,10 +1,6 @@
 /*
  * Test of the Screen class
  */
-//#include <mutant/reader.h>
-//#include <mutant/io_factory.h>
-
-//#include <Base/BitMap/BitMap.h>
 
 #include <pspkernel.h>
 #include <pspdisplay.h>
@@ -33,9 +29,7 @@ extern "C" {
 	#include <Base/Math/Quat.h>
 }
 
-//#include "Skin.h"
-
-PSP_MODULE_INFO("MutaliskTest", 0x1000, 1, 1);
+PSP_MODULE_INFO("BlurTest", 0x1000, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
 static unsigned int __attribute__((aligned(16))) list[262144];
@@ -116,7 +110,7 @@ struct ScenePlayerApp
 		renderContext.projMatrix = identityMatrix;
 
 		scene.blueprint = mutalisk::loadResource<mutalisk::data::scene>(pathPrefix + sceneName);
-		scene.renderable = prepare(renderContext, *scene.blueprint, pathPrefix);
+		scene.renderable = mutalisk::prepare(renderContext, *scene.blueprint, pathPrefix);
 	}
 
 	void setProjMatrix(ScePspFMatrix4 const& projMatrix)
@@ -128,7 +122,6 @@ struct ScenePlayerApp
 	void update(float deltaTime) { scene.renderable->update(deltaTime); }
 	void process() { scene.renderable->process(); }
 	void render(int maxActors = -1, int maxLights = -1) { 
-//		::render(renderContext, *scene.renderable, true, true, maxActors, maxLights); }
 		mutalisk::render(renderContext, *scene.renderable, maxActors); }
 
 	struct Scene
@@ -138,11 +131,11 @@ struct ScenePlayerApp
 	};
 	
 	mutalisk::RenderContext	renderContext;
-	Scene			scene;
+	Scene					scene;
 };
 std::auto_ptr<ScenePlayerApp> scenePlayerApp;
-std::string gSceneFileName = "doll.msk";
-std::string gPathPrefix = "host1:DemoTest/doll/psp/";//"ms0:PSP/TESTDATA/";
+std::string gSceneFileName = "logo.msk";
+std::string gPathPrefix = "host1:DemoTest/logo/psp/";//"ms0:PSP/TESTDATA/";
 
 /*
 std::auto_ptr<mutant::anim_character_set> mutantTest()

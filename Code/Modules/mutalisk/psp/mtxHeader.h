@@ -23,8 +23,8 @@ struct MtxHeader
 		MaxMipLevels = 7
 	};
 
-/*	struct
-	{
+//	struct
+//	{
 		u32 signature;
 
 		u16 pixelFormat;
@@ -66,7 +66,7 @@ struct MtxHeader
 //		wrap
 //		clamp
 
-	};*/
+//	};
 };
 
 } // namespace data 
