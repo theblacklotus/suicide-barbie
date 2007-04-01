@@ -25,8 +25,8 @@ namespace mutalisk
 			TimelineFuncT func;
 			nFlags flags;
 
-			Item(unsigned sec = 0, int frame = -1, TimelineFuncT func_ = 0, nFlags flags_ = Default)
-			: func(func_), flags(flags_) { startFrame = (frame >= 0)? sec*FramesPerSecond + frame: ~0U; }
+			Item(float sec = -1.f, int frame = 0, TimelineFuncT func_ = 0, nFlags flags_ = Default)
+			: func(func_), flags(flags_) { startFrame = (sec >= 0)? (unsigned int)(sec*FramesPerSecond) + frame: ~0U; }
 		};
 
 	private:
@@ -46,7 +46,7 @@ namespace mutalisk
 
 			ScriptT newScript(itemCount);
 			std::copy(items, items + itemCount, newScript.begin());
-			mScripts.push_back(std::make_pair(newScript, 0));
+			mScripts.push_back(std::make_pair(newScript, -1));
 		}
 
 		void update(Context& ctx, unsigned frame)
@@ -58,23 +58,49 @@ namespace mutalisk
 					continue;
 
 				unsigned nextScriptIt = currScriptIt;
-				if(frame >= it->first[currScriptIt].startFrame)
+				if(currScriptIt == -1 || frame >= it->first[currScriptIt].startFrame)
 				{
 					++nextScriptIt;
 					if(nextScriptIt < it->first.size() && frame >= it->first[nextScriptIt].startFrame)
+					{
 						currScriptIt = nextScriptIt;
+						if (it->first[currScriptIt].flags & Item::Once)
+						{
+							printf("call once (next) with startFrame = %i\n", it->first[currScriptIt].startFrame);
+							TimelineFuncT func = it->first[currScriptIt].func;
+							if (func == 0)
+								printf("func is 0!!\n");
+							(ctx.*func)();
+						}
+					}
 				}
 				else
 				{
 					if(nextScriptIt > 0)
 						--nextScriptIt;
-					if(frame < it->first[currScriptIt].startFrame)
+					if(nextScriptIt != currScriptIt && frame < it->first[currScriptIt].startFrame)
+					{
 						currScriptIt = nextScriptIt;
+						if (it->first[currScriptIt].flags & Item::Once)
+						{
+							printf("call once (previous) with startFrame = %i\n", it->first[currScriptIt].startFrame);
+							TimelineFuncT func = it->first[currScriptIt].func;
+							if (func == 0)
+								printf("func is 0!!\n");
+//							(ctx.*func)();
+						}
+					}
 				}
 
+				if (currScriptIt == -1 || (it->first[currScriptIt].flags & Item::Once))
+					continue;
+
 				TimelineFuncT func = it->first[currScriptIt].func;
-				ASSERT(func);
-				(ctx.*func)();
+//				ASSERT(func);
+				if (func == 0)
+					printf("func is 0!!\n");
+				else
+					(ctx.*func)();
 			}
 		}
 	};
