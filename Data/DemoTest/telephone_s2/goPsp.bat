@@ -1,2 +1,2 @@
 @mkdir psp
-..\..\..\Tools\bin\ImportScene.exe psp telephone_s1.fbx >telephone_s1.fbx.out
+..\..\..\Tools\bin\ImportScene.exe psp telephone_s2.fbx >telephone_s2.fbx.out
