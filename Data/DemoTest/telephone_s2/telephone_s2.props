@@ -2,7 +2,7 @@
 scene = {}
 
 scene.RootNode = {}
---scene.RootNode.shader = 'unlit'
---scene.RootNode.ambient = {1,1,1}
+scene.RootNode.shader = 'unlit'
+scene.RootNode.ambient = {1,1,1}
 
 return scene
