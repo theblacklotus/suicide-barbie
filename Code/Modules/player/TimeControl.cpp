@@ -4,7 +4,7 @@ using namespace mutalisk;
 
 TimeControl::TimeControl()
 :	currentTime(0)
-,	isPaused(false)
+,	paused(false)
 ,	discontinuity(0.f)
 {
 	resetKeys();
@@ -12,7 +12,7 @@ TimeControl::TimeControl()
 
 float TimeControl::update(float dt)
 {
-	if (!isPaused)
+	if (!paused)
 	{
 		currentTime += dt;
 		if(currentTime - dt < timeKey[1] && currentTime >= timeKey[1])
@@ -51,9 +51,9 @@ void TimeControl::scroll(float dt)
 		currentTime = std::max<float>(currentTime, 0.0f);
 }
 
-void TimeControl::pause(int pause)
+void TimeControl::pause(int flag)
 {
-	isPaused = pause;
+	paused = flag;
 }
 
 void TimeControl::resetKeys()

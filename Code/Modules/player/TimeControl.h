@@ -22,14 +22,12 @@ namespace mutalisk
 		float time() const { return static_cast<float>(currentTime); }
 		int isPaused() const { return paused; }
 
-		void pause(int pause);
-
 		float getDiscontinuity();
 
 	private:
 		float currentTime;
 		float timeKey[2];
-		bool isPaused;
+		bool paused;
 		float discontinuity;
 	};
 } // namespace mutalisk
