@@ -58,8 +58,8 @@ void Unlit::pass(Input const& i, unsigned passIndex)
 	mImpl->setupBuffers(i);
 	mImpl->setupAmbientOnly();
 
-	sceGuAmbient(0x00ffffff);
-	sceGuColor(i.surface->ambient);
+//	sceGuAmbient(0x00ffffff);
+//	sceGuColor(i.surface->emissive);
 	sceGuSendCommandi(88, (unsigned int)((1.0f-i.surface->transparency) * 255.0f));
 
 	mImpl->commit();
