@@ -3,5 +3,6 @@ scene = {}
 
 scene.RootNode = {}
 scene.RootNode.shader = 'baked'
+scene.RootNode.emissive = {1,1,1}
 
 return scene
