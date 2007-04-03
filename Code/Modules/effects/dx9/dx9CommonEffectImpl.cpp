@@ -25,6 +25,13 @@ size_t CommonEffectImpl::organizeLightsInPasses(BaseEffect::Input::Lights const&
 		}
 		lightsInPasses.push_back(pass);
 	}
+
+	if(lightsInPasses.empty())
+	{
+		LightsPerPass emptyPass;
+		emptyPass.count = 0;
+		lightsInPasses.push_back(emptyPass);
+	}
 	return estimatedPassCount;
 }
 
@@ -126,9 +133,11 @@ void CommonEffectImpl::setupSurface(BaseEffect::Input const& input)
 	ASSERT(input.surface);
 	BaseEffect::Input::Surface const& surface = *input.surface;
 
-	fx().SetValue("vMaterialAmbient", &surface.ambient, sizeof(surface.ambient));
+	// @DEPRICATE: ambient
+	fx().SetValue("vMaterialAmbient", &surface.diffuse, sizeof(surface.diffuse));
 	fx().SetValue("vMaterialDiffuse", &surface.diffuse, sizeof(surface.diffuse));
 	fx().SetValue("vMaterialSpecular", &surface.specular, sizeof(surface.specular));
+	fx().SetValue("vMaterialEmissive", &surface.emissive, sizeof(surface.emissive));
 
 	IDirect3DBaseTexture9 const* diffuseTexture = surface.diffuseTexture;
 	fx().SetBool("bDiffuseTextureEnabled", (diffuseTexture != 0));
@@ -146,6 +155,8 @@ void CommonEffectImpl::setupSurface(BaseEffect::Input const& input)
 	fx().SetInt("nDestBlend", surface.dstBlend);
 	bool alphaBlendEnable = !((input.surface->srcBlend == D3DBLEND_ONE) && (input.surface->dstBlend == D3DBLEND_ZERO));
 	fx().SetBool("bAlphaBlendEnable", alphaBlendEnable);
+
+	fx().SetInt("nTextureProjType", 0); // @TBD: texture_projNONE
 }
 
 void CommonEffectImpl::setupGeometry(BaseEffect::Input const& input)

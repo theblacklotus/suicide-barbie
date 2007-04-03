@@ -6,139 +6,139 @@
 using namespace mutalisk;
 using namespace mutalisk::effects;
 
-void Shiny::fillRequest(Request& request)
-{
-	request.required.matrices.push_back(BaseEffect::WorldMatrix);
-	request.required.matrices.push_back(BaseEffect::ViewMatrix);
-	request.required.matrices.push_back(BaseEffect::WorldViewProjMatrix);
-	request./*required*/optional.textures.push_back(BaseEffect::EnvmapTexture);
-	request.optional.textures.push_back(BaseEffect::DiffuseTexture);
-//	request.required.vecs.push_back(BaseEffect::AmbientColor);
-//	request.required.vecs.push_back(BaseEffect::DiffuseColor);
-//	request.required.vecs.push_back(BaseEffect::SpecularColor);
-	request.lightCountRange.first = 0;
-	request.lightCountRange.second = 4;
-}
-
 struct Shiny::Impl : public CommonEffectImpl
 {
-	void setupSurfacePass()
+	PassInfo							passInfo;
+	LightsInPassesT						lightsInPasses;
+	BaseEffect::Input::Lights const*	prevLights;
+
+	Impl()
 	{
-		fx().SetValue("vLightAmbient", D3DXVECTOR4(1,1,1,1), sizeof(D3DXVECTOR4));
-		fx().SetInt("iNumLights", 0);
+		lightsInPasses.resize(4);
 	}
 
-	void setupEnvmapPass(BaseEffect::Input const& input)
+	LightsInPassesT& processLights(BaseEffect::Input::Lights const& lights)
 	{
-		IDirect3DBaseTexture9 const* envmapTexture = input.textures[BaseEffect::EnvmapTexture];
-//		IDirect3DBaseTexture9 const* envmapTexture = input.textures[BaseEffect::DiffuseTexture];
-//		ASSERT(envmapTexture);
-		fx().SetBool("bDiffuseTextureEnabled", true);
-		fx().SetTexture("tDiffuse", const_cast<IDirect3DBaseTexture9*>(envmapTexture));
-		fx().SetInt("nAddressU", D3DTADDRESS_CLAMP);
-		fx().SetInt("nAddressV", D3DTADDRESS_CLAMP);
-//		fx().SetInt("nAddressU", D3DTADDRESS_WRAP);
-//		fx().SetInt("nAddressV", D3DTADDRESS_WRAP);
+		if(this->prevLights == &lights)
+			return this->lightsInPasses;
 
+		this->lightsInPasses.resize(0);
+		organizeLightsInPasses(lights, this->lightsInPasses);
 
-
-//		float angle = -2.0f * valEnvMap * (GU_PI/180.0f);
-//		float cs = cosf(angle);
-//		float sn = sinf(angle);
-		static float sx = 0.5f;
-		static float sy = 0.5f;
-		static float sz = 1;
-		static float oz = 1;
-		static D3DXMATRIX viewMatrix = D3DXMATRIX(
-/*			0.5,   0,   0, 0,
-			0,   0.5,  0, 0,
-			0,    0,   1, 1,
-			.5,  .5,  1, 1 );
-*/			
-/*			0.5,   0,   0, 0,
-			0,   0.5,  0, 0,
-			0,    0,   0, 0,
-			.5,  .5,  0, 1 );*/
-			1,    0,   0,   0,
-			0,    1,   0,   0,
-			0,    0,   1,   0,
-			0,    0,   1,   1 );
-
-		D3DXMATRIX projMatrix;
-		static float x = 2.75f;
-		static float n = -0.5f;
-		static float z = 0.5f;
-		D3DXMatrixPerspectiveLH(&projMatrix, x, x, n, -100.0f);
-		projMatrix._41 = 0.0f;
-		projMatrix._42 = 0.0f;
-//		projMatrix._43 += z;
-
-		static D3DXMATRIX postMatrix = D3DXMATRIX(
-			1,    0,   0,   0,
-			0,    1,   0,   0,
-			0,    0,   1,   0,
-		  0.5,  0.5,   0,   1 );
-		D3DXMATRIX textureProjMatrix;
-		D3DXMatrixMultiply(&textureProjMatrix, &viewMatrix, &projMatrix);
-		D3DXMatrixMultiply(&textureProjMatrix, &textureProjMatrix, &postMatrix);
-		fx().SetMatrix("mTextureProjection", &textureProjMatrix);
-		fx().SetInt("nTextureProjType", 2); // @TBD: texture_projNORMAL
+		this->prevLights = &lights;
+		return this->lightsInPasses;
 	}
 
-	enum { MAX_PASSES = 1 };
-	PassInfo	passInfo[MAX_PASSES];
+	void setupEnvironmentMap(BaseEffect::Input const& input)
+	{
+		ASSERT(input.surface);
+		BaseEffect::Input::Surface const& surface = *input.surface;
+
+		
+		fx().SetValue("vLightAmbient", &D3DXCOLOR(1,1,1,1), sizeof(D3DXCOLOR));
+		fx().SetValue("vMaterialAmbient", &surface.ambient, sizeof(surface.ambient));
+		fx().SetValue("vMaterialDiffuse", &D3DXCOLOR(0,0,0,0), sizeof(D3DXCOLOR));
+		fx().SetValue("vMaterialSpecular", &D3DXCOLOR(0,0,0,0), sizeof(D3DXCOLOR));
+		fx().SetValue("vMaterialEmissive", &D3DXCOLOR(0,0,0,0), sizeof(D3DXCOLOR));
+
+		IDirect3DBaseTexture9 const* envmapTexture = surface.envmapTexture;
+		fx().SetBool("bDiffuseTextureEnabled", (envmapTexture != 0));
+		if(envmapTexture)
+		{
+			fx().SetTexture("tDiffuse", const_cast<IDirect3DBaseTexture9*>(envmapTexture));
+			fx().SetTexture("tEnvironment", const_cast<IDirect3DBaseTexture9*>(envmapTexture));
+			fx().SetInt("nAddressU", D3DTADDRESS_CLAMP);//addressU);
+			fx().SetInt("nAddressV", D3DTADDRESS_CLAMP);//addressV);
+		}
+
+		fx().SetFloat("fOpacity", 1.0f);
+		fx().SetValue("vUvOffset", &D3DXVECTOR2(0.0f, 0.0f), sizeof(D3DXVECTOR2));
+
+		fx().SetInt("nSrcBlend", D3DBLEND_ONE);
+		fx().SetInt("nDestBlend", D3DBLEND_ONE);
+		fx().SetBool("bAlphaBlendEnable", true);
+
+		{
+			static float sx = 0.5f;
+			static float sy = 0.5f;
+			static float sz = 1;
+			static float oz = 1;
+			static D3DXMATRIX viewMatrix = D3DXMATRIX(
+				1,    0,   0,   0,
+				0,    1,   0,   0,
+				0,    0,   1,   0,
+				0,    0,   1,   1 );
+
+			D3DXMATRIX projMatrix;
+			static float x = 2.75f;
+			static float n = -0.5f;
+			static float z = 0.5f;
+			D3DXMatrixPerspectiveLH(&projMatrix, x, x, n, -100.0f);
+			projMatrix._41 = 0.0f;
+			projMatrix._42 = 0.0f;
+
+			static D3DXMATRIX postMatrix = D3DXMATRIX(
+				1,    0,   0,   0,
+				0,    1,   0,   0,
+				0,    0,   1,   0,
+			  0.5,  0.5,   0,   1 );
+			D3DXMATRIX textureProjMatrix;
+			D3DXMatrixMultiply(&textureProjMatrix, &viewMatrix, &projMatrix);
+			D3DXMatrixMultiply(&textureProjMatrix, &textureProjMatrix, &postMatrix);
+			fx().SetMatrix("mTextureProjection", &textureProjMatrix);
+			fx().SetInt("nTextureProjType", 2); // @TBD: texture_projNORMAL
+		}
+	}
+
 };
 
 Shiny::Shiny()
 :	mImpl(new Impl())
 {
-	fillRequest(mRequest);
-	allocInput(mInput, mRequest);
 }
 
 Shiny::~Shiny()
 {
 }
 
-unsigned Shiny::begin()
+void Shiny::begin()
 {
 	mImpl->passIndex = ~0;
 	mImpl->begin("Main");
-	return Impl::MAX_PASSES;
 }
 
-BaseEffect::PassInfo const& Shiny::passInfo(unsigned passIndex)
+unsigned Shiny::passCount(Input const& i)
 {
-	return mImpl->passInfo[passIndex];
+	unsigned lightPasses = static_cast<unsigned>(mImpl->processLights(i.lights).size());
+	return max(1, lightPasses) + 1;
 }
 
-void Shiny::pass(unsigned passIndex)
+BaseEffect::PassInfo const& Shiny::passInfo(Input const& i, unsigned passIndex)
 {
-	ASSERT(validateInput(mInput, mRequest));
-	bool resetPass = (mImpl->passIndex != passIndex);
-	switch(passIndex)
+	return mImpl->passInfo;
+}
+
+void Shiny::pass(Input const& i, unsigned passIndex)
+{
+	unsigned fxPass = min(1, passIndex); 
+	if(mImpl->passIndex != fxPass)
+		mImpl->pass(fxPass);
+
+	Shiny::Impl::LightsInPassesT const& lightsInPasses = mImpl->processLights(i.lights);
+	if(passIndex < lightsInPasses.size())
 	{
-	case 0:
-		if(resetPass)
-			mImpl->pass(0);
-		mImpl->setupSurfacePass();
-		mImpl->setupEnvmapPass(mInput);
-		mImpl->setupSurface(mInput);
-		mImpl->setupGeometry(mInput);
-		break;
-/*	case 1:
-		if(resetPass)
-			mImpl->pass(1);
-		mImpl->setupEnvmapPass(mInput);
-//		mImpl->setupSurfacePass();
-		mImpl->setupSurface(mInput);
-		mImpl->setupGeometry(mInput);
-		break;*/
-	default:
-		ASSERT("Invalid pass index");
+		mImpl->setupLights(mImpl->processLights(i.lights)[passIndex]);
+		mImpl->setupSurface(i);
 	}
+	else
+	{
+		mImpl->setupEnvironmentMap(i);
+	}
+
+	mImpl->setupGeometry(i);
+	mImpl->setupBuffers(i);
+	
 	mImpl->commit();
-	mImpl->passIndex = passIndex;
 }
 
 void Shiny::captureState()

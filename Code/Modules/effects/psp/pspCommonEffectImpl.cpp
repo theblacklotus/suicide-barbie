@@ -31,7 +31,7 @@ ColorT mutalisk::effects::mulAlpha(mutalisk::data::Color src, float alpha)
 size_t CommonEffectImpl::organizeLightsInPasses(BaseEffect::Input::Lights const& lights,
 	std::vector<LightsPerPass>& lightsInPasses)
 {
-	size_t estimatedPassCount = (std::max(1U, lights.count) - 1) >> 2 + 1;
+	size_t estimatedPassCount = ((std::max(1U, lights.count) - 1) >> 2) + 1;
 	lightsInPasses.reserve(estimatedPassCount);
 
 	unsigned light = 0;
@@ -47,15 +47,32 @@ size_t CommonEffectImpl::organizeLightsInPasses(BaseEffect::Input::Lights const&
 		}
 		lightsInPasses.push_back(pass);
 	}
-	return estimatedPassCount;
+	
+	if(lightsInPasses.empty())
+	{
+		LightsPerPass emptyPass;
+		emptyPass.count = 0;
+		lightsInPasses.push_back(emptyPass);
+	}
+
+	return lightsInPasses.size();
 }
 
-void CommonEffectImpl::setupLights(LightsPerPass const& input)
+namespace
+{
+	float saturate(float v)
+	{
+		return std::min(std::max(v, 0.0f), 1.0f);
+	}
+}
+
+void CommonEffectImpl::setupLights(LightsPerPass const& input, BaseEffect::Input const& baseInput)
 {
 	mutalisk::data::Color totalAmbient;
 	totalAmbient.r = 0; totalAmbient.g = 0; totalAmbient.b = 0; totalAmbient.a = 0;
 
-	for(unsigned q = 0; q < input.count; ++q)
+	unsigned lightIndex = 0;
+	for(unsigned q = 0; q < input.count; ++q, ++lightIndex)
 	{
 		ASSERT(q < MAX_LIGHTS);
 		ASSERT(input.lights[q]);
@@ -69,8 +86,8 @@ void CommonEffectImpl::setupLights(LightsPerPass const& input)
 		// $TBD: support specular
 		// $TBD: support point/spot lights
 
-		sceGuLightColor(q, GU_DIFFUSE, colorRGBAtoDWORD(light.diffuse));
-		sceGuLightAtt(q, light.attenuation[0], light.attenuation[1], light.attenuation[2]);
+		sceGuLightColor(lightIndex, GU_DIFFUSE, colorRGBAtoDWORD(light.diffuse));
+		sceGuLightAtt(lightIndex, light.attenuation[0], light.attenuation[1], light.attenuation[2]);
 
 		totalAmbient.r += light.ambient.r;
 		totalAmbient.g += light.ambient.g;
@@ -80,9 +97,31 @@ void CommonEffectImpl::setupLights(LightsPerPass const& input)
 		switch(light.type)
 		{
 		case mutalisk::data::scene::Light::Directional:
-			sceGuLight(q, GU_DIRECTIONAL, GU_DIFFUSE, &lightDir);
+			sceGuLight(lightIndex, GU_DIRECTIONAL, GU_DIFFUSE, &lightDir);
 			break;
 		case mutalisk::data::scene::Light::DirectionalExt:
+			{
+			mutalisk::data::Color diffuse0, diffuse1;
+			diffuse0.r = saturate(light.diffuse.r - light.ambient.r);
+			diffuse0.g = saturate(light.diffuse.g - light.ambient.g);
+			diffuse0.b = saturate(light.diffuse.b - light.ambient.b);
+			diffuse0.a = saturate(light.diffuse.a - light.ambient.a);
+			diffuse1.r = saturate(light.diffuseAux0.r - light.ambient.r);
+			diffuse1.g = saturate(light.diffuseAux0.g - light.ambient.g);
+			diffuse1.b = saturate(light.diffuseAux0.b - light.ambient.b);
+			diffuse1.a = saturate(light.diffuseAux0.a - light.ambient.a);
+			ScePspFVector3 negLightDir = { -lightDir.x, -lightDir.y, -lightDir.z };
+
+			sceGuLightColor(lightIndex, GU_DIFFUSE, colorRGBAtoDWORD(diffuse0));
+			sceGuLight(lightIndex, GU_DIRECTIONAL, GU_DIFFUSE, &lightDir);
+			sceGuEnable(GU_LIGHT0 + lightIndex);
+			++lightIndex;
+
+			sceGuLightColor(lightIndex, GU_DIFFUSE, colorRGBAtoDWORD(diffuse1));
+			sceGuLight(lightIndex, GU_DIRECTIONAL, GU_DIFFUSE, &negLightDir);
+			}
+			break;
+
 		case mutalisk::data::scene::Light::Spot:
 		case mutalisk::data::scene::Light::Point:
 			ASSERT("Not supported");
@@ -90,130 +129,20 @@ void CommonEffectImpl::setupLights(LightsPerPass const& input)
 		}
 		lightPos = lightPos;
 
-		sceGuEnable(GU_LIGHT0 + q);
+		sceGuEnable(GU_LIGHT0 + lightIndex);
 	}
 	sceGuAmbient(colorRGBAtoDWORD(totalAmbient));
 
-	if(input.count > 0)
-		sceGuEnable(GU_LIGHTING);
-
-/*	int vLightType[MAX_LIGHTS];							// Light's position in world space
-	D3DXVECTOR3 vLightPos[MAX_LIGHTS];					// Light's position in world space
-	D3DXVECTOR3 vLightDir[MAX_LIGHTS];					// Light's direction in world space
-	D3DXVECTOR3 vLightAttenuation[MAX_LIGHTS];			// Light's attenuations {attn0, attn1, attn2}
-	float  fLightSpotCutoff[MAX_LIGHTS];				// Light's spot cutoff
-	float  fLightSpotExp[MAX_LIGHTS];					// Light's spot exponent
-	D3DXVECTOR4 vLightDiffuse[MAX_LIGHTS];				// Light's diffuse color
-	D3DXVECTOR4 vLightDiffuseAux0[MAX_LIGHTS];			// Light's diffuse auxilary color 0
-	D3DXVECTOR4 vLightDiffuseAux1[MAX_LIGHTS];			// Light's diffuse auxilary color 1
-	D3DXVECTOR4 vLightSpecular[MAX_LIGHTS];				// Light's specular color
-	D3DXVECTOR4 vLightAmbient = D3DXVECTOR4(0,0,0,0);	// Light's ambient color
-
-	for(unsigned q = 0; q < input.count; ++q)
-	{
-		ASSERT(q < MAX_LIGHTS);
-		ASSERT(input.lights[q]);
-		ASSERT(input.matrices[q]);
-
-		data::scene::Light const& light = *input.lights[q];
-		D3DXMATRIX const& worldMatrix = *input.matrices[q];
-		D3DXVECTOR3 lightPos = D3DXVECTOR3(
-			worldMatrix._41,
-			worldMatrix._42,
-			worldMatrix._43);
-		D3DXVECTOR3 lightDir = D3DXVECTOR3(
-			worldMatrix._31,
-			worldMatrix._32,
-			worldMatrix._33);
-		D3DXVec3Normalize(&lightDir, &lightDir);
-
-		vLightDiffuse[q] = D3DXVECTOR4(light.diffuse.r, light.diffuse.g, light.diffuse.b, light.diffuse.a);
-		vLightSpecular[q] = D3DXVECTOR4(light.specular.r, light.specular.g, light.specular.b, light.specular.a);
-
-		vLightAttenuation[q] = D3DXVECTOR3(light.attenuation[0], light.attenuation[1], light.attenuation[2]);
-
-		switch(light.type)
-		{
-		case data::scene::Light::Directional:
-			vLightType[q] = 0; // @TBD: lightDIRECTIONAL
-			vLightDir[q] = lightDir;
-			break;
-		case data::scene::Light::Spot:
-			vLightType[q] = 2; // @TBD: lightSPOT
-			vLightPos[q] = lightPos;
-			vLightDir[q] = lightDir;
-			fLightSpotCutoff[q] = cosf(light.phi);
-			fLightSpotExp[q] = 2.0f; //@TBD: light.theta
-			break;
-		case data::scene::Light::Point:
-			vLightType[q] = 1; // @TBD: lightPOINT
-			vLightPos[q] = lightPos;
-			break;
-		case data::scene::Light::DirectionalExt:
-			vLightType[q] = 3; // @TBD: lightDIRECTIONAL_EXT
-			vLightDir[q] = lightDir;
-			break;
-		}
-
-		switch(light.type)
-		{
-		case data::scene::Light::Directional:
-		case data::scene::Light::Spot:
-		case data::scene::Light::Point:
-			vLightAmbient += D3DXVECTOR4(light.ambient.r, light.ambient.g, light.ambient.b, light.ambient.a);
-			vLightDiffuseAux0[q] = D3DXVECTOR4(0,0,0,0);	
-			vLightDiffuseAux1[q] = D3DXVECTOR4(0,0,0,0);	
-			break;
-
-		case data::scene::Light::DirectionalExt:
-			vLightDiffuseAux0[q] = 
-				D3DXVECTOR4(light.diffuseAux0.r, light.diffuseAux0.g, light.diffuseAux0.b, light.diffuseAux0.a);
-			vLightDiffuseAux1[q] =
-				D3DXVECTOR4(light.ambient.r, light.ambient.g, light.ambient.b, light.ambient.a);
-			break;
-		}
-	}
-
-	fx().SetValue("nLightType", vLightType, sizeof(int)*MAX_LIGHTS);
-	fx().SetValue("vLightPos", vLightPos, sizeof(D3DXVECTOR3)*MAX_LIGHTS);
-	fx().SetValue("vLightDir", vLightDir, sizeof(D3DXVECTOR3)*MAX_LIGHTS);
-	fx().SetValue("vLightAttenuation", vLightAttenuation, sizeof(D3DXVECTOR3)*MAX_LIGHTS);
-	fx().SetValue("fLightSpotCutoff", fLightSpotCutoff, sizeof(float)*MAX_LIGHTS);
-	fx().SetValue("fLightSpotExp", fLightSpotExp, sizeof(float)*MAX_LIGHTS);
-	fx().SetValue("vLightDiffuse", vLightDiffuse, sizeof(D3DXVECTOR4)*MAX_LIGHTS);
-	fx().SetValue("vLightDiffuseAux0", vLightDiffuseAux0, sizeof(D3DXVECTOR4)*MAX_LIGHTS);
-	fx().SetValue("vLightDiffuseAux1", vLightDiffuseAux1, sizeof(D3DXVECTOR4)*MAX_LIGHTS);
-	fx().SetValue("vLightSpecular", vLightSpecular, sizeof(D3DXVECTOR4)*MAX_LIGHTS);
-	fx().SetValue("vLightAmbient", vLightAmbient, sizeof(D3DXVECTOR4));
-	fx().SetInt("iNumLights", static_cast<int>(input.count));
-	*/
+	//if(input.count > 0)
+	sceGuEnable(GU_LIGHTING);
 }
 
 void CommonEffectImpl::setupSurface(BaseEffect::Input const& input)
 {
 	ASSERT(input.surface);
 
-	sceGuAmbientColor(~0U);
 	BaseEffect::Input::Surface const& surface = *input.surface;
-
-/*	fx().SetValue("vMaterialAmbient", &surface.ambient, sizeof(surface.ambient));
-	fx().SetValue("vMaterialDiffuse", &surface.diffuse, sizeof(surface.diffuse));
-	fx().SetValue("vMaterialSpecular", &surface.specular, sizeof(surface.specular));
-
-	IDirect3DBaseTexture9 const* diffuseTexture = surface.diffuseTexture;
-	fx().SetBool("bDiffuseTextureEnabled", (diffuseTexture != 0));
-	if(diffuseTexture)
-	{
-		fx().SetTexture("tDiffuse", const_cast<IDirect3DBaseTexture9*>(diffuseTexture));
-		fx().SetInt("nAddressU", D3DTADDRESS_WRAP);//addressU);
-		fx().SetInt("nAddressV", D3DTADDRESS_WRAP);//addressV);
-	}
-
-	fx().SetFloat("fOpacity", 1.0f - surface.transparency);
-	fx().SetValue("vUvOffset", &D3DXVECTOR2(surface.uOffset, surface.vOffset), sizeof(D3DXVECTOR2));
-
-	fx().SetInt("nSrcBlend", surface.srcBlend);
-	fx().SetInt("nDestBlend", surface.dstBlend);*/
+	sceGuModelColor(surface.emissive, surface.diffuse, surface.diffuse, 0);
 
 	sceGuBlendFunc(GU_ADD, surface.srcBlend, surface.dstBlend, 
 		surface.srcFix, surface.dstFix);
@@ -223,12 +152,10 @@ void CommonEffectImpl::setupSurface(BaseEffect::Input const& input)
 		surface.dstBlend == GU_FIX && surface.dstFix == 0U);
 	if(alphaBlendEnable)
 	{
-		sceGuTexFunc(GU_TFX_MODULATE, GU_TCC_RGBA);
 		sceGuEnable(GU_BLEND);
 	}
 	else
 	{
-		sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
 		sceGuDisable(GU_BLEND);
 	}
 	if (input.surface)
@@ -258,7 +185,7 @@ void CommonEffectImpl::setupSurface(BaseEffect::Input const& input)
 			sceGuTexImage(texture.mipmap,texture.width,texture.height,texture.stride,texture.data);
 			sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 			sceGuTexFilter(GU_LINEAR_MIPMAP_NEAREST, GU_LINEAR_MIPMAP_NEAREST);
-//			sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
+			sceGuTexFunc(GU_TFX_MODULATE, GU_TCC_RGBA);
 			sceGuEnable(GU_TEXTURE_2D);
 		}
 		else
@@ -283,16 +210,6 @@ void CommonEffectImpl::setupGeometry(BaseEffect::Input const& input)
 
 	sceGumMatrixMode(GU_MODEL);
 	sceGumLoadMatrix(&input.matrices[BaseEffect::WorldMatrix]);	// 0
-
-/*	DX_MSG("set World matrix") =
-		fx().SetMatrix("mWorld", &input.matrices[BaseEffect::WorldMatrix]);	// 0
-
-	DX_MSG("set View matrix") =
-		fx().SetMatrix("mView", &input.matrices[BaseEffect::ViewMatrix]);	// 1
-
-	DX_MSG("set WorldViewProj matrix") =
-		fx().SetMatrix("mWorldViewProjection", &input.matrices[BaseEffect::WorldViewProjMatrix]);	// 4
-	*/
 }
 
 void CommonEffectImpl::setupBuffers(BaseEffect::Input const& input)

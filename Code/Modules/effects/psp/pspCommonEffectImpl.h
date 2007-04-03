@@ -19,7 +19,7 @@ struct CommonEffectImpl
 	size_t organizeLightsInPasses(BaseEffect::Input::Lights const& lights,
 		LightsInPassesT& lightsInPasses);
 
-	void setupLights(LightsPerPass const& input);
+	void setupLights(LightsPerPass const& input, BaseEffect::Input const& baseInput);
 	void setupSurface(BaseEffect::Input const& input);
 	void setupGeometry(BaseEffect::Input const& input);
 	void setupBuffers(BaseEffect::Input const& input);

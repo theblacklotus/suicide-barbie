@@ -10,11 +10,10 @@ struct Unlit::Impl : public CommonEffectImpl
 {
 	PassInfo	passInfo;
 
-	void setupAmbientOnly()
+	void setupEmissiveOnly()
 	{
-		D3DXVECTOR4 ambient = D3DXVECTOR4(1,1,1,1);
-		fx().SetValue("vLightAmbient", &ambient, sizeof(D3DXVECTOR4));
-		fx().SetValue("vMaterialAmbient", &ambient, sizeof(D3DXVECTOR4));
+		D3DXVECTOR4 white = D3DXVECTOR4(1,1,1,1);
+		fx().SetValue("vMaterialEmissive", &white, sizeof(D3DXVECTOR4));
 		fx().SetInt("iNumLights", 0);
 	}
 };
@@ -53,10 +52,7 @@ void Unlit::pass(Input const& i, unsigned passIndex)
 	mImpl->setupSurface(i);
 	mImpl->setupGeometry(i);
 	mImpl->setupBuffers(i);
-	mImpl->setupAmbientOnly();
-
-	// @TEMP:
-	// mImpl->fx().SetValue("vLightAmbient", &i.surface->ambient, sizeof(D3DXVECTOR4));
+	mImpl->setupEmissiveOnly();
 
 	mImpl->commit();
 }

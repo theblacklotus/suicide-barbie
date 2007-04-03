@@ -423,7 +423,7 @@ std::string outputFileName(std::string fileName)
 template <typename Data>
 void save(std::string dstName, Data& data)
 {
-	mutant::mutant_writer mutWriter(mutant::writer_factory::createOutput(outputFileName(dstName), writer_factory::PLAIN));
+	mutant::mutant_writer mutWriter(mutant::writer_factory::createOutput(outputFileName(dstName)));//, writer_factory::PLAIN));
 	mutWriter << data;
 }
 
@@ -976,26 +976,28 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 				assertWarning(properties.hasVector(BackColor), "DirectionalExt light type misses 'Back Color' property");
 				assertWarning(properties.hasVector(EquatorColor), "DirectionalExt light type misses 'Equator Color' property");
 
-				assertWarning(properties.vectors[BackColor].size() >= 4, "'Back Color' property must be Vector3 or Vector4");
-				assertWarning(properties.vectors[EquatorColor].size() >= 4, "'Equator Color' property must be Vector3 or Vector4");
+				assertWarning(properties.vectors[BackColor].size() >= 3, "'Back Color' property must be Vector3 or Vector4");
+				assertWarning(properties.vectors[EquatorColor].size() >= 3, "'Equator Color' property must be Vector3 or Vector4");
 
 				data.lights[q].type = mutalisk::data::scene::Light::DirectionalExt;
 
-				if(properties.vectors[EquatorColor].size() >= 4)
+				if(properties.vectors[EquatorColor].size() >= 3)
 				{
 					data.lights[q].ambient.r = static_cast<float>(properties.vectors[EquatorColor][0]);
 					data.lights[q].ambient.g = static_cast<float>(properties.vectors[EquatorColor][1]);
 					data.lights[q].ambient.b = static_cast<float>(properties.vectors[EquatorColor][2]);
-					data.lights[q].ambient.a = static_cast<float>(properties.vectors[EquatorColor][3]);
 				}
+				if(properties.vectors[EquatorColor].size() >= 4)
+					data.lights[q].ambient.a = static_cast<float>(properties.vectors[EquatorColor][3]);
 
-				if(properties.vectors[BackColor].size() >= 4)
+				if(properties.vectors[BackColor].size() >= 3)
 				{
 					data.lights[q].diffuseAux0.r = static_cast<float>(properties.vectors[BackColor][0]);
 					data.lights[q].diffuseAux0.g = static_cast<float>(properties.vectors[BackColor][1]);
 					data.lights[q].diffuseAux0.b = static_cast<float>(properties.vectors[BackColor][2]);
-					data.lights[q].diffuseAux0.a = static_cast<float>(properties.vectors[BackColor][3]);
 				}
+				if(properties.vectors[BackColor].size() >= 4)
+					data.lights[q].diffuseAux0.a = static_cast<float>(properties.vectors[BackColor][3]);
 			}
 		}
 		else
@@ -1010,6 +1012,20 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 		data.lights[q].diffuse.g = static_cast<float>(lColor.mGreen) * intensity;
 		data.lights[q].diffuse.b = static_cast<float>(lColor.mBlue) * intensity;		
 		data.lights[q].diffuse.a = static_cast<float>(lColor.mAlpha) * intensity;
+
+		std::string const DiffuseColor = "diffuseColor";
+		if(properties.hasVector(DiffuseColor))
+		{
+			assertWarning(properties.vectors[DiffuseColor].size() >= 3, "'Diffuse Color' property must be Vector3 or Vector4");
+			if(properties.vectors[DiffuseColor].size() >= 3)
+			{
+				data.lights[q].diffuse.r = static_cast<float>(properties.vectors[DiffuseColor][0]);
+				data.lights[q].diffuse.g = static_cast<float>(properties.vectors[DiffuseColor][1]);
+				data.lights[q].diffuse.b = static_cast<float>(properties.vectors[DiffuseColor][2]);
+			}
+			if(properties.vectors[DiffuseColor].size() >= 4)
+				data.lights[q].diffuse.a = static_cast<float>(properties.vectors[DiffuseColor][3]);
+		}
 
 		data.lights[q].specular = data.lights[q].diffuse;
 
@@ -1149,12 +1165,6 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 				mutalisk::data::Color& specular = data.actors[q].materials[w].shaderInput.specular;
 				mutalisk::data::Color& emissive = data.actors[q].materials[w].shaderInput.emissive;
 
-				// @TBD: emissive
-				emissive.r = 0.0f;
-				emissive.g = 0.0f;
-				emissive.b = 0.0f;
-				emissive.a = 0.0f;
-
 				KFbxPropertyDouble3 lKFbxDouble3;
 				if(i->materials[w].parameters->GetNewFbxClassId().Is(KFbxSurfaceLambert::ClassId))
 				{
@@ -1170,6 +1180,12 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 					diffuse.g = static_cast<float>(lKFbxDouble3.Get()[1]);
 					diffuse.b = static_cast<float>(lKFbxDouble3.Get()[2]);
 					diffuse.a = 1.0f;
+
+					lKFbxDouble3 = surface->GetEmissiveColor();
+					emissive.r = static_cast<float>(lKFbxDouble3.Get()[0]);
+					emissive.g = static_cast<float>(lKFbxDouble3.Get()[1]);
+					emissive.b = static_cast<float>(lKFbxDouble3.Get()[2]);
+					emissive.a = 1.0f;
 
 					specular.r = 0.0f;
 					specular.g = 0.0f;
@@ -1196,6 +1212,12 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 					specular.g = static_cast<float>(lKFbxDouble3.Get()[1]);
 					specular.b = static_cast<float>(lKFbxDouble3.Get()[2]);
 					specular.a = 1.0f;
+
+					lKFbxDouble3 = surface->GetEmissiveColor();
+					emissive.r = static_cast<float>(lKFbxDouble3.Get()[0]);
+					emissive.g = static_cast<float>(lKFbxDouble3.Get()[1]);
+					emissive.b = static_cast<float>(lKFbxDouble3.Get()[2]);
+					emissive.a = 1.0f;
 				}
 			}
 		}
@@ -1651,7 +1673,7 @@ void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& propert
 		actor.slice = static_cast<unsigned>(properties.vectors["slice"][0]);
 	}
 
-	if(properties.hasVector("ambient") || properties.hasVector("diffuse") || properties.hasVector("specular"))
+	if(properties.hasVector("ambient") || properties.hasVector("diffuse") || properties.hasVector("specular") || properties.hasVector("emissive"))
 	{
 		for(size_t w = 0; w < actor.materials.size(); ++w)
 		{
@@ -1664,6 +1686,8 @@ void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& propert
 					surface->GetAmbientColor().Set(readColorFromProperties(properties, "ambient"));
 				if(properties.hasVector("diffuse"))
 					surface->GetDiffuseColor().Set(readColorFromProperties(properties, "diffuse"));
+				if(properties.hasVector("emissive"))
+					surface->GetEmissiveColor().Set(readColorFromProperties(properties, "emissive"));
 			}
 			else if(actor.materials[w].parameters->GetNewFbxClassId().Is(KFbxSurfacePhong::ClassId))
 			{
@@ -1674,6 +1698,8 @@ void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& propert
 					surface->GetDiffuseColor().Set(readColorFromProperties(properties, "diffuse"));
 				if(properties.hasVector("specular"))
 					surface->GetSpecularColor().Set(readColorFromProperties(properties, "specular"));
+				if(properties.hasVector("emissive"))
+					surface->GetEmissiveColor().Set(readColorFromProperties(properties, "emissive"));
 			}
 		}
 	}

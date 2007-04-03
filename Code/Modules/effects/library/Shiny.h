@@ -10,26 +10,17 @@ namespace mutalisk { namespace effects {
 
 class Shiny : public BaseEffect
 {
-protected:
-	static void fillRequest(Request& request);
-
 public:
 	Shiny();
 	virtual ~Shiny();
 
-	virtual unsigned begin();
-	virtual PassInfo const& passInfo(unsigned passIndex);
-	virtual void pass(unsigned passIndex);
-	virtual void end();
-
-	virtual void captureState();
-
-/*	virtual void begin();
+	virtual void begin();
 	virtual unsigned passCount(Input const& i);
 	virtual PassInfo const& passInfo(Input const& i, unsigned passIndex);
 	virtual void pass(Input const& i, unsigned passIndex);
 	virtual void end();
-*/
+	
+	virtual void captureState();
 
 private:
 	struct Impl;

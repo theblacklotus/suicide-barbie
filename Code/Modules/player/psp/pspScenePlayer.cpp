@@ -194,10 +194,11 @@ namespace {
 //		printf("¤¤ src.diffuseTexture = %x\n", src.diffuseTexture);
 
 		dst.diffuseTexture = (src.diffuseTexture != ~0U) ? scene.mResources.textures[src.diffuseTexture].blueprint.get() : 0;
+		dst.envmapTexture = (src.envmapTexture != ~0U) ? scene.mResources.textures[src.envmapTexture].blueprint.get() : 0;
 //		printf("¤¤ dst.diffuseTexture = %x\n", dst.diffuseTexture);
 
 //		dst.diffuseTexture = (src.diffuseTexture != ~0U)? scene.mResources.textures[src.diffuseTexture] : 0;
-		dst.envmapTexture = 0;//(src.envmapTexture != ~0U)? scene.mNativeResources.textures[src.envmapTexture] : 0;
+//		dst.envmapTexture = 0(src.envmapTexture != ~0U)? scene.mNativeResources.textures[src.envmapTexture] : 0;
 
 		dst.uOffset = src.uOffset;
 		dst.vOffset = src.vOffset;

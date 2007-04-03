@@ -21,14 +21,14 @@ struct Repository
 	Repository(bool named = true)
 		: mNamed(named)
 	{
-		{char const* n[] = {"lambert", "default"};
+		{char const* n[] = {"lambert", "default", ""};
 		entry(new Lambert(), n);}
 
-		{char const* n[] = {"unlit"};
+		{char const* n[] = {"unlit", "baked", ""};
 		entry(new Unlit(), n);}
 
-		//{char const* n[] = {"shiny"};
-		//entry(new Shiny(), n);}
+		{char const* n[] = {"shiny", ""};
+		entry(new Shiny(), n);}
 	}
 
 public:
@@ -67,7 +67,7 @@ private:
 	{
 		std::vector<std::string> names;
 		if(mNamed)
-			for(int q = 0; q < sizeof(namesArray)/sizeof(char const*); ++q)
+			for(int q = 0; !std::string(namesArray[q]).empty(); ++q)
 				names.push_back(namesArray[q]);
 		mEffects.push_back(std::make_pair(fx, names));
 	}
