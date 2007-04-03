@@ -1,0 +1,10 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'lambert'
+scene.RootNode.diffusecolor = {1,1,1}
+--scene.RootNode.emissive = {1,1,1}
+
+
+return scene
