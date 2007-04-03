@@ -1,0 +1,16 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'baked'
+
+
+scene.blobs = {}
+scene.blobs.blendOp = 'Lerp'
+scene.blobs.zOp = 'ReadOnly'
+scene.blobs.slice = 11
+
+scene.pPlane1 = {}
+scene.pPlane1.slice = 10
+
+return scene
