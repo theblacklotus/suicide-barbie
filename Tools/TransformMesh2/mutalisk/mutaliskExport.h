@@ -2599,12 +2599,26 @@ void setPlatform(Platform platform)
 
 void beginScene(char const* sceneFileName)
 {
-	// LUA test
+	// LUA
 	std::string sceneProperties = mutalisk::fileName2SceneName(std::string(sceneFileName)) + ".props";
 	mutalisk::lua::LuaPlayer::getInstance().exec(sceneProperties);
 	mutalisk::lua::readFromResult(gProperties);
 	mutalisk::lua::LuaPlayer::getInstance().garbageCollect();
-	// \LUA test
+
+	{
+		OutputScene::Properties properties;
+		mutalisk::lua::PropertiesByNameT::const_iterator propsIt = gProperties.find("RootNode");
+		if(propsIt != gProperties.end())
+			processLuaProperties(propsIt->second, properties);
+
+		const std::string GlobalScale = "globalScale";
+		if(properties.hasVector(GlobalScale))
+		{
+			if(properties.vectors[GlobalScale].size() > 0)
+				gGlobalScale = static_cast<float>(properties.vectors[GlobalScale][0]);
+		}
+	}
+	// \LUA
 
 	gOutputScene.source = sceneFileName;
 	gOutputScene.name = mutalisk::fileName2SceneName(std::string(sceneFileName));
