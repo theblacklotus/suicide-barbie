@@ -4,6 +4,12 @@
 #include "cfg.h"
 #include "platform.h"
 #include <mutalisk/mutalisk.h>
+#if defined(MUTALISK_PSP)
+#include <pspkernel.h>
+#include <list>
+#include "ScenePlayer.h"
+#include "psp/pspScenePlayer.h"
+#endif
 
 namespace mutalisk
 {
@@ -15,6 +21,7 @@ namespace mutalisk
 			std::auto_ptr<mutalisk::data::scene>	blueprint;
 			mutable RenderableSceneT*				renderable;
 			mutable float							startTime;
+			std::string								pathPrefix;
 		};
 
 	public:
@@ -57,6 +64,24 @@ namespace mutalisk
 		float			mCurrTime;
 		unsigned		mCurrFrame;
 		std::string		mPathPrefix;
+
+#if defined(MUTALISK_PSP)					//	texture streaming
+	public:
+		BaseDemoPlayer()
+		:	m_currentLoad(0)
+		{
+		}
+		void loadTextures(Scene& scene, bool async = true);
+		void unloadTextures(Scene& scene);
+		int updateTextures();
+	private:
+		typedef std::pair<std::string, RenderableScene::SharedResources::Texture*> QueueItem;
+		std::list<QueueItem> m_texQueue;
+		SceUID			m_currentLoad;
+		data::MtxHeader*m_currentTexture;
+		RenderableScene::SharedResources::Texture*		m_currentResource;
+#endif
+
 	};
 
 } // namespace mutalisk

@@ -55,6 +55,7 @@ BaseDemoPlayer::Scene const& BaseDemoPlayer::load(Scene& scene, std::string cons
 {
 	std::string path, fileName;
 	splitFilename(sceneName, path, fileName);
+	scene.pathPrefix = path;
 	setResourcePath(mPathPrefix + path);
 
 	scene.blueprint = loadResource<mutalisk::data::scene>(fileName);
@@ -62,6 +63,103 @@ BaseDemoPlayer::Scene const& BaseDemoPlayer::load(Scene& scene, std::string cons
 	scene.startTime = -1.0f;
 	return scene;
 }
+
+#if defined(MUTALISK_PSP)
+void BaseDemoPlayer::loadTextures(Scene& scene, bool async)
+{
+	setResourcePath(mPathPrefix + scene.pathPrefix);
+	array<mutalisk::data::scene::Ref>& textureIds = scene.blueprint->textureIds;
+	array<RenderableScene::SharedResources::Texture>& textures = scene.renderable->mResources.textures;
+	textures.resize(textureIds.size());
+	for(size_t q = 0; q < textureIds.size(); ++q)
+	{
+		if (async)
+		{
+			RenderableScene::SharedResources::Texture* tex = &textures[q];
+			QueueItem item(mPathPrefix + scene.pathPrefix + textureIds[q], tex);
+			m_texQueue.push_back(item);
+		}
+		else
+		{
+			textures[q].blueprint = loadResource<mutalisk::data::texture>(textureIds[q]);
+			textures[q].renderable = prepare(renderContext, *textures[q].blueprint);
+		}
+	}
+}
+
+
+void BaseDemoPlayer::unloadTextures(Scene& scene)
+{
+	array<RenderableScene::SharedResources::Texture>& textures = scene.renderable->mResources.textures;
+	textures.resize(0);
+}
+
+int BaseDemoPlayer::updateTextures()
+{
+	// if texture load in flight; check to see if done
+	if (m_currentLoad)
+	{
+		SceIores res;
+		int ret = sceIoPollAsync(m_currentLoad, &res);
+		if (ret == 1)
+		{
+//			printf("sceIoPollAsync returned %x ; still loading\n", ret);
+			return m_texQueue.size();
+		}
+		else if(ret == 0)
+		{
+//			printf("sceIoPollAsync returned %x ; loading done with res = %i\n", ret, res);
+		}
+		else
+		{
+			printf("sceIoPollAsync returned %x with res = %x\n", ret, res);
+			m_currentLoad = 0;
+			return m_texQueue.size();
+		}
+		sceIoClose(m_currentLoad);
+		m_currentLoad = 0;
+		std::auto_ptr<data::texture> resource(new mutalisk::data::texture);
+		resource->patchupTextureFromMemory(m_currentTexture);
+
+		m_currentResource->blueprint = resource;
+		m_currentResource->renderable = prepare(renderContext, *m_currentResource->blueprint);
+		return m_texQueue.size();
+	}
+
+	// if no texture load in flight; check to see if have any queued up
+	if (!m_currentLoad && !m_texQueue.empty())
+	{
+		QueueItem& item = m_texQueue.front();
+		std::string& name = item.first;
+		m_currentResource = item.second;	
+
+//		printf("trying to open file %s\n", name.c_str());
+		m_currentLoad = sceIoOpen(name.c_str(), PSP_O_RDONLY, 0777);
+		if (m_currentLoad>=0)
+		{
+//			printf("successfully opened file\n");
+			int size = sceIoLseek(m_currentLoad, 0, PSP_SEEK_END);
+			sceIoLseek(m_currentLoad, 0, PSP_SEEK_SET);
+//			printf("file size = %i\n", size);
+			m_currentTexture = (data::MtxHeader*)malloc(size + sizeof(data::MtxHeader));
+			printf("mem ptr = %x\n", m_currentTexture);
+			if (sceIoChangeAsyncPriority(m_currentLoad, 0x8))
+			{
+				printf("sceIoChangeAsyncPriority failed\n");
+			}
+			int ret = sceIoReadAsync(m_currentLoad, m_currentTexture, size);
+//			printf("sceIoReadAsync returned = %x\n", ret);
+		}
+		else
+		{
+			printf("unable to find file %s\n", name.c_str());
+		}
+
+		m_texQueue.pop_front();
+	}
+	return m_texQueue.size();	
+}
+#endif
 
 void BaseDemoPlayer::setTime(float t)
 {

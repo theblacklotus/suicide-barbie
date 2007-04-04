@@ -16,7 +16,8 @@ class TestDemo : public mutalisk::BaseDemoPlayer
 	{
 		Scene	logo;
 		Scene	flower;
-		Scene	phone0;
+		Scene	phone1;
+		Scene	phone2;
 		Scene	walk;
 	};
 	Scenes							scn;
@@ -33,8 +34,16 @@ protected:
 	void logo_to_flower();
 	void flower();
 	void flower_to_phone0();
-	void phone0();
+	void phone1();
+	void phone2();
 	void walk();
+
+	// load points
+	void loadFlower();
+	void loadPhone1();
+	void loadPhone2();
+	void loadWalk();
+	void loadXXX();
 };
 
 #endif // TEST_DEMO_H_
