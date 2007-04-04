@@ -20,6 +20,10 @@ namespace mutalisk { namespace data
 
 		// memory management
 		psp_texture(); ~psp_texture();
+
+		void patchupTextureFromMemory(MtxHeader* header);
+		MtxHeader* memContainer;		// used with texture is creted from memory; psp_texture takes over ownership for data passed in
+
 	};
 
 	// memory management
@@ -29,8 +33,7 @@ namespace mutalisk { namespace data
 //
 inline template <typename In> In& operator>> (In& i, psp_texture& texture)
 {
-//	clear(texture);
-	memset(&texture, 0, sizeof(texture));
+	clear(texture);
 
 	try
 	{
@@ -43,6 +46,7 @@ inline template <typename In> In& operator>> (In& i, psp_texture& texture)
 		texture.width  = header.textureWidth;
 		texture.height = header.textureHeight;
 		texture.stride = header.textureStride;
+		texture.mipmap = 0;
 
 		texture.clutFormat = header.clutFormat;
 		texture.clutEntries = header.clutEntries;
@@ -51,7 +55,8 @@ inline template <typename In> In& operator>> (In& i, psp_texture& texture)
 		texture.clut = (void*)(header.paletteOffset + (int)texture.data);
 		
 		texture.swizzled = header.swizzle;
-
+		printf("い alloc = %x\n", (unsigned int)texture.data);
+/*
 		printf("い width = %i\n", texture.width);
 		printf("い height = %i\n", texture.height);
 		printf("い format = %i\n", texture.format);
@@ -62,7 +67,7 @@ inline template <typename In> In& operator>> (In& i, psp_texture& texture)
 		printf("い clut# = %i\n", texture.clutEntries);
 		printf("い clut@ = %x\n", (unsigned int)texture.clut);
 		printf("い swizzled = %s\n", texture.swizzled ? "yes" : "no");
-
+*/
 //		i.readArray((u32*)texture.data, header.vramAllocationSize/4);
 		i.readOpaqueData(texture.data, header.vramAllocationSize);
 /*
