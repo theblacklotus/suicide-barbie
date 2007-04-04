@@ -79,8 +79,39 @@ struct ScenePlayerApp
 	Scene					scene;
 };
 std::auto_ptr<ScenePlayerApp> scenePlayerApp;
-std::string gSceneFileName = "telephone_s1.msk";
-std::string gPathPrefix = "host1:DemoTest/telephone_s1/psp/";//"ms0:PSP/TESTDATA/";
+std::string gConfigFileName = "host1:DemoTest/scenePlayer.cfg";
+std::string gSceneFileName = "walk.msk";
+std::string gPathPrefix = "host1:DemoTest/walk/psp/";//"ms0:PSP/TESTDATA/";
+
+
+void readConfigFile(std::string const& configFileName)
+{
+	SceUID file;
+	if((file = sceIoOpen(configFileName.c_str(), PSP_O_RDONLY, 0777)) > 0 )
+	{
+		SceOff fileSize = sceIoLseek(file, 0, PSP_SEEK_END);
+		sceIoLseek(file, 0, PSP_SEEK_SET);
+
+		char* data = new char[fileSize];
+		if(sceIoRead(file, data, fileSize) == fileSize)
+		{
+			std::string str(data);
+			if(str.find_first_of(" ") != std::string::npos)
+			{
+				std::string sceneFileName = str.substr(0, str.find_first_of(" "));
+				std::string pathPrefix = str.substr(str.find_last_of(" ") + 1, std::string::npos);
+
+				printf("path-prefix: %s, scene-name: %s\n", gPathPrefix.c_str(), gSceneFileName.c_str());
+
+				if(!sceneFileName.empty())
+					gSceneFileName = sceneFileName;
+				if(!pathPrefix.empty())
+					gPathPrefix = pathPrefix;
+			}
+		}
+		delete[] data;
+	}
+}
 
 
 
@@ -164,6 +195,8 @@ int main(int argc, char* argv[])
 
 	int val = 0;
 
+	readConfigFile(gConfigFileName);
+
 	printf("ScenePlayer: create\n");
 	scenePlayerApp.reset(new ScenePlayerApp(gSceneFileName, gPathPrefix));
 	printf("ScenePlayer: created and loaded\n");
@@ -188,7 +221,8 @@ int main(int argc, char* argv[])
 ;;mutalisk::TimeBlock updateTime, processTime, renderTime, loopTime, finishAndSyncTime;
 ;;loopTime.peek();
 
-		bool doBlur = true;
+		bool doPrintInfo = false;
+		bool doBlur = false;//true;
 		static float blurStrength = 0.2f;
 		static unsigned blurThreshold = 114;
 		static int blurSrcModifier = 200;
@@ -200,6 +234,8 @@ int main(int argc, char* argv[])
 			{
 				if (pad.Buttons & PSP_CTRL_SELECT && !(oldPad.Buttons & PSP_CTRL_SELECT))
 					gTimeControl.pause(!gTimeControl.isPaused());
+				if (pad.Buttons & PSP_CTRL_START)// && !(oldPad.Buttons & PSP_CTRL_START))
+					doPrintInfo = !doPrintInfo;
 				if (pad.Buttons & PSP_CTRL_CROSS)
 					doBlur = !doBlur;
 				if (pad.Buttons & PSP_CTRL_UP && !(pad.Buttons & PSP_CTRL_TRIANGLE))
@@ -238,6 +274,7 @@ int main(int argc, char* argv[])
 
 			// clear screen
 
+			//sceGuClearColor(0xff00ff00);
 			sceGuClearColor(0xff000000);
 			sceGuClearDepth(0xffff);
 			sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
@@ -357,13 +394,16 @@ int main(int argc, char* argv[])
 
 ;;loopTime.peek();
 ;;static mutalisk::TimeBlock frameTime; frameTime.peek();
-		pspDebugScreenSetOffset((int)mainRenderTarget.vramAddr);
-		pspDebugScreenSetXY(0,0);
-		pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
-		pspDebugScreenPrintf("\n");
-		pspDebugScreenPrintf("mutalisk: update(%f) process(%f) render(%f)", updateTime.ms(), processTime.ms(), renderTime.ms());
-		pspDebugScreenPrintf("\n");
-		pspDebugScreenPrintf("blur: str(%f) thrshld(%d) src(%d) dst(%d)", blurStrength, (int)blurThreshold, (int)blurSrcModifier, (int)blurDstModifier);
+		if(doPrintInfo)
+		{
+			pspDebugScreenSetOffset((int)mainRenderTarget.vramAddr);
+			pspDebugScreenSetXY(0,0);
+			pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
+			pspDebugScreenPrintf("\n");
+			pspDebugScreenPrintf("mutalisk: update(%f) process(%f) render(%f)", updateTime.ms(), processTime.ms(), renderTime.ms());
+			pspDebugScreenPrintf("\n");
+			pspDebugScreenPrintf("blur: str(%f) thrshld(%d) src(%d) dst(%d)", blurStrength, (int)blurThreshold, (int)blurSrcModifier, (int)blurDstModifier);
+		}
 
 		sceDisplayWaitVblankStart();
 		mainRenderTarget2.vramAddr = mainRenderTarget.vramAddr;
