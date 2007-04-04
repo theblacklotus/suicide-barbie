@@ -74,6 +74,25 @@ namespace {
 	}
 }
 
+		struct Data
+		{
+			Vec3 pos;
+			float area;
+		};
+		struct Ball
+		{
+			u32 color;
+			Vec3 normal;
+			Vec3 pos;
+			float area;
+			bool operator < (const Ball& other) const 
+			{
+				if (pos.z > other.pos.z)
+					return false;
+				else
+					return true;
+			}
+		};
 std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh const& data)
 {
 	std::auto_ptr<RenderableMesh> mesh(new RenderableMesh(data));
@@ -105,7 +124,7 @@ std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh co
 
 		;;printf("skinInfo processed\n");
 	}
-	else if(false)		// "ball render"(tm) technique
+	else if(!false)		// "ball render"(tm) technique
 	{
 		;;printf("using \"ball render\"(tm) technique\n");
 
@@ -122,11 +141,6 @@ std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh co
 			u32 color;
 			Vec3 normal;
 			Vec3 pos;
-		};
-		struct Data
-		{
-			Vec3 pos;
-			float area;
 		};
 
 		if (data.primitiveType != GU_TRIANGLES) 
@@ -147,23 +161,16 @@ std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh co
 			assert(false);
 		}
 
-
-		// assert triangle list
-
-		size_t vertexStride = sizeof(Vertex);
-		size_t vertexCount = data.indexCount / 3 /*three verts make up one triangle*/ * 2 /*one sprite equals 2 verts*/;
-		mesh->mAmplifiedVertexData[0] = new unsigned char[vertexStride * vertexCount];
-		mesh->mAmplifiedVertexDecl = GU_VERTEX_32BITF | GU_NORMAL_32BITF | GU_TEXTURE_32BITF | GU_COLOR_8888;
-		mesh->mAmplifiedVertexStride = vertexStride;
-		mesh->mUserData = new unsigned char[sizeof(Data) * vertexCount];
-
 		Vertex* src = (Vertex*)data.vertexData;
-		Vertex* dst = (Vertex*)mesh->mAmplifiedVertexData[0];
-		Data* out   = (Data*)mesh->mUserData;
 		u16* index = (u16*)data.indexData;
+
 		u32 skipped = 0;
 		float scale = 1000.f;
-		float areaThreshold = 5.f;
+		float areaThreshold = 0.f;
+
+		std::vector<Ball> balls;
+		balls.reserve(data.indexCount / 3);
+
 		for(size_t i = 0; i < data.indexCount; i+=3)
 		{
 			u32 i0 = *index++;
@@ -206,30 +213,46 @@ std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh co
 				continue;
 			}
 
-			Data data;
-			data.pos = p;
-			data.area = sqrtf(area) / 1000.f;
-			*out++ = data;
+			Ball ball;
+			ball.color = v0.color;
+			ball.normal = v0.normal;
+			ball.pos = p;
+			ball.area = sqrtf(area) / 1300.f;
+			ball.area += ball.area * 0.25f;
 
-			v0.u = v0.v = 0.f;
-			v1.u = v1.v = 1.f;
-
-			area *= 1.f / scale;
-
-			Vec3 extrude;
-			extrude.x = -area / 10.f;
-			extrude.y = area / 10.f;
-			extrude.z = -area / 10.f;
-
-			Vec3_sub(&p0, &p, &extrude);
-			Vec3_add(&p1, &p, &extrude);
-
-			v0.pos = p0;
-			v1.pos = p1;
-			*dst++ = v0;
-			*dst++ = v1;
+			balls.push_back(ball);
 		}
 		printf("%i out of %i triangles skipped\n", skipped, data.indexCount/3);
+
+		std::sort(balls.begin(), balls.end());
+
+		size_t vertexCount = balls.size() * 2 /*one sprite equals 2 verts*/;
+		size_t vertexStride = sizeof(Vertex);
+		mesh->mAmplifiedVertexData[0] = new unsigned char[vertexStride * vertexCount];
+		mesh->mAmplifiedVertexDecl = GU_VERTEX_32BITF | GU_NORMAL_32BITF | GU_TEXTURE_32BITF | GU_COLOR_8888;
+		mesh->mAmplifiedVertexStride = vertexStride;
+		mesh->mUserData = new unsigned char[sizeof(Data) * vertexCount];
+
+		Vertex* dst = (Vertex*)mesh->mAmplifiedVertexData[0];
+		Data* out   = (Data*)mesh->mUserData;
+		Vec3 zeroVec = {0,0,0};
+		for(std::vector<Ball>::const_iterator it = balls.begin(); it != balls.end(); ++it)
+		{
+			const Ball& ball = *it;
+
+			Vertex v0, v1;
+			v0.u = v0.v = 0.f;
+			v1.u = v1.v = 1.f;
+			v0.color = v1.color = ball.color;
+			v0.normal = v1.normal = ball.normal;
+			v0.pos = v1.pos = zeroVec;
+			Data data;
+			data.pos = ball.pos;
+			data.area = ball.area;
+			*dst++ = v0;
+			*dst++ = v1;
+			*out++ = data;
+		}
 
 		mutalisk::data::mesh& dataHack = const_cast<mutalisk::data::mesh&>(data);
 		delete dataHack.indexData; dataHack.indexData = 0;				// $HACK ; will force raw vertex data when rendering
@@ -818,16 +841,36 @@ void render(RenderContext& rc, RenderableScene const& scene, int maxActors)
 		Vec3 p0, p1, v;
 		static size_t count = 0;
 		if (count < primCount)
-			count+= primCount / (60 * 3);
+			count+= 1; //primCount / (60 * 3);
+		static float t = 0;
+		const static float t1 = 1.f / 520.f;
+		static bool fadeOut = false;
+		if (t > 5.f)
+			fadeOut = true;
+		if (fadeOut)
+			t -= 1.f / 60.f;
+		else
+			t += 1.f / 60.f;
+		float t0 = t1;
 		for (size_t j = 0; j < primCount; ++j)
 		{
 			Data& d = *data++;
-			if (j > count)
-			{
+			Vec3_scale(&v, &vec, d.area);
+
+			t0 += t1;
+			float td = (t - t0) * 2.5f;
+			if (td <= 0.f)
 				v.x = v.y = v.z = 0.f;
+			else if (0.f < td && td <= 1.f)
+			{
+				float const up = 1.2f;
+				float a = 3.142592f - asinf(1.f/up);
+				float s = up * sinf(td*a);
+				Vec3_scale(&v, &v, s);
 			}
-			else
-				Vec3_scale(&v, &vec, d.area);
+
+
+
 			Vec3_sub(&p0, &d.pos, &v);
 			Vec3_add(&p1, &d.pos, &v);
 			vertexData->pos = p0; vertexData++;
