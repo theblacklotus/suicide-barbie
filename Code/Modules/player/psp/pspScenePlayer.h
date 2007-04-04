@@ -35,17 +35,19 @@ struct RenderContext
 struct RenderableMesh
 {
 	RenderableMesh(mutalisk::data::mesh const& blueprint)
-		: mBlueprint(blueprint), mAmplifiedVertexDecl(0), mAmplifiedBufferIndex(0) {
+		: mBlueprint(blueprint), mAmplifiedVertexDecl(0), mAmplifiedBufferIndex(0), mUserData(0) {
 		mAmplifiedVertexData[0] = 0;
 		mAmplifiedVertexData[1] = 0; }
 	~RenderableMesh() {
 		delete[] mAmplifiedVertexData[0];
-		delete[] mAmplifiedVertexData[1]; }
+		delete[] mAmplifiedVertexData[1];
+		delete[] mUserData; }
 	mutalisk::data::mesh const&			mBlueprint;
 	unsigned char*						mAmplifiedVertexData[2];
 	int									mAmplifiedVertexDecl;
 	unsigned							mAmplifiedVertexStride;
 	unsigned							mAmplifiedBufferIndex;
+	unsigned char*						mUserData;
 
 private:
 	RenderableMesh(RenderableMesh const& c);
