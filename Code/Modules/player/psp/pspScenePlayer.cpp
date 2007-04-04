@@ -78,6 +78,7 @@ namespace {
 		{
 			Vec3 pos;
 			float area;
+			u32 displace;
 		};
 		struct Ball
 		{
@@ -232,9 +233,25 @@ std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh co
 		mesh->mAmplifiedVertexStride = vertexStride;
 		mesh->mUserData = new unsigned char[sizeof(Data) * vertexCount];
 
+		std::vector<unsigned> random;
+		random.resize(balls.size());
+		for (size_t i = 0 ; i < random.size(); ++i)
+		{
+			random[i] = i;
+		}
+
+		for (size_t i = 0 ; i < random.size(); ++i)
+		{
+			size_t j = rand() % random.size();
+			unsigned x = random[i];
+			random[i] = random[j];
+			random[j] = x;
+		}
+
 		Vertex* dst = (Vertex*)mesh->mAmplifiedVertexData[0];
 		Data* out   = (Data*)mesh->mUserData;
 		Vec3 zeroVec = {0,0,0};
+		std::vector<unsigned>::const_iterator rnd = random.begin();
 		for(std::vector<Ball>::const_iterator it = balls.begin(); it != balls.end(); ++it)
 		{
 			const Ball& ball = *it;
@@ -248,6 +265,7 @@ std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh co
 			Data data;
 			data.pos = ball.pos;
 			data.area = ball.area;
+			data.displace = *rnd++;
 			*dst++ = v0;
 			*dst++ = v1;
 			*out++ = data;
@@ -828,24 +846,19 @@ void render(RenderContext& rc, RenderableScene const& scene, int maxActors)
 			Vec3 normal;
 			Vec3 pos;
 		};
-		struct Data
-		{
-			Vec3 pos;
-			float area;
-		};
 		mesh.mAmplifiedBufferIndex = 1 - mesh.mAmplifiedBufferIndex;
 		Vertex* vertexData = (Vertex*)mesh.mAmplifiedVertexData[mesh.mAmplifiedBufferIndex];
 		Data* data = (Data*)mesh.mUserData;
 		size_t primCount = mesh.mBlueprint.vertexCount / 2;
 		Vec3 p0, p1, v;
-		static size_t count = 0;
-		if (count < primCount)
-			count+= 1; //primCount / (60 * 3);
+
 		static float t = 0;
 		const static float t1 = 1.f / 520.f;
 		static bool fadeOut = false;
 		if (t > 5.f)
 			fadeOut = true;
+		if (t < -1.f)
+			fadeOut = false;
 		if (fadeOut)
 			t -= 1.f / 60.f;
 		else
@@ -853,7 +866,8 @@ void render(RenderContext& rc, RenderableScene const& scene, int maxActors)
 		float t0 = t1;
 		for (size_t j = 0; j < primCount; ++j)
 		{
-			Data& d = *data++;
+			unsigned displace = data[j].displace;
+			Data& d = data[displace];
 			Vec3_scale(&v, &vec, d.area);
 
 			t0 += t1;
@@ -872,8 +886,8 @@ void render(RenderContext& rc, RenderableScene const& scene, int maxActors)
 
 			Vec3_sub(&p0, &d.pos, &v);
 			Vec3_add(&p1, &d.pos, &v);
-			vertexData->pos = p0; vertexData++;
-			vertexData->pos = p1; vertexData++;
+			vertexData[displace*2+0].pos = p0;
+			vertexData[displace*2+1].pos = p1;
 		}
 	}
 
