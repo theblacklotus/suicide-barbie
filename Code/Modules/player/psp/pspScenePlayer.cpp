@@ -119,7 +119,6 @@ std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh co
 
 		mesh->mAmplifiedVertexData[1] = new unsigned char[newVertexStride * data.vertexCount];
 		memcpy(mesh->mAmplifiedVertexData[1], mesh->mAmplifiedVertexData[0], newVertexStride * data.vertexCount);
-		mesh->mAmplifiedVertexData[0] = new unsigned char[newVertexStride * data.vertexCount];
 		mesh->mAmplifiedBufferIndex = 0;
 
 		;;printf("skinInfo processed\n");
@@ -415,7 +414,7 @@ namespace {
 
 	void setProjection(RenderContext& rc, float fovy, float aspect)
 	{
-		float const zn = 0.1f;
+		float const zn = 1.0f;
 		float const zf = 50.0f;
 
 		// 

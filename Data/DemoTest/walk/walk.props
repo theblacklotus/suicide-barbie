@@ -1,0 +1,15 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'lambert'
+scene.RootNode.ambient = {0,0,0}
+scene.RootNode.diffuse = {1,1,1}
+scene.RootNode.emissive = {0,0,0}
+
+scene.directionalLight1 = {}
+scene.directionalLight1.diffuseColor = {1.0, 1.0, 1.0}
+scene.directionalLight1.equatorColor = {0.3, 0.3, 0.4}
+scene.directionalLight1.backColor =    {0.5, 0.3, 0.1}
+
+return scene
