@@ -24,7 +24,10 @@ extern "C" {
 	#include <Base/Std/Std.h>
 	#include <Base/Math/Lin.h>
 	#include <Base/Math/Quat.h>
+
+	extern uint32_t allocated_memory;
 }
+
 
 #include <player/TimeControl.h>
 
@@ -34,6 +37,8 @@ void streamWavePause(int pause);
 void streamWaveNudge(int offset);
 void streamAT3File(char *file);
 
+#define streamWavePause(x) 
+#define streamWaveNudge(x) 
 
 PSP_MODULE_INFO("TimelineViewer", PSP_MODULE_USER, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
@@ -279,6 +284,8 @@ int main(int argc, char* argv[])
 		pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
 		pspDebugScreenPrintf("\n");
 		pspDebugScreenPrintf("mutalisk: update(%f) sceneTime(%f)", updateTime.ms(), gTimeControl.time());
+		pspDebugScreenPrintf("\n");
+		pspDebugScreenPrintf("allocated memory = %i", allocated_memory);
 
 		sceDisplayWaitVblankStart();
 		mainRenderTarget2.vramAddr = mainRenderTarget.vramAddr;
