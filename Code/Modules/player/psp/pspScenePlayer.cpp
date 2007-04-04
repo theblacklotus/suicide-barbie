@@ -124,7 +124,7 @@ std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh co
 
 		;;printf("skinInfo processed\n");
 	}
-	else if(!false)		// "ball render"(tm) technique
+	else if(false)		// "ball render"(tm) technique
 	{
 		;;printf("using \"ball render\"(tm) technique\n");
 
