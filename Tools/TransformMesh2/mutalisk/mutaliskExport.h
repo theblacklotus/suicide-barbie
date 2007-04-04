@@ -116,6 +116,8 @@ struct OutputSkinnedMesh : public BaseSkinnedMesh
 	std::string	source;
 	std::string name;
 
+	Vec3 pivotOffset;
+
 	// memory management
 	~OutputSkinnedMesh() { clear(); }
 	void clear()
@@ -222,6 +224,7 @@ struct OutputScene
 OutputScene gOutputScene;
 mutalisk::lua::PropertiesByNameT gProperties;
 float gGlobalScale = 0.01f;
+bool gEnableScalingPivots = true;
 
 struct Curve
 {
@@ -1381,8 +1384,25 @@ void processMaterials(KFbxMesh* pMesh, std::vector<OutputSkinnedMesh::IndexT> co
 	}
 }
 
+
+KFbxVector4 getPivot(KFbxNode* pNode)
+{
+	if(!gEnableScalingPivots)
+		return KFbxVector4(0, 0, 0, 0);
+
+	assert(pNode);
+	KFbxVector4 rotationPivot, scalingPivot;
+	rotationPivot = pNode->GetRotationPivot(KFbxNode::eSOURCE_SET);
+	scalingPivot = pNode->GetScalingPivot(KFbxNode::eSOURCE_SET);
+	assertWarning(rotationPivot[0] == scalingPivot[0], "Scaling and rotation pivot must be the same");
+	assertWarning(rotationPivot[1] == scalingPivot[1], "Scaling and rotation pivot must be the same");
+	assertWarning(rotationPivot[2] == scalingPivot[2], "Scaling and rotation pivot must be the same");
+	return rotationPivot;
+}
+
 void processMesh(KFbxNode* pNode)
 {
+	assert(pNode);
 	std::string nodeName = pNode->GetName();
 	KFbxMesh* pMesh = (KFbxMesh*)pNode->GetNodeAttribute();
 
@@ -1747,13 +1767,13 @@ std::string processShaderResource(KFbxSurfaceMaterial* pMaterial)
 
 namespace
 {
-	void samplePosition(OutputSkinnedMesh::Vec3& outPos, KFbxMesh& mesh, int i, int j, int vertexId)
+	void samplePosition(OutputSkinnedMesh::Vec3& outPos, KFbxMesh& mesh, int i, int j, int vertexId, KFbxVector4 pivot)
 	{
 		kInt controlPointIndex = mesh.GetPolygonVertex(i, j);
 		KFbxVector4* lControlPoints = mesh.GetControlPoints();
 
 		for(int w = 0; w < 3; ++w)
-			outPos[w] = static_cast<float>(lControlPoints[controlPointIndex][w]) * gGlobalScale;
+			outPos[w] = static_cast<float>(lControlPoints[controlPointIndex][w] - pivot[w]) * gGlobalScale;
 	}
 	void sampleNormal(OutputSkinnedMesh::Vec3& outNormal, KFbxMesh& mesh, KFbxLayerElementNormal* leVtxn, int i, int j, int vertexId)
 	{
@@ -1976,11 +1996,21 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 {
 	assert(pNode);
 	std::string resourceName = pNode->GetName();
+	KFbxVector4 pivotOffset = getPivot(pNode);
 
 	if(gOutputScene.meshResources.find(resourceName) != gOutputScene.meshResources.end())
+	{
+		OutputSkinnedMesh& result = gOutputScene.meshResources[resourceName];
+		assert(result.pivotOffset[0] == pivotOffset[0]);
+		assert(result.pivotOffset[1] == pivotOffset[1]);
+		assert(result.pivotOffset[2] == pivotOffset[2]);
 		return gOutputScene.meshResources[resourceName];
+	}
 
 	OutputSkinnedMesh& result = gOutputScene.meshResources[resourceName];
+	result.pivotOffset[0] = static_cast<float>(pivotOffset[0]);
+	result.pivotOffset[1] = static_cast<float>(pivotOffset[1]);
+	result.pivotOffset[2] = static_cast<float>(pivotOffset[2]);
 
 	// fill result
 	KFbxMesh* pMesh = (KFbxMesh*) pNode->GetNodeAttribute();
@@ -2042,7 +2072,7 @@ OutputSkinnedMesh& processMeshResource(KFbxNode* pNode)
 			for (kInt j = 0; j < min(POLY_SIZE, lPolygonSize); j++, vertexId++)
 			{
 				OutputSkinnedMesh::Vertex v;
-				samplePosition(v.pos,	*pMeshTriangulated, i, j			, vertexId);
+				samplePosition(v.pos,	*pMeshTriangulated, i, j			, vertexId, pivotOffset);
 				sampleNormal(v.normal,	*pMeshTriangulated, leVtxn, i, j	, vertexId);
 				sampleUv(v.uvw,			*pMeshTriangulated, leUV, i, j		, vertexId);
 				sampleColor(v.color,	*pMeshTriangulated, leVtxc, i, j	, vertexId);
@@ -2361,6 +2391,8 @@ std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode
 	CurveSequentialSampler sy(pTakeNode->GetScaleY(), processDefaultCurve(pDefaultTakeNode->GetScaleY()));
 	CurveSequentialSampler sz(pTakeNode->GetScaleZ(), processDefaultCurve(pDefaultTakeNode->GetScaleZ()));
 
+	KFbxVector4 pivotOffset = getPivot(pNode);
+
 	size_t const VQV_CURVE_ANIM_COMPONENTS = 3 + 4 + 3;
 	typedef mutant::comp_quaternion_from_euler<Quat,float,float,float> t_comp_3_floats_to_quaternion;
 
@@ -2383,9 +2415,9 @@ std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode
 			keys.push_back(static_cast<float>(curTime.GetSecondDouble()));
 			
 			// position
-			values.push_back(tx(curTime) * gGlobalScale);
-			values.push_back(ty(curTime) * gGlobalScale);
-			values.push_back(tz(curTime) * gGlobalScale);
+			values.push_back((tx(curTime) + static_cast<float>(pivotOffset[0]))* gGlobalScale);
+			values.push_back((ty(curTime) + static_cast<float>(pivotOffset[1]))* gGlobalScale);
+			values.push_back((tz(curTime) + static_cast<float>(pivotOffset[2]))* gGlobalScale);
 
 			Quat quat;		
 			if(gLWMode)
@@ -2616,6 +2648,13 @@ void beginScene(char const* sceneFileName)
 		{
 			if(properties.vectors[GlobalScale].size() > 0)
 				gGlobalScale = static_cast<float>(properties.vectors[GlobalScale][0]);
+		}
+		
+		const std::string EnableScalingPivots = "enableScalingPivots";
+		if(properties.hasVector(EnableScalingPivots))
+		{
+			if(properties.vectors[EnableScalingPivots].size() > 0)
+				gEnableScalingPivots = (properties.vectors[EnableScalingPivots][0] > 0);
 		}
 	}
 	// \LUA
