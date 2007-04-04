@@ -6,9 +6,15 @@
 #include <effects/Library.h>
 #include <effects/BaseEffect.h>
 
+extern "C" {
+	#include <Base/Std/Std.h>
+	#include <Base/Math/Lin.h>
+}
+
 namespace mutalisk
 {
 	using namespace effects;
+	bool gDelayedTextureLoading = false;
 
 ////////////////////////////////////////////////
 std::auto_ptr<RenderableTexture> prepare(RenderContext& rc, mutalisk::data::texture const& data)
@@ -28,11 +34,14 @@ std::auto_ptr<RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene 
 		scene->mResources.meshes[q].blueprint = loadResource<mutalisk::data::mesh>(pathPrefix + data.meshIds[q]);
 		scene->mResources.meshes[q].renderable = prepare(rc, *scene->mResources.meshes[q].blueprint);
 	}
-	scene->mResources.textures.resize(data.textureIds.size());
-	for(size_t q = 0; q < data.textureIds.size(); ++q)
+	if (!gDelayedTextureLoading)
 	{
-		scene->mResources.textures[q].blueprint = loadResource<mutalisk::data::texture>(pathPrefix + data.textureIds[q]);
-		scene->mResources.textures[q].renderable = prepare(rc, *scene->mResources.textures[q].blueprint);
+		scene->mResources.textures.resize(data.textureIds.size());
+		for(size_t q = 0; q < data.textureIds.size(); ++q)
+		{
+			scene->mResources.textures[q].blueprint = loadResource<mutalisk::data::texture>(pathPrefix + data.textureIds[q]);
+			scene->mResources.textures[q].renderable = prepare(rc, *scene->mResources.textures[q].blueprint);
+		}
 	}
 	for(size_t q = 0; q < data.textureIds.size(); ++q)
 	{
@@ -95,6 +104,143 @@ std::auto_ptr<RenderableMesh> prepare(RenderContext& rc, mutalisk::data::mesh co
 		mesh->mAmplifiedBufferIndex = 0;
 
 		;;printf("skinInfo processed\n");
+	}
+	else if(false)		// "ball render"(tm) technique
+	{
+		;;printf("using \"ball render\"(tm) technique\n");
+
+		if ( (data.vertexDecl & GU_COLOR_8888) == 0 ) 
+		{
+			printf("ASSERT: need vertex color for ball render!\n");
+			assert(false);
+		}
+
+		// this is what the input must look like, and what the output will look like.. simple, huh?
+		struct Vertex
+		{
+			float u, v;
+			u32 color;
+			Vec3 normal;
+			Vec3 pos;
+		};
+		struct Data
+		{
+			Vec3 pos;
+			float area;
+		};
+
+		if (data.primitiveType != GU_TRIANGLES) 
+		{
+			printf("ASSERT: input needs to be triangle list!\n");
+			assert(false);
+		}
+
+		if (data.vertexStride != sizeof(Vertex))
+		{
+			printf("ASSERT: vertex does not match ball render vertex!\n");
+			assert(false);
+		}
+
+		if(data.indexData == 0 /*|| (data.vertexDecl & GU_INDEX_16BIT) == 0*/)
+		{
+			printf("ASSERT: source is not indexed or not 16bits!\n");
+			assert(false);
+		}
+
+
+		// assert triangle list
+
+		size_t vertexStride = sizeof(Vertex);
+		size_t vertexCount = data.indexCount / 3 /*three verts make up one triangle*/ * 2 /*one sprite equals 2 verts*/;
+		mesh->mAmplifiedVertexData[0] = new unsigned char[vertexStride * vertexCount];
+		mesh->mAmplifiedVertexDecl = GU_VERTEX_32BITF | GU_NORMAL_32BITF | GU_TEXTURE_32BITF | GU_COLOR_8888;
+		mesh->mAmplifiedVertexStride = vertexStride;
+		mesh->mUserData = new unsigned char[sizeof(Data) * vertexCount];
+
+		Vertex* src = (Vertex*)data.vertexData;
+		Vertex* dst = (Vertex*)mesh->mAmplifiedVertexData[0];
+		Data* out   = (Data*)mesh->mUserData;
+		u16* index = (u16*)data.indexData;
+		u32 skipped = 0;
+		float scale = 1000.f;
+		float areaThreshold = 5.f;
+		for(size_t i = 0; i < data.indexCount; i+=3)
+		{
+			u32 i0 = *index++;
+			u32 i1 = *index++;
+			u32 i2 = *index++;
+
+			Vertex v0 = src[i0];
+			Vertex v1 = src[i1];
+			Vertex v2 = src[i2];
+
+			Vec3& p0 = v0.pos;
+			Vec3& p1 = v1.pos;
+			Vec3& p2 = v2.pos;
+
+			Vec3_scale(&p0, &p0, scale);
+			Vec3_scale(&p1, &p1, scale);
+			Vec3_scale(&p2, &p2, scale);
+
+			// calc area
+
+			Vec3 d0, d1, c;
+			Vec3_sub(&d0, &p1, &p0);
+			Vec3_sub(&d1, &p2, &p0);
+			Vec3_cross(&c, &d0, &d1);
+			float area = Vec3_length(&c) * 0.5f;
+
+			// calc midpoint (barycentric)
+
+			Vec3 p;
+			Vec3_scale(&d0, &d0, 0.5f);
+			Vec3_scale(&d1, &d1, 0.5f);
+			Vec3_add(&p, &d0, &d1);
+			Vec3_add(&p, &p0, &p);
+
+			Vec3_scale(&p, &p, 1.f / scale);
+
+			if (area < areaThreshold)
+			{
+				skipped++;
+				continue;
+			}
+
+			Data data;
+			data.pos = p;
+			data.area = sqrtf(area) / 1000.f;
+			*out++ = data;
+
+			v0.u = v0.v = 0.f;
+			v1.u = v1.v = 1.f;
+
+			area *= 1.f / scale;
+
+			Vec3 extrude;
+			extrude.x = -area / 10.f;
+			extrude.y = area / 10.f;
+			extrude.z = -area / 10.f;
+
+			Vec3_sub(&p0, &p, &extrude);
+			Vec3_add(&p1, &p, &extrude);
+
+			v0.pos = p0;
+			v1.pos = p1;
+			*dst++ = v0;
+			*dst++ = v1;
+		}
+		printf("%i out of %i triangles skipped\n", skipped, data.indexCount/3);
+
+		mutalisk::data::mesh& dataHack = const_cast<mutalisk::data::mesh&>(data);
+		delete dataHack.indexData; dataHack.indexData = 0;				// $HACK ; will force raw vertex data when rendering
+		dataHack.primitiveType = GU_SPRITES;							// $HACK ; primtype is now sprites
+		dataHack.vertexCount = ((data.indexCount/3) - skipped) * 2;		// $HACK ; adjust vertex count
+
+		mesh->mAmplifiedVertexData[1] = new unsigned char[vertexStride * vertexCount];
+		memcpy(mesh->mAmplifiedVertexData[1], mesh->mAmplifiedVertexData[0], vertexStride * vertexCount);
+		mesh->mAmplifiedBufferIndex = 0;
+
+		;;printf("done processing \"ball render\"(tm) technique\n");
 	}
 
 	return mesh;
@@ -246,7 +392,7 @@ namespace {
 
 	void setProjection(RenderContext& rc, float fovy, float aspect)
 	{
-		float const zn = 1.0f;
+		float const zn = 0.1f;
 		float const zf = 50.0f;
 
 		// 
@@ -621,6 +767,73 @@ void render(RenderContext& rc, RenderableScene const& scene, int maxActors)
 		}
 	}
 //;;printf(" render -- 1\n");
+
+	CTransform::t_matrix cameraMatrix(CTransform::identityMatrix());
+	if(scene.mBlueprint.defaultCameraIndex != ~0U)
+	{
+		unsigned int cameraIndex = scene.mBlueprint.defaultCameraIndex;
+		if(animatedCamera)
+		{
+			ASSERT(cameraIndex >= 0 && cameraIndex < scene.mState.camera2XformIndex.size());
+			cameraMatrix = scene.mState.matrices[scene.mState.camera2XformIndex[cameraIndex]];
+		}
+		else
+		{
+			ASSERT(cameraIndex >= 0 && cameraIndex < scene.mBlueprint.cameras.size());
+			toNative(cameraMatrix, scene.mBlueprint.cameras[cameraIndex].worldMatrix.data);
+		}
+	}
+	const array<data::scene::Actor>& actors = scene.mBlueprint.actors;
+	mutalisk::array<RenderableScene::SharedResources::Mesh>& meshes = const_cast<RenderableScene&>(scene).mResources.meshes;
+	for(size_t q = 0; q < actors.size(); ++q)
+	{
+		unsigned meshIndex = actors[q].meshIndex;
+		ASSERT(meshIndex >= 0 && meshIndex < meshes.size());
+		RenderableMesh& mesh = *meshes[meshIndex].renderable;
+		if (mesh.mUserData == 0)
+			continue;
+		const CTransform::t_matrix& worldMatrix = scene.mState.matrices[scene.mState.actor2XformIndex[q]];
+		Mat33 wc,cw;
+		Mat33_transpose(&wc, const_cast<Mat33*>(&worldMatrix.Rot));
+		Mat33_mul(&cw, &wc, &cameraMatrix.Rot);
+		Vec3 unit2d = {1.f, 1.f, 0.f};
+		Vec3 vec;
+		Vec3_setMat33MulVec3(&vec, &cw, &unit2d);
+		struct Vertex
+		{
+			float u, v;
+			u32 color;
+			Vec3 normal;
+			Vec3 pos;
+		};
+		struct Data
+		{
+			Vec3 pos;
+			float area;
+		};
+		mesh.mAmplifiedBufferIndex = 1 - mesh.mAmplifiedBufferIndex;
+		Vertex* vertexData = (Vertex*)mesh.mAmplifiedVertexData[mesh.mAmplifiedBufferIndex];
+		Data* data = (Data*)mesh.mUserData;
+		size_t primCount = mesh.mBlueprint.vertexCount / 2;
+		Vec3 p0, p1, v;
+		static size_t count = 0;
+		if (count < primCount)
+			count+= primCount / (60 * 3);
+		for (size_t j = 0; j < primCount; ++j)
+		{
+			Data& d = *data++;
+			if (j > count)
+			{
+				v.x = v.y = v.z = 0.f;
+			}
+			else
+				Vec3_scale(&v, &vec, d.area);
+			Vec3_sub(&p0, &d.pos, &v);
+			Vec3_add(&p1, &d.pos, &v);
+			vertexData->pos = p0; vertexData++;
+			vertexData->pos = p1; vertexData++;
+		}
+	}
 
 	static std::vector<InstanceInput> instanceInputs;
 	static std::vector<BaseEffect::Input::Surface> surfaceInputs;

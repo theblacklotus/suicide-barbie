@@ -15,6 +15,7 @@
 
 namespace mutalisk
 {
+	extern bool gDelayedTextureLoading;
 
 #ifndef AP
 #define AP_DEFINED_LOCALY
