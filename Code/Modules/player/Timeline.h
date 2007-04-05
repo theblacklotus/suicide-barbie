@@ -58,7 +58,7 @@ namespace mutalisk
 					continue;
 
 				unsigned nextScriptIt = currScriptIt;
-				if(currScriptIt == -1 || frame >= it->first[currScriptIt].startFrame)
+				if(currScriptIt == (unsigned)-1 || frame >= it->first[currScriptIt].startFrame)
 				{
 					++nextScriptIt;
 					if(nextScriptIt < it->first.size() && frame >= it->first[nextScriptIt].startFrame)
@@ -92,7 +92,7 @@ namespace mutalisk
 					}
 				}
 
-				if (currScriptIt == -1 || (it->first[currScriptIt].flags & Item::Once))
+				if (currScriptIt == (unsigned)-1 || (it->first[currScriptIt].flags & Item::Once))
 					continue;
 
 				TimelineFuncT func = it->first[currScriptIt].func;
