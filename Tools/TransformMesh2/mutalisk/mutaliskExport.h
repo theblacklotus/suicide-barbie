@@ -1645,6 +1645,14 @@ fbxDouble3 readColorFromProperties(OutputScene::Properties& properties, std::str
 
 void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& properties)
 {
+	if(properties.hasString("diffuseMap"))
+	{
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+		{
+			std::string const& textureName = properties.strings["diffuseMap"];
+			actor.materials[w].colorTexture = processTextureResource(textureName);
+		}
+	}
 	if(properties.hasString("envMap"))
 	{
 		for(size_t w = 0; w < actor.materials.size(); ++w)
