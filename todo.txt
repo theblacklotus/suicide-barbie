@@ -6,11 +6,12 @@ _Demo_
 .	audio support for dx9
 +	fix UV export
 +	fix per-vertex normals
++	3-point lighting on PSP
 +	release on PSP
-.	envmap on PSP
++	envmap on PSP
 .	shadows
 .	mirror
-.	face
++	face
 +	blur/bloom (configurable) on PSP only
 +	simple time profiling for PSP
 +	memory profiling for PSP
