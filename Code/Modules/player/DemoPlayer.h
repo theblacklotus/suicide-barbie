@@ -23,6 +23,7 @@ namespace mutalisk
 			mutable float							startTime;
 			std::string								pathPrefix;
 		};
+		typedef void(*OnDrawT)(RenderableSceneT const&);
 
 	public:
 		virtual ~BaseDemoPlayer() {}
@@ -33,9 +34,10 @@ namespace mutalisk
 		void clearColor();
 
 		Scene const& load(Scene& scene, std::string const& sceneName);
+		void draw(Scene const& scene, OnDrawT onDraw);
 		void draw(Scene const& scene);
 		void pause(Scene const& scene) {}
-		void restart(Scene const& scene) {}
+		void restart(Scene const& scene);
 		float sceneTime(Scene const& scene);
 
 		void blink() {}

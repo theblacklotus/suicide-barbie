@@ -64,6 +64,11 @@ BaseDemoPlayer::Scene const& BaseDemoPlayer::load(Scene& scene, std::string cons
 	return scene;
 }
 
+void BaseDemoPlayer::restart(Scene const& scene)
+{
+	scene.startTime = -1.0f;
+}
+
 #if defined(MUTALISK_PSP)
 void BaseDemoPlayer::loadTextures(Scene& scene, bool async)
 {
@@ -178,7 +183,15 @@ void BaseDemoPlayer::setPath(std::string const& pathPrefix)
 	return time() - scene.startTime;
 }
 
+namespace {
+void onDrawDefault(RenderableSceneT const& scene) {}
+}
 void BaseDemoPlayer::draw(Scene const& scene)
+{
+	draw(scene, &::onDrawDefault);
+}
+
+void BaseDemoPlayer::draw(Scene const& scene, OnDrawT onDraw)
 {
 	if(scene.startTime <= 0.0f)
 		scene.startTime = time();
@@ -191,6 +204,7 @@ void BaseDemoPlayer::draw(Scene const& scene)
 	scene.renderable->update(time() - scene.startTime);
 	scene.renderable->process();
 #endif
+	onDraw(*scene.renderable);
 	mutalisk::render(renderContext, *scene.renderable);
 }
 

@@ -20,6 +20,7 @@ namespace mutalisk
 #define AP_DEFINED_LOCALY
 #define AP std::auto_ptr
 #endif
+void setMatrix(CTransform::t_matrix& matrix, float const* worldMatrixData);
 
 struct RenderableMesh;
 struct RenderableTexture;
@@ -61,6 +62,9 @@ struct RenderableScene
 		typedef std::vector<CTransform::t_matrix> MatricesT;
 		TransformsT						transforms;
 		MatricesT						matrices;
+
+		unsigned						activeCameraIndex;
+		CTransform::t_matrix			cameraMatrix;
 
 		std::vector<size_t>				light2XformIndex;
 		std::vector<size_t>				camera2XformIndex;
@@ -139,7 +143,7 @@ struct RenderableScene
 			}
 		}
 
-		void process(SharedResources& sharedResources)	
+		void process(mutalisk::data::scene const& blueprint, SharedResources& sharedResources)	
 		{
 //;;printf("process -- 0\n");
 			ASSERT(this->hierarchy);
@@ -158,6 +162,48 @@ struct RenderableScene
 //;;printf("process -- processSkinMesh0\n");
 				}
 //;;printf("process -- 3\n");
+
+			static bool animatedActors = true;//gSettings.forceAnimatedActors;
+			static bool animatedCamera = true;//gSettings.forceAnimatedCamera;
+
+			if(this->activeCameraIndex == ~0U)
+			{
+				animatedActors = false;
+				animatedCamera = false;
+			}
+
+			if(!animatedActors)
+				for(size_t q = 0; q < this->actor2XformIndex.size(); ++q)
+				{
+					setMatrix(
+						this->matrices[this->actor2XformIndex[q]],
+						blueprint.actors[q].worldMatrix.data);
+				}
+
+			if(!animatedCamera)
+				for(size_t q = 0; q < this->camera2XformIndex.size(); ++q)
+				{
+					setMatrix(
+						this->matrices[this->camera2XformIndex[q]],
+						blueprint.cameras[q].worldMatrix.data);
+				}
+
+			if(this->activeCameraIndex != ~0U)
+			{
+				if(animatedCamera)
+				{
+					ASSERT(this->activeCameraIndex >= 0 && this->activeCameraIndex < this->camera2XformIndex.size());
+					this->cameraMatrix = this->matrices[this->camera2XformIndex[this->activeCameraIndex]];
+				}
+				else
+				{
+					ASSERT(this->activeCameraIndex >= 0 && this->activeCameraIndex < blueprint.cameras.size());
+					setMatrix(
+						this->cameraMatrix,
+						blueprint.cameras[this->activeCameraIndex].worldMatrix.data);
+				}
+			}
+//;;printf("process -- 4\n");
 		}
 
 	};
@@ -216,9 +262,12 @@ struct RenderableScene
 				mapBoneToHierarchy(*mState.hierarchy,
 					&mResources.meshes[q].blueprint->skinInfo->bones[0], mResources.meshes[q].blueprint->skinInfo->bones.size(),
 					mState.bone2XformIndex[q]);
+
+		mState.activeCameraIndex = mBlueprint.defaultClipIndex;
+		mState.cameraMatrix = CTransform::identityMatrix();
 	}
 	void update(float time) { mState.update(mBlueprint, time); }
-	void process() { mState.process(mResources); }
+	void process() { mState.process(mBlueprint, mResources); }
 };
 
 void setResourcePath(std::string const& path);

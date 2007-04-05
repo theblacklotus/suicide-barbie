@@ -22,6 +22,17 @@ std::auto_ptr<mutant::mutant_reader> createFileReader(std::string const& fileNam
 	return mutReader;
 }
 
+void setMatrix(CTransform::t_matrix& matrix, float const* matrixData)
+{
+	// new-age wants transposed matrix
+	matrix = xMat34(
+		matrixData[0],	matrixData[4],	matrixData[8],
+		matrixData[1],	matrixData[5],	matrixData[9],
+		matrixData[2],	matrixData[6],	matrixData[10],
+		matrixData[12],	matrixData[13],	matrixData[14]
+	);
+}
+
 void CSkinnedAlgos::processSkinMesh(Vec3 const* srcPositions, Vec3 const* srcNormals, float const* srcWeights, unsigned char const* srcBoneIndices,
 	Vec3 *dstPositions, Vec3* dstNormals, size_t srcVertexStride, size_t srcWeightStride, size_t srcBoneIndexStride,
 	size_t dstVertexStride, size_t vertexCount,
@@ -34,26 +45,9 @@ void CSkinnedAlgos::processSkinMesh(Vec3 const* srcPositions, Vec3 const* srcNor
 	BoneMapT::const_iterator bIdIt = boneMap.begin();
 	for( ; (i < boneMap.size()) && (bIdIt != boneMap.end()); ++bIdIt, ++i )
 	{
+		CTransform::t_matrix tm;
 		float const* mat16 = skinInfo.bones[ bIdIt->first ].matrix.data;
-		CTransform::t_matrix tm( // new-age wants transposed matrix
-			mat16[0], mat16[1], mat16[2],
-			mat16[4], mat16[5], mat16[6],
-			mat16[8], mat16[9], mat16[10],
-			mat16[12], mat16[13], mat16[14]
-		);
-
-		tm.Rot.Row[0].x = mat16[0];
-		tm.Rot.Row[1].x = mat16[1];
-		tm.Rot.Row[2].x = mat16[2];
-		tm.Rot.Row[0].y = mat16[4];
-		tm.Rot.Row[1].y = mat16[5];
-		tm.Rot.Row[2].y = mat16[6];
-		tm.Rot.Row[0].z = mat16[8];
-		tm.Rot.Row[1].z = mat16[9];
-		tm.Rot.Row[2].z = mat16[10];
-		tm.Move.x = mat16[12];
-		tm.Move.y = mat16[13];
-		tm.Move.z = mat16[14];
+		setMatrix(tm, mat16);
 
 		CTransform::t_matrix itm;
 		Mat34_invertOrthogonal(&itm, &tm);

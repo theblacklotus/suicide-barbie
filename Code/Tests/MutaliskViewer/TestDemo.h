@@ -14,11 +14,18 @@ class TestDemo : public mutalisk::BaseDemoPlayer
 	typedef TimelineT::Item				Item;
 	struct Scenes
 	{
+		Scene	walk;
+		Scene	walkBG;
+
 		Scene	logo;
 		Scene	flower;
+		Scene	face;
+
 		Scene	phone1;
 		Scene	phone2;
-		Scene	walk;
+		Scene	phone3;
+		Scene	phone4;
+		Scene	phoneTrans;
 	};
 	Scenes							scn;
 	TimelineT						timeline;
@@ -30,13 +37,14 @@ public:
 protected:
 	virtual void onStart();
 
-	void logo();
-	void logo_to_flower();
-	void flower();
-	void flower_to_phone0();
-	void phone1();
-	void phone2();
 	void walk();
+	void logo();
+	void logo_x_flower();
+	void face_on_flower();
+	void flower();
+	void phone1(); void phone2(); void phone3(); void phone4();
+	void phone1_x__(); void phone2_x__(); void phone3_x__();
+	void phone__x_2(); void phone__x_3(); void phone__x_4();
 
 	// load points
 	void loadFlower();
