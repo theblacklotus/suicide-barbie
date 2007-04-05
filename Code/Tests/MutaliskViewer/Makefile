@@ -40,6 +40,7 @@ CC_FLAGS=\
 SRCS=\
 	BallRenderer.cpp\
 	callbacks.c\
+	CharRenderer.cpp\
 	PostProcess.cpp\
 	TestDemo.cpp\
 	TimeBlock.cpp\

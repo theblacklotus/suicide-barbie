@@ -1,5 +1,6 @@
 #include "TestDemo.h"
 #include "BallRenderer.h"
+#include "CharRenderer.h"
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -69,6 +70,7 @@ void TestDemo::onStart()
 	load(scn.phoneTrans,"telephone_trans\\psp\\telephone_trans.msk");
 
 	prepareBalls(*scn.face.renderable);
+//	prepareChars(*scn.walk.renderable);
 }
 #endif
 

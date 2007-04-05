@@ -33,6 +33,7 @@ extern "C" {
 #include "TimeBlock.h"
 #include "PostProcess.h"
 #include "BallRenderer.h"
+#include "CharRenderer.h"
 
 PSP_MODULE_INFO("ScenePlayer", 0x1000, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
@@ -59,6 +60,7 @@ struct ScenePlayerApp
 		scene.blueprint = mutalisk::loadResource<mutalisk::data::scene>(pathPrefix + sceneName);
 		scene.renderable = prepare(renderContext, *scene.blueprint, pathPrefix);
 //		mutalisk::prepareBalls(*scene.renderable);
+//		mutalisk::prepareChars(*scene.renderable);
 	}
 
 	void setProjMatrix(ScePspFMatrix4 const& projMatrix)
@@ -70,6 +72,7 @@ struct ScenePlayerApp
 	void process() { scene.renderable->process(); }
 	void render(int maxActors = -1, int maxLights = -1) { 
 //		mutalisk::renderBalls(*scene.renderable);
+//		mutalisk::renderChars(*scene.renderable);
 		mutalisk::render(renderContext, *scene.renderable, maxActors); }
 
 	struct Scene
