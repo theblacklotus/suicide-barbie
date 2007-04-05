@@ -47,7 +47,7 @@ struct Shiny::Impl : public CommonEffectImpl
 			sceGuTexImage(texture.mipmap,texture.width,texture.height,texture.stride,texture.data);
 			sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 			sceGuTexFilter(GU_LINEAR_MIPMAP_NEAREST, GU_LINEAR_MIPMAP_NEAREST);
-			sceGuTexFunc(GU_TFX_MODULATE,GU_TCC_RGB);
+			sceGuTexFunc(GU_TFX_MODULATE,GU_TCC_RGBA);
 			sceGuEnable(GU_TEXTURE_2D);
 		}
 		else

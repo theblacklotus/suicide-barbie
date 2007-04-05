@@ -1,0 +1,9 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'baked'
+scene.RootNode.globalScale = 0.1
+
+
+return scene

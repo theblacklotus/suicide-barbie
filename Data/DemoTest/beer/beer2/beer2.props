@@ -1,0 +1,46 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'baked'
+
+scene.addENV = {}
+scene.addENV.shader = 'shiny'
+--scene.addENV.blendOp = 'Add'
+scene.addENV.blendOp = 'Lerp'
+scene.addENV.zOp = 'ReadOnly'
+scene.addENV.emissive = {0.1,0.2,0.1}
+scene.addENV.ambient = {1,1,1}
+scene.addENV.envMap = 'env1_3.tga'
+scene.addENV.slice = 4
+
+scene.trans = {}
+scene.trans.shader = 'baked'
+scene.trans.blendOp = 'Lerp'
+scene.trans.zOp = 'ReadOnly'
+scene.trans.emissive = {1,1,0}
+scene.trans.slice = 3
+
+scene.mark1 = {}
+scene.mark1.blendOp = 'Lerp'
+scene.mark1.zOp = 'ReadOnly'
+scene.mark1.slice = 2
+
+scene.back = {}
+scene.back.blendOp = 'Lerp'
+scene.back.zOp = 'ReadOnly'
+scene.back.slice = 1
+
+scene.BrunetteNaked_Mesh = {}
+scene.BrunetteNaked_Mesh.shader = 'shiny'
+scene.BrunetteNaked_Mesh.envMap = 'env1_3.tga'
+scene.BrunetteNaked_Mesh.emissive = {1,1,1}
+scene.BrunetteNaked_Mesh.ambient = {0.2,0.2,0.2}
+
+scene.BlondeNaked_Mesh = {}
+scene.BlondeNaked_Mesh.shader = 'shiny'
+scene.BlondeNaked_Mesh.envMap = 'env1_3.tga'
+scene.BlondeNaked_Mesh.emissive = {1,1,1}
+scene.BlondeNaked_Mesh.ambient = {0.2,0.2,0.2}
+
+return scene

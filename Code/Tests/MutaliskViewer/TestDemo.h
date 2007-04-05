@@ -26,12 +26,23 @@ class TestDemo : public mutalisk::BaseDemoPlayer
 		Scene	phone3;
 		Scene	phone4;
 		Scene	phoneTrans;
+
+		//
+		Scene	beer1;
+		Scene	beer2;
+		Scene	garlic1;
+		Scene	garlic2;
+		Scene	mix1;
+		Scene	mix2;
+		Scene	mix3;
+
 	};
 	Scenes							scn;
 	TimelineT						timeline;
-	Scene moo;
+	float							timeOffset;
 
 public:
+	TestDemo() : timeOffset(0) {}
 	void doFrame(float t);
 
 protected:
@@ -45,6 +56,14 @@ protected:
 	void phone1(); void phone2(); void phone3(); void phone4();
 	void phone1_x__(); void phone2_x__(); void phone3_x__();
 	void phone__x_2(); void phone__x_3(); void phone__x_4();
+
+	void beer1();
+	void beer2();
+	void garlic1();
+	void garlic2();
+	void mix1();
+	void mix2();
+	void mix3();
 
 	// load points
 	void loadFlower();

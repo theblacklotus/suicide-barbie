@@ -7,7 +7,7 @@
 
 void TestDemo::doFrame(float t)
 {
-	setTime(t);
+	setTime(t + timeOffset);
 	timeline.update(*this, frame());
 	static char count= 0;
 	if (count++ == 10)
@@ -16,41 +16,6 @@ void TestDemo::doFrame(float t)
 		updateTextures();
 	}
 }
-
-/*void TestDemo::onStart()
-{
-	{Item items[] = {
-		Item(0,		0,	S_FUNC(logo)),
-		Item(9,		20,	S_FUNC(logo_to_flower)),
-		Item(12,	15,	S_FUNC(flower)),
-		Item(26,	18,	S_FUNC(flower_to_phone0)),
-		Item(32,	0,	S_FUNC(phone1)),
-		Item(34,	12,	S_FUNC(phone2)),
-		Item(36,	24,	S_FUNC(walk)),
-		Item()
-	};
-	timeline.addScript(items);}
-
-	{Item streamer[] = {
-		Item(2,		0,	S_FUNC(loadFlower), 	Item::Once),
-		Item(12,	0,	S_FUNC(loadPhone1), 	Item::Once),
-		Item(24,	0,	S_FUNC(loadPhone2), 	Item::Once),
-		Item(32,	0,	S_FUNC(loadWalk),		Item::Once),
-		Item(36,	0,	S_FUNC(loadXXX),		Item::Once),
-		Item()
-	};
-	timeline.addScript(streamer);
-	}
-
-	mutalisk::gDelayedTextureLoading = true;
-	load(scn.logo,		"head\\psp\\head.msk");
-	load(scn.flower,	"flower\\psp\\flower.msk");
-	load(scn.phone1,	"telephone_s2\\psp\\telephone_s2.msk");
-	load(scn.phone2,	"telephone_s2\\psp\\telephone_s2.msk");
-	load(scn.walk,		"walk01\\psp\\walk01.msk");
-	loadTextures(scn.logo, false);
-}*/
-
 namespace
 {
 	int ms(int v)
@@ -58,14 +23,15 @@ namespace
 		return static_cast<int>(round(static_cast<float>(v) * 0.3f));
 	}
 }
-
+#if 0
 void TestDemo::onStart()
 {
 	{Item items[] = {
-		Item(0,		ms(00),			S_FUNC(walk)),
+		Item(0,		ms(00),		S_FUNC(walk)),
 
 		Item(23,	ms(05),		S_FUNC(logo)),
-		Item(32,	ms(75)/*ms(05)*/,		S_FUNC(logo_x_flower)),
+		Item(32,	ms(75)/*ms(05)*/,
+								S_FUNC(logo_x_flower)),
 		Item(34,	ms(71),		S_FUNC(face_on_flower)),
 		Item(48,	ms(80),		S_FUNC(flower)),
 
@@ -81,7 +47,7 @@ void TestDemo::onStart()
 		Item(84,	ms(00),		S_FUNC(phone3_x__)),
 
 		Item(84,	ms(50),		S_FUNC(phone__x_4)),
-		Item(85,	ms(00),		S_FUNC(phone4)),				// (32 + 82)/2
+		Item(85,	ms(00),		S_FUNC(phone4)),			// (32 + 82)/2
 
 		Item()
 	};
@@ -101,11 +67,39 @@ void TestDemo::onStart()
 	load(scn.phone4,	"telephone_s4\\psp\\telephone_s4.msk");
 	load(scn.phoneTrans,"telephone_trans\\psp\\telephone_trans.msk");
 
-	//load(scn.walk,		"walk01\\psp\\walk01.msk");
-	//loadTextures(scn.logo, false);
-	
-	prepareBalls(*scn.face.renderable);
+	prepareBalls(*scn.face.renderable)
 }
+#endif
+
+#if 1
+void TestDemo::onStart()
+{
+	timeOffset = 120;
+	{Item items[] = {
+		Item(122,	ms(90),		S_FUNC(beer1)),
+		Item(130,	ms(71),		S_FUNC(beer2)),
+		Item(138,	ms(51),		S_FUNC(garlic1)),
+		Item(146,	ms(32),		S_FUNC(garlic2)),
+		Item(154,	ms(13),		S_FUNC(mix1)),
+		Item(164,	ms(13),		S_FUNC(mix2)),
+		Item(169,	ms(13),		S_FUNC(mix3)),
+
+		Item()
+	};
+	timeline.addScript(items);}
+
+	mutalisk::gDelayedTextureLoading = false;
+	load(scn.beer1,		"beer\\beer1\\psp\\beer1.msk");
+	load(scn.beer2,		"beer\\beer2\\psp\\beer2.msk");
+	
+	load(scn.garlic1,	"garlic\\garlic1\\psp\\garlic1.msk");
+	load(scn.garlic2,	"garlic\\garlic2\\psp\\garlic2.msk");
+
+	load(scn.mix1,		"mix\\mix1\\psp\\mix1.msk");
+	load(scn.mix2,		"mix\\mix2\\psp\\mix2.msk");
+	load(scn.mix3,		"mix\\mix3\\psp\\mix3.msk");
+}
+#endif
 
 void TestDemo::walk()
 {
@@ -196,6 +190,34 @@ void TestDemo::phone__x_4()
 }
 
 
+void TestDemo::beer1()
+{
+	draw(scn.beer1);
+}
+void TestDemo::beer2()
+{
+	draw(scn.beer2);
+}
+void TestDemo::garlic1()
+{
+	draw(scn.garlic1);
+}
+void TestDemo::garlic2()
+{
+	draw(scn.garlic2);
+}
+void TestDemo::mix1()
+{
+	draw(scn.mix1);
+}
+void TestDemo::mix2()
+{
+	draw(scn.mix2);
+}
+void TestDemo::mix3()
+{
+	draw(scn.mix3);
+}
 
 
 

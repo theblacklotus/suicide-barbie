@@ -1,0 +1,48 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'baked'
+scene.RootNode.globalScale = 100
+
+scene.addENV = {}
+scene.addENV.shader = 'shiny'
+scene.addENV.blendOp = 'Add'
+--scene.addENV.blendOp = 'Lerp'
+scene.addENV.zOp = 'ReadOnly'
+scene.addENV.emissive = {0.4,0.4,0.4}
+scene.addENV.ambient = {1,1,1}
+scene.addENV.envMap = 'env1_3.tga'
+scene.addENV.slice = 4
+
+scene.redENV = {}
+scene.redENV.shader = 'shiny'
+scene.redENV.emissive = {0,0,0}
+scene.redENV.ambient = {1,1,1}
+scene.redENV.envMap = 'env1_2.tga'
+
+scene.silverENV = {}
+scene.silverENV.shader = 'shiny'
+--scene.silverENV.blendOp = 'Lerp'
+--scene.silverENV.zOp = 'ReadOnly'
+scene.silverENV.emissive = {0,0,0}
+scene.silverENV.ambient = {1,1,1}
+scene.silverENV.envMap = 'env1_1.tga'
+
+scene.alphaG = {}
+scene.alphaG.blendOp = 'Lerp'
+scene.alphaG.zOp = 'ReadOnly'
+scene.alphaG.slice = 2
+
+scene.back = {}
+scene.back.blendOp = 'Lerp'
+scene.back.zOp = 'ReadOnly'
+scene.back.slice = 1
+
+scene.girls = {}
+scene.girls.shader = 'shiny'
+scene.girls.envMap = 'env1_3.tga'
+scene.girls.emissive = {1,1,1}
+scene.girls.ambient = {0.2,0.2,0.2}
+
+return scene

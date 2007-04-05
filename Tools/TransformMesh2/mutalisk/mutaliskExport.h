@@ -1831,7 +1831,7 @@ namespace
 				break;
 
 			case KFbxLayerElement::eBY_POLYGON_VERTEX:
-				assert(textureUVIndex >= 0);
+//				assert(textureUVIndex >= 0);
 				switch (leUV->GetReferenceMode())
 				{
 				case KFbxLayerElement::eDIRECT:
@@ -1840,6 +1840,8 @@ namespace
 				case KFbxLayerElement::eINDEX_TO_DIRECT:
 					//tmpId = leUV->GetIndexArray().GetAt(textureUVIndex);
 					//uv = leUV->GetDirectArray().GetAt(tmpId);
+					if(textureUVIndex < 0)
+						textureUVIndex = 0;
 					uv = leUV->GetDirectArray().GetAt(textureUVIndex);
 					break;
 				default:
