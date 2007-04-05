@@ -16,6 +16,15 @@ namespace mutalisk
 	using namespace effects;
 	bool gDelayedTextureLoading = false;
 
+RenderContext::RenderContext()
+:	znear(1.0f)
+,	zfar(50.0f)
+{
+	gumLoadIdentity(&viewMatrix);
+	gumLoadIdentity(&projMatrix);
+	gumLoadIdentity(&viewProjMatrix);
+}
+
 ////////////////////////////////////////////////
 std::auto_ptr<RenderableTexture> prepare(RenderContext& rc, mutalisk::data::texture const& data)
 {
@@ -231,10 +240,9 @@ namespace {
 
 	void setProjection(RenderContext& rc, float fovy, float aspect)
 	{
-//  		float const zn = rc.znear;//1.0f;
-//  		float const zf = rc.zfar;//50.0f;
-		float const zn = 1.0f;
-		float const zf = 50.0f;
+  		float const zn = rc.znear;//1.0f;
+  		float const zf = rc.zfar;//50.0f;
+
 
 		// 
 		float angle = (fovy / 2) * (GU_PI/180.0f);

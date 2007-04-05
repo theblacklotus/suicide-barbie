@@ -28,6 +28,7 @@ namespace mutalisk
 
 struct RenderContext
 {
+	RenderContext();
 	ScePspFMatrix4	viewMatrix;
 	ScePspFMatrix4	projMatrix;
 	ScePspFMatrix4	viewProjMatrix;
