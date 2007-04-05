@@ -11,6 +11,9 @@
 	typedef unsigned int u32;
 	typedef unsigned long long u64;
 #endif
+#ifndef FOURCC
+	#define FOURCC(a,b,c,d) ((a << 24) + (b << 16) + (c << 8) + d)
+#endif
 
 namespace mutalisk { namespace data
 {
@@ -18,7 +21,7 @@ struct MtxHeader
 {
 	enum
 	{
-		Signature_CurrentVersion = '2XTM', // "MTX2" in little endian format
+		Signature_CurrentVersion = FOURCC('2','X','T','M'), // "MTX2" in little endian format
 
 		MaxMipLevels = 7
 	};
