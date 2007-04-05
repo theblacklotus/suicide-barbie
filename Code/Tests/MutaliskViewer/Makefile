@@ -38,6 +38,7 @@ CC_FLAGS=\
 	-Wno-unknown-pragmas\
 
 SRCS=\
+	BallRenderer.cpp\
 	callbacks.c\
 	PostProcess.cpp\
 	TestDemo.cpp\
