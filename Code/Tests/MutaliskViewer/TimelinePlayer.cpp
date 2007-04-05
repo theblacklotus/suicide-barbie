@@ -171,6 +171,7 @@ int main(int argc, char* argv[])
 //	streamAT3File("host1:/dumpa_mig.at3");
 
 
+	bool doPrintInfo = false;
 	gTimeControl.restart(true);
 	while(running())
 	{
@@ -180,6 +181,9 @@ int main(int argc, char* argv[])
 			float speedModifier = 1.0f;
 			//if (pad.Buttons != oldPad.Buttons)
 			{
+				if ((pad.Buttons & PSP_CTRL_START) && !(oldPad.Buttons & PSP_CTRL_START))
+					doPrintInfo = !doPrintInfo;
+
 				if (pad.Buttons & PSP_CTRL_CROSS)
 					speedModifier = 0.25;
 
@@ -279,13 +283,16 @@ int main(int argc, char* argv[])
 ;;loopTime.peek();
 ;;static mutalisk::TimeBlock frameTime; frameTime.peek();
 
-		pspDebugScreenSetOffset((int)mainRenderTarget.vramAddr);
-		pspDebugScreenSetXY(0,0);
-		pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
-		pspDebugScreenPrintf("\n");
-		pspDebugScreenPrintf("mutalisk: update(%f) sceneTime(%f)", updateTime.ms(), gTimeControl.time());
-		pspDebugScreenPrintf("\n");
-		pspDebugScreenPrintf("allocated memory = %i", allocated_memory);
+		if(doPrintInfo)
+		{
+			pspDebugScreenSetOffset((int)mainRenderTarget.vramAddr);
+			pspDebugScreenSetXY(0,0);
+			pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
+			pspDebugScreenPrintf("\n");
+			pspDebugScreenPrintf("mutalisk: update(%f) sceneTime(%f)", updateTime.ms(), gTimeControl.time());
+			pspDebugScreenPrintf("\n");
+			pspDebugScreenPrintf("allocated memory = %i", allocated_memory);
+		}
 
 		sceDisplayWaitVblankStart();
 		mainRenderTarget2.vramAddr = mainRenderTarget.vramAddr;
