@@ -231,8 +231,10 @@ namespace {
 
 	void setProjection(RenderContext& rc, float fovy, float aspect)
 	{
-		float const zn = rc.znear;//1.0f;
-		float const zf = rc.zfar;//50.0f;
+//  		float const zn = rc.znear;//1.0f;
+//  		float const zf = rc.zfar;//50.0f;
+		float const zn = 1.0f;
+		float const zf = 50.0f;
 
 		// 
 		float angle = (fovy / 2) * (GU_PI/180.0f);
