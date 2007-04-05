@@ -31,6 +31,9 @@ struct RenderContext
 	ScePspFMatrix4	viewMatrix;
 	ScePspFMatrix4	projMatrix;
 	ScePspFMatrix4	viewProjMatrix;
+
+	float znear;
+	float zfar;
 };
 
 struct RenderableMesh

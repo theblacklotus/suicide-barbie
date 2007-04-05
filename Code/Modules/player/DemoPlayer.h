@@ -22,6 +22,8 @@ namespace mutalisk
 			mutable RenderableSceneT*				renderable;
 			mutable float							startTime;
 			std::string								pathPrefix;
+			float									znear;
+			float									zfar;
 		};
 		typedef void(*OnDrawT)(RenderableSceneT const&);
 

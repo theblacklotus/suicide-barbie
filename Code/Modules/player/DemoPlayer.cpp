@@ -61,6 +61,8 @@ BaseDemoPlayer::Scene const& BaseDemoPlayer::load(Scene& scene, std::string cons
 	scene.blueprint = loadResource<mutalisk::data::scene>(fileName);
 	scene.renderable = prepare(renderContext, *scene.blueprint).release();
 	scene.startTime = -1.0f;
+	scene.znear = 1.0f;
+	scene.zfar = 50.0f;
 	return scene;
 }
 
@@ -204,6 +206,9 @@ void BaseDemoPlayer::draw(Scene const& scene, OnDrawT onDraw)
 	scene.renderable->update(time() - scene.startTime);
 	scene.renderable->process();
 #endif
+	renderContext.znear = scene.znear;
+	renderContext.zfar = scene.zfar;
+
 	onDraw(*scene.renderable);
 	mutalisk::render(renderContext, *scene.renderable);
 }

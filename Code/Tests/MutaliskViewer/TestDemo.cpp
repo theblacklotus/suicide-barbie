@@ -23,11 +23,12 @@ namespace
 		return static_cast<int>(round(static_cast<float>(v) * 0.3f));
 	}
 }
-#if 0
+#if 1
 void TestDemo::onStart()
 {
 	{Item items[] = {
 		Item(0,		ms(00),		S_FUNC(walk)),
+		Item(11,	ms(00),		S_FUNC(walk_far)),
 
 		Item(23,	ms(05),		S_FUNC(logo)),
 		Item(32,	ms(75)/*ms(05)*/,
@@ -67,11 +68,11 @@ void TestDemo::onStart()
 	load(scn.phone4,	"telephone_s4\\psp\\telephone_s4.msk");
 	load(scn.phoneTrans,"telephone_trans\\psp\\telephone_trans.msk");
 
-	prepareBalls(*scn.face.renderable)
+	prepareBalls(*scn.face.renderable);
 }
 #endif
 
-#if 1
+#if 0
 void TestDemo::onStart()
 {
 	timeOffset = 120;
@@ -103,6 +104,18 @@ void TestDemo::onStart()
 
 void TestDemo::walk()
 {
+	scn.walk.znear = 1;
+	scn.walk.zfar = 15;
+
+	draw(scn.walkBG);
+	clearZ();
+	draw(scn.walk);
+}
+void TestDemo::walk_far()
+{
+	scn.walk.znear = 3;
+	scn.walk.zfar = 8;
+
 	draw(scn.walkBG);
 	clearZ();
 	draw(scn.walk);

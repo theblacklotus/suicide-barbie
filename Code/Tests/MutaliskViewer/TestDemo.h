@@ -48,7 +48,7 @@ public:
 protected:
 	virtual void onStart();
 
-	void walk();
+	void walk(); void walk_far();
 	void logo();
 	void logo_x_flower();
 	void face_on_flower();
