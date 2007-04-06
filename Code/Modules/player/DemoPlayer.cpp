@@ -310,3 +310,24 @@ void BaseDemoPlayer::clearZ()
 void BaseDemoPlayer::clearColor()
 {
 }
+
+struct BloomJob : public BaseDemoPlayer::IJob
+{
+	BaseDemoPlayer::PostProcessSettings* dstSettings;
+	BaseDemoPlayer::PostProcessSettings srcSettings;
+	void process()
+	{
+		ASSERT(dstSettings);
+		*dstSettings = srcSettings;
+	}
+};
+void BaseDemoPlayer::ppBloom(float strength, unsigned threshold, unsigned srcModifier, unsigned dstModifier)
+{
+	BloomJob* job = new BloomJob;
+	job->dstSettings = &mPPSettings;
+	job->srcSettings.strength = strength;
+	job->srcSettings.threshold = threshold;
+	job->srcSettings.srcModifier = srcModifier;
+	job->srcSettings.dstModifier = dstModifier;
+	mJobQueue.push_back(job);
+}

@@ -47,6 +47,7 @@ size_t CommonEffectImpl::organizeLightsInPasses(BaseEffect::Input::Lights const&
 		}
 		lightsInPasses.push_back(pass);
 	}
+
 	
 	if(lightsInPasses.empty())
 	{

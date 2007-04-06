@@ -137,6 +137,8 @@ void TestDemo::walk()
 	draw(scn.walkBG);
 	clearZ();
 	draw(scn.walk);
+
+	ppBloom(0);
 }
 void TestDemo::walk_far()
 {
@@ -146,6 +148,8 @@ void TestDemo::walk_far()
 	draw(scn.walkBG);
 	clearZ();
 	draw(scn.walk);
+
+	ppBloom(0);
 }
 
 void TestDemo::logo()
@@ -174,20 +178,24 @@ void TestDemo::flower()
 void TestDemo::phone1()
 {
 	draw(scn.phone1);
+	ppBloom(0.2f, 114, 200, 160);
 }
 void TestDemo::phone2()
 {
 	draw(scn.phone2);
+	ppBloom(0.2f, 114, 200, 160);
 	restart(scn.phoneTrans);
 }
 void TestDemo::phone3()
 {
 	draw(scn.phone3);
+	ppBloom(0.2f, 114, 200, 160);
 	restart(scn.phoneTrans);
 }
 void TestDemo::phone4()
 {
 	draw(scn.phone4);
+	ppBloom(0.2f, 114, 200, 160);
 	restart(scn.phoneTrans);
 }
 

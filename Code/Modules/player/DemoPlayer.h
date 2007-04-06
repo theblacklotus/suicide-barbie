@@ -27,6 +27,14 @@ namespace mutalisk
 		};
 		typedef void(*OnDrawT)(RenderableSceneT const&);
 
+		struct PostProcessSettings {
+			PostProcessSettings() : strength(0), threshold(0), srcModifier(0), dstModifier(255) {}
+			float strength;
+			unsigned threshold;
+			unsigned srcModifier;
+			unsigned dstModifier;
+		};
+
 	public:
 		virtual ~BaseDemoPlayer() {}
 
@@ -42,11 +50,13 @@ namespace mutalisk
 		void restart(Scene const& scene);
 		float sceneTime(Scene const& scene);
 
+		void ppBloom(float strength, unsigned threshold = 0, unsigned srcModifier = 0, unsigned dstModifier = 255);
 		void blink() {}
 
 		// getters
 		unsigned frame() const { return mCurrFrame; }
 		float time() const { return mCurrTime; }
+		PostProcessSettings const& ppSettings() const { return mPPSettings; }
 
 	public:
 		// system interface
@@ -69,7 +79,8 @@ namespace mutalisk
 		float			mCurrTime;
 		unsigned		mCurrFrame;
 		std::string		mPathPrefix;
-
+		PostProcessSettings
+						mPPSettings;
 
 	public:
 		struct IJob
