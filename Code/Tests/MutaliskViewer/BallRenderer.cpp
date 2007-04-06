@@ -196,6 +196,7 @@ namespace
 
 	void renderBalls(mutalisk::RenderableScene const& scene)
 	{
+		static bool firstTime = true;
 		const mutalisk::array<mutalisk::data::scene::Actor>& actors = scene.mBlueprint.actors;
 		mutalisk::array<mutalisk::RenderableScene::SharedResources::Mesh>& meshes = const_cast<mutalisk::RenderableScene&>(scene).mResources.meshes;
 		for(size_t q = 0; q < actors.size(); ++q)
@@ -219,6 +220,7 @@ namespace
 				Vec3 normal;
 				Vec3 pos;
 			};
+again:
 			mesh.mAmplifiedBufferIndex = 1 - mesh.mAmplifiedBufferIndex;
 			Vertex* vertexData = (Vertex*)mesh.mAmplifiedVertexData[mesh.mAmplifiedBufferIndex];
 			Data* data = (Data*)mesh.mUserData;
@@ -235,7 +237,7 @@ namespace
 
 			const static float t1 = 1.f / 520.f;
 
-			float t0 = t1;
+			float t0 = 0.f;
 			for (size_t j = 0; j < primCount; ++j)
 			{
 				unsigned displace = data[j].displace;
@@ -260,6 +262,11 @@ namespace
 				Vec3_add(&p1, &d.pos, &v);
 				vertexData[displace*2+0].pos = p0;
 				vertexData[displace*2+1].pos = p1;
+			}
+			if (firstTime)
+			{
+				firstTime = false;
+				goto again;
 			}
 		}
 	}
