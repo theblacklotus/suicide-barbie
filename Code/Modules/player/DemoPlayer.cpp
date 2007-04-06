@@ -70,6 +70,34 @@ void BaseDemoPlayer::restart(Scene const& scene)
 {
 	scene.startTime = -1.0f;
 }
+/*
+void BaseDemoPlayer::processJobQueue()
+{
+	for(size_t q = 0; q < mJobQueue.size(); ++q)
+	{
+		ASSERT(mJobQueue[q].scene->renderable);
+	#if defined(MUTALISK_DX9)
+		mutalisk::update(*mJobQueue[q].scene->renderable, mJobQueue[q].time);
+		mutalisk::process(*mJobQueue[q].scene->renderable);
+	#elif defined(MUTALISK_PSP)
+		mJobQueue[q].scene->renderable->update(mJobQueue[q].time);
+		mJobQueue[q].scene->renderable->process();
+	#endif
+		mJobQueue[q].onDraw(*mJobQueue[q].scene->renderable);
+	}
+	mJobQueue.resize(0);
+}*/
+
+void BaseDemoPlayer::processJobQueue()
+{
+	for(size_t q = 0; q < mJobQueue.size(); ++q)
+	{
+		ASSERT(mJobQueue[q]);
+		mJobQueue[q]->process();
+		delete mJobQueue[q];
+	}
+	mJobQueue.resize(0);
+}
 
 #if defined(MUTALISK_PSP)
 void BaseDemoPlayer::loadTextures(Scene& scene, bool async)
@@ -193,6 +221,18 @@ void BaseDemoPlayer::draw(Scene const& scene)
 	draw(scene, &::onDrawDefault);
 }
 
+struct RenderJob : public BaseDemoPlayer::IJob
+{
+	BaseDemoPlayer::Scene const*	scene;
+	RenderContextT*					renderContext;
+	void process()
+	{
+		renderContext->znear = scene->znear;
+		renderContext->zfar = scene->zfar;
+		mutalisk::render(*renderContext, *scene->renderable);
+	}
+};
+
 void BaseDemoPlayer::draw(Scene const& scene, OnDrawT onDraw)
 {
 	if(scene.startTime <= 0.0f)
@@ -206,26 +246,65 @@ void BaseDemoPlayer::draw(Scene const& scene, OnDrawT onDraw)
 	scene.renderable->update(time() - scene.startTime);
 	scene.renderable->process();
 #endif
-	renderContext.znear = scene.znear;
-	renderContext.zfar = scene.zfar;
+	//renderContext.znear = scene.znear;
+	//renderContext.zfar = scene.zfar;
 
 	onDraw(*scene.renderable);
-	mutalisk::render(renderContext, *scene.renderable);
+//	mutalisk::render(renderContext, *scene.renderable);
+	RenderJob* job = new RenderJob;
+	job->scene = &scene;
+	job->renderContext = &renderContext;
+	mJobQueue.push_back(job);
 }
+/*
+void BaseDemoPlayer::draw(Scene const& scene, OnDrawT onDraw)
+{
+	if(scene.startTime <= 0.0f)
+	{
+		scene.startTime = time();
+
+		scene.renderable->update(0.0f);
+		scene.renderable->process();
+		onDraw(*scene.renderable);
+	}
+//	else
+	{
+		renderContext.znear = scene.znear;
+		renderContext.zfar = scene.zfar;
+		mutalisk::render(renderContext, *scene.renderable);
+	}
+
+	Job job;
+	job.scene = &scene;
+	job.time = time() - scene.startTime;
+	job.onDraw = onDraw;
+	mJobQueue.push_back(job);
+}*/
 
 void BaseDemoPlayer::clear()
 {
 }
 
+struct ClearZJob : public BaseDemoPlayer::IJob
+{
+	RenderContextT*					renderContext;
+	void process()
+	{
+	#if defined(MUTALISK_DX9)
+		DX_MSG("Depth clear") = 
+			renderContext.device->Clear(0, NULL, D3DCLEAR_ZBUFFER, D3DXCOLOR(0.0f,0.0f,0.0f,0.0f), 1.0f, 0);
+	#elif defined(MUTALISK_PSP)
+		sceGuClearDepth(0xffff);
+		sceGuClear(GU_DEPTH_BUFFER_BIT);
+	#endif
+	}
+};
+
 void BaseDemoPlayer::clearZ()
 {
-#if defined(MUTALISK_DX9)
-	DX_MSG("Depth clear") = 
-		renderContext.device->Clear(0, NULL, D3DCLEAR_ZBUFFER, D3DXCOLOR(0.0f,0.0f,0.0f,0.0f), 1.0f, 0);
-#elif defined(MUTALISK_PSP)
-	sceGuClearDepth(0xffff);
-	sceGuClear(GU_DEPTH_BUFFER_BIT);
-#endif
+	ClearZJob* job = new ClearZJob;
+	job->renderContext = &renderContext;
+	mJobQueue.push_back(job);
 }
 
 void BaseDemoPlayer::clearColor()

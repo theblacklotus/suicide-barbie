@@ -6,6 +6,7 @@ scene.RootNode.shader = 'lambert'
 scene.RootNode.ambient = {0,0,0}
 scene.RootNode.diffuse = {1,1,1}
 scene.RootNode.emissive = {0,0,0}
+--scene.RootNode.globalScale = 10
 
 scene.directionalLight1 = {}
 scene.directionalLight1.diffuseColor = {1.0, 1.0, 1.0}

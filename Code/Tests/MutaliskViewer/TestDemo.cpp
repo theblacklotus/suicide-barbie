@@ -17,6 +17,7 @@ void TestDemo::doFrame(float t)
 		updateTextures();
 	}
 }
+
 namespace
 {
 	int ms(int v)
@@ -104,6 +105,30 @@ void TestDemo::onStart()
 }
 #endif
 
+namespace {
+void updateAnimatedProperties(mutalisk::RenderableScene const& scene)
+{
+	const mutalisk::array<mutalisk::data::scene::Actor>& actors = scene.mBlueprint.actors;
+	float time = scene.mState.time;
+
+	// update properties
+	for(size_t q = 0; q < actors.size(); ++q)
+	{
+		mutalisk::data::scene::Actor& actor = const_cast<mutalisk::data::scene::Actor&>(actors[q]);
+
+		float v = scene.mState.sampleAnimation(actor.nodeName, "UVScroll", time, 0.5f);
+		float fadeOut = scene.mState.sampleAnimation(actor.nodeName, "Fadeout", time, 0.0f);
+		float fadeIn = scene.mState.sampleAnimation(actor.nodeName, "Fadein", time, 1.0f);
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+		{
+			actor.materials[w].shaderInput.vOffset = 1.0f - v*2.0f;
+			actor.materials[w].shaderInput.transparency = 1.0f - ((1.0f - fadeOut) * fadeIn);
+		}
+		//actor.active = (scene.mState.sampleAnimation(actor.nodeName, "Fadein", time+1.0f, 1.0f) > 0.0f);
+	}
+}
+}
+
 void TestDemo::walk()
 {
 	scn.walk.znear = 1;
@@ -125,14 +150,14 @@ void TestDemo::walk_far()
 
 void TestDemo::logo()
 {
-	draw(scn.logo);
+	draw(scn.logo, updateAnimatedProperties);
 }
 
 void TestDemo::logo_x_flower()
 {
 	draw(scn.flower);
 	clearZ();
-	draw(scn.logo);
+	draw(scn.logo, updateAnimatedProperties);
 }
 
 void TestDemo::face_on_flower()

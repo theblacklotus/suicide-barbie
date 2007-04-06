@@ -85,19 +85,19 @@ void CSkinnedAlgos::processSkinMesh(Vec3 const* srcPositions, Vec3 const* srcNor
 		unsigned char const* boneIndices = srcBoneIndicesRaw + q * srcBoneIndexStride;
 		CTransform::t_vector accumP3( 0.0f, 0.0f, 0.0f ), accumN3( 0.0f, 0.0f, 0.0f );
 		float accumWeight = 0.0f;
-		for( size_t w = 0; w < skinInfo.weightsPerVertex; ++w )
+		
+		for( size_t w = 0; /*w < 3 && */w < skinInfo.weightsPerVertex; ++w )
 		{
 			unsigned char boneId = boneIndices[w];
 			ASSERT(boneId < worldMatrices.size());
 			ASSERT(boneId <= lastI);
 			float boneWeight = weights[w];
 			accumWeight += boneWeight;
-/*			if( w != skinInfo.weightsPerVertex - 1 )
-				accumWeight += boneWeight;
-			else
-				boneWeight = 1.0f - accumWeight;
-*/
-			Mat34 worldMatrix = worldMatrices[boneId];
+
+			if(boneWeight < 0.001f)
+				continue;
+
+			Mat34& worldMatrix = worldMatrices[boneId];
 
 			Vec3 v3;
 			Vec3_setMat34MulVec3( &v3, &worldMatrix, &pos3 );

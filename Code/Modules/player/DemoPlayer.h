@@ -58,6 +58,7 @@ namespace mutalisk
 		void platformSetup();
 #endif
 		void start() { onStart(); }
+		void processJobQueue();
 
 	protected:
 		virtual void onStart() = 0;
@@ -68,6 +69,25 @@ namespace mutalisk
 		float			mCurrTime;
 		unsigned		mCurrFrame;
 		std::string		mPathPrefix;
+
+
+	public:
+		struct IJob
+		{
+			virtual ~IJob() {}
+			virtual void process() = 0;
+		};
+		std::vector<IJob*>
+						mJobQueue;
+/*	private:
+		struct Job
+		{
+			Scene const* scene;
+			float time;
+			OnDrawT onDraw;
+		};
+		std::vector<Job>
+						mJobQueue;*/
 
 #if defined(MUTALISK_PSP)					//	texture streaming
 	public:

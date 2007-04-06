@@ -38,7 +38,7 @@ extern "C" {
 PSP_MODULE_INFO("ScenePlayer", 0x1000, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
-static unsigned int __attribute__((aligned(16))) list[262144];
+static unsigned int __attribute__((aligned(16))) list[2][262144];
 extern unsigned char logo_start[];
 
 
@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
 	pspDebugScreenInit();
 	sceGuInit();
 
-	sceGuStart(GU_DIRECT,list);
+	sceGuStart(GU_DIRECT,list[0]);
 	sceGuDrawBuffer(mainRenderTarget.format,mainRenderTarget.vramAddr,mainRenderTarget.stride);
 	sceGuDispBuffer(mainRenderTarget2.width,mainRenderTarget2.height,mainRenderTarget2.vramAddr,mainRenderTarget2.stride);
 	sceGuDepthBuffer(zbp,BUF_WIDTH);
@@ -271,7 +271,9 @@ int main(int argc, char* argv[])
 		}
 
 
-		sceGuStart(GU_DIRECT,list);
+		static int listId = 0;
+//		listId = 1-listId;
+		sceGuStart(GU_DIRECT,list[listId]);
 //;;printf("main -- guStart\n");
 
 		{
@@ -317,15 +319,7 @@ int main(int argc, char* argv[])
 //;;printf("main -- projMatrix1\n");
 
 			scenePlayerApp->setProjMatrix(projMatrix);
-//;;printf("main -- setProjMatrix\n");
-;;updateTime.peek();
-			scenePlayerApp->update(gTimeControl.update(getDeltaTime()));
-;;updateTime.peek();
-//;;printf("main -- update\n");
-;;processTime.peek();
-			scenePlayerApp->process();
-;;processTime.peek();
-//;;printf("main -- process\n");
+
 ;;renderTime.peek();
 			scenePlayerApp->render();
 ;;renderTime.peek();
@@ -391,15 +385,35 @@ int main(int argc, char* argv[])
 		}
 
 //;;printf("main -- guFinish0\n");
-;;finishAndSyncTime.peek();
 		sceGuFinish();
+
 //;;printf("main -- guFinish1\n");
+//;;printf("main -- setProjMatrix\n");
+;;updateTime.peek();
+			scenePlayerApp->update(gTimeControl.update(getDeltaTime()));
+;;updateTime.peek();
+//;;printf("main -- update\n");
+;;processTime.peek();
+			scenePlayerApp->process();
+;;processTime.peek();
+//;;printf("main -- process\n");
+
+;;finishAndSyncTime.peek();
 		sceGuSync(0,0);
 ;;finishAndSyncTime.peek();
 //;;printf("main -- guSync\n");
 
+
+
 ;;loopTime.peek();
 ;;static mutalisk::TimeBlock frameTime; frameTime.peek();
+
+		{
+			static float maxFrameTime = 1.0f;
+			float ft = frameTime.ms();
+			if(ft < 120.0f) maxFrameTime = std::max(maxFrameTime, ft);
+		}
+
 		if(doPrintInfo)
 		{
 			pspDebugScreenSetOffset((int)mainRenderTarget.vramAddr);

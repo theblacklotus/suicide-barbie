@@ -98,7 +98,7 @@ struct RenderableScene
 
 			this->time = 0.0f;
 		}
-		float sampleAnimation(std::string const& actorName, std::string const& channelName, float t, float defaultValue = 0.0f)
+		float sampleAnimation(std::string const& actorName, std::string const& channelName, float t, float defaultValue = 0.0f) const
 		{
 			ASSERT(this->clip);
 			if(!this->clip->has(actorName))
@@ -125,22 +125,6 @@ struct RenderableScene
 			this->time = time;
 			this->xformArrayAnimator.updateTransforms(this->time,
 				this->transforms.begin(), this->transforms.end());
-
-			// update properties
-			for(size_t q = 0; q < scene.actors.size(); ++q)
-			{
-				mutalisk::data::scene::Actor& actor = const_cast<mutalisk::data::scene&>(scene).actors[q];
-
-				float v = sampleAnimation(actor.nodeName, "UVScroll", time, 0.5f);
-				float fadeOut = sampleAnimation(actor.nodeName, "Fadeout", time, 0.0f);
-				float fadeIn = sampleAnimation(actor.nodeName, "Fadein", time, 1.0f);
-				for(size_t w = 0; w < actor.materials.size(); ++w)
-				{
-					actor.materials[w].shaderInput.vOffset = 1.0f - v*2.0f;
-					actor.materials[w].shaderInput.transparency = 1.0f - ((1.0f - fadeOut) * fadeIn);
-				}
-				//actor.active = (sampleAnimation(actor.nodeName, "Fadein", time+1.0f, 1.0f) > 0.0f);
-			}
 		}
 
 		void process(mutalisk::data::scene const& blueprint, SharedResources& sharedResources)	

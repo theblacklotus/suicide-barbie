@@ -1,22 +1,25 @@
 _Demo_
+.	rendering glitch
+.	fix deltatime calc
+.	blur in timeline
+.	scene-specific blur
+.	shadows
+.	mirror
+?	clear color from camera
+?	'visibility' tracks
 +	add audio to TimelineViewerPSP
 +	add time control to TimelineViewerPSP/ScenePlayerPSP
-.	clear color from camera
 +	blockReads for sequential containers
-.	audio support for dx9
 +	fix UV export
 +	fix per-vertex normals
 +	3-point lighting on PSP
 +	release on PSP
 +	envmap on PSP
-.	shadows
-.	mirror
 +	face
 +	blur/bloom (configurable) on PSP only
 +	simple time profiling for PSP
 +	memory profiling for PSP
 +	memory consumption by player/availability on PSP
-.	'visibility' tracks
 
 
 
