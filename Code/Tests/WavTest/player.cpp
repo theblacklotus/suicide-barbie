@@ -15,7 +15,7 @@ int wav_streamer(SceSize args, void *argp);
 
 static SceUID playth;
 
-void streamWaveFile(char *file)
+void streamWaveFile(const char *file)
 {
 	playth = sceKernelCreateThread("wav_streamer", wav_streamer, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
 
@@ -25,7 +25,7 @@ void streamWaveFile(char *file)
 		return;
 	}
 
-	sceKernelStartThread(playth, strlen(file)+1, file);
+	sceKernelStartThread(playth, strlen(file)+1, (void*)file);
 }
 
 static volatile int nudgeOffset = 0;
@@ -48,7 +48,7 @@ void streamWaveNudge(int offset)
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#define printf	pspDebugScreenPrintf
+//#define printf	pspDebugScreenPrintf
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -229,7 +229,7 @@ int wav_streamer(SceSize args, void *argp)
 		}
 
 		pspDebugScreenSetXY(0,2);
-		printf("offset = 0x%x (%3.1f%%)\n", offset, 100.f * offset/size);
+//		printf("offset = 0x%x (%3.1f%%)\n", offset, 100.f * offset/size);
 		if (isPaused)
 			sceKernelSleepThread();
 	}

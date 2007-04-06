@@ -32,13 +32,15 @@ extern "C" {
 #include <player/TimeControl.h>
 
 #include <pspsdk.h>
-void streamWaveFile(char *file);
+void streamWaveFile(const char *file);
 void streamWavePause(int pause);
 void streamWaveNudge(int offset);
-void streamAT3File(char *file);
+void streamAT3File(const char *file);
 
 #define streamWavePause(x) 
 #define streamWaveNudge(x) 
+
+#include "intro.h"
 
 PSP_MODULE_INFO("TimelineViewer", PSP_MODULE_USER, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
@@ -137,6 +139,17 @@ int main(int argc, char* argv[])
 	sceGuDisplay(GU_TRUE);
 
 	// run sample
+	if (!loadIntro(gPathPrefix + "intro/psp/"))
+		printf("error loading intro\n");
+
+	if (sizeof(IntroRenderTarget) != sizeof(Texture))
+	{
+		printf("ERROR: mismatching render target structure size\n");
+	}
+	IntroRenderTarget irt[2];
+	memcpy(&irt[0], &mainRenderTarget, sizeof(Texture));
+	memcpy(&irt[1], &mainRenderTarget2, sizeof(Texture));
+	SceUID intro = startIntro(irt);
 
 	int val = 0;
 
@@ -147,6 +160,9 @@ int main(int argc, char* argv[])
 	gDemo->platformSetup();
 	gDemo->start();
 	printf("ScenePlayer: created and loaded\n");
+
+	sceKernelWaitThreadEnd(intro, 0);
+	unloadIntro();
 
 	SceCtrlData oldPad;
 	oldPad.Buttons = 0;
@@ -167,8 +183,8 @@ int main(int argc, char* argv[])
 		printf("thid2 = %x\n", thid2);
 	}
 
-	streamWaveFile("host1:/dumpa_mig.wav");
-//	streamAT3File("host1:/dumpa_mig.at3");
+	streamWaveFile((gPathPrefix + "music/suicidebarbie.wav").c_str());
+//	streamAT3File((gPathPrefix + "music/suicidebarbie.at3").c_str());
 
 
 	bool doPrintInfo = false;

@@ -9,7 +9,7 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
 
 int setupCallbacks(void);
 
-void streamWaveFile(char *file);
+void streamWaveFile(const char *file);
 void streamWaveNudge(int offset);
 
 int main(void)

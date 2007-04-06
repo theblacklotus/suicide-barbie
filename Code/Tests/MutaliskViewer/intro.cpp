@@ -6,6 +6,9 @@
 
 #include <platform.h>
 
+#include <pspdisplay.h>
+#include "intro.h"
+
 /*
 
 	if (!loadIntro("host1:/DemoTest/intro/psp/"))
@@ -37,12 +40,82 @@
 
 */
 
+struct Texture
+{
+	int format;
+	int mipmap;
+	int width, height, stride;
+	void* data;
+	void* vramAddr;
+};
 
+static IntroRenderTarget s_renderTarget;
+static IntroRenderTarget s_renderTarget2;
+void setRenderTarget(IntroRenderTarget& renderTarget)
+{
+	sceGuDrawBufferList(renderTarget.format,renderTarget.vramAddr,renderTarget.stride);
+	sceGuOffset(2048 - (renderTarget.width/2),2048 - (renderTarget.height/2));
+	sceGuViewport(2048,2048,renderTarget.width,renderTarget.height);
+}
+
+static unsigned int __attribute__((aligned(16))) list[4096];
+void renderIntro(float time);
+void renderPSPLogo(float time);
+
+int tbl_intro(SceSize args, void *argp)
+{
+	float t = 0.f;
+	bool firstTime = true;
+	while(t < 11.f)
+	{
+		t += 1/60.f;
+
+		sceGuStart(GU_DIRECT,list);
+		setRenderTarget(s_renderTarget);
+
+		if (firstTime)
+		{
+			sceGuClearColor(0xff000000);
+			sceGuClearDepth(0xffff);
+			sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
+			firstTime = false;
+		}
+
+		if (t > 8.f)
+			renderPSPLogo(t);
+		else
+			renderIntro(t);
+
+		sceGuFinish();
+		sceGuSync(0,0);
+		sceDisplayWaitVblankStart();
+		s_renderTarget2.vramAddr = s_renderTarget.vramAddr;
+		s_renderTarget.vramAddr = sceGuSwapBuffers();
+
+	}
+	return 0;
+}
+
+SceUID startIntro(const IntroRenderTarget renderTarget[2])
+{
+	s_renderTarget = renderTarget[0];
+	s_renderTarget2 = renderTarget[1];
+	SceUID introth = sceKernelCreateThread("tbl_intro", tbl_intro, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
+
+	if (introth < 0)
+	{
+		printf("Error creating tbl_intro.\n");
+		return introth;
+	}
+
+	sceKernelStartThread(introth, 0, 0);
+	return introth;
+}
 
 void uncompressFrame(uint32_t* in, uint32_t* out, int size);
 mutalisk::data::psp_texture* loadTexture(const std::string& name);
 int loadAnim(const std::string name, std::vector<mutalisk::data::psp_texture*>& textures);
-void drawDots(float time, int evenFrame);
+void drawDots(float time, int evenFrame, float fade);
 
 static mutalisk::data::psp_texture* centerDot = 0;
 static mutalisk::data::psp_texture* whiteDot = 0;
@@ -248,36 +321,70 @@ void uncompressFrame(uint32_t* in, uint32_t* out, int size)
 }
 
 void drawQuad(mutalisk::data::psp_texture& texture, uint32_t x, uint32_t y, int blurSrcModifier = 200, int blurDstModifier = 160);
-void renderIntro()
+void renderIntro(float time)
 {
+	float out = 1.f;
+	if (time > 6.5)
+		out = 1.f - (time-6.5);
+	if (out < 0.f)
+		out = 0.f;
 	{
+		float t = time;
+		if (t > 1.f)
+			t = 1.f;
+		t *= out;
 		static size_t i = 0;
 		if (++i == textures128.size())
 			i = 0;
-		drawQuad(*textures128[i], 168,     48);
-		drawQuad(*textures16[i],  168+128, 48);
+		drawQuad(*textures128[i], 168,     48, 200 * t, 160 * t);
+		drawQuad(*textures16[i],  168+128, 48, 200 * t, 160 * t);
 	}
-		drawQuad(*centerDot, 168+49, 88, 0xff, 0x00);
 	{
-		static float time = 0;
-		time += 1.f/60.f;
+		float t = time * 2;
+		if (t > 1.f)
+			t = 1.f;
+		t *= out;
+		drawQuad(*centerDot, 168+49, 88, 0xff * t, 0x00);
+	}
+	{
 		static int evenFrame = 0;
 		evenFrame++;
-		drawDots(time, (evenFrame >> 2)&1);
+		drawDots(time+3.f, (evenFrame >> 2)&1, out);
 	}
 
+	if (time > 3.5f)
 	{
-		drawQuad(*tblTextA, 160,     225, 0xff, 0x00);
-		drawQuad(*tblTextB, 160+128, 225, 0xff, 0x00);
-	}
-
-	{
-		drawQuad(*pspLogoA, 90,     72, 0xff, 0x00);
-		drawQuad(*pspLogoB, 90+256, 72, 0xff, 0x00);
+		float t = time - 3.5f;
+		if (t > 1.f)
+			t = 1.f;
+		t *= out;
+		unsigned alpha = 0xff * t;
+		drawQuad(*tblTextA, 160,     225, alpha, 0x00);
+		drawQuad(*tblTextB, 160+128, 225, alpha, 0x00);
 	}
 }
 
-void drawDots(float time, int evenFrame)
+void renderPSPLogo(float time)
+{
+	sceGuClearColor(0xff000000);
+	sceGuClearDepth(0xffff);
+	sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
+
+	if (time > 9.5f)
+		time -= (time - 9.5f) * 2;
+
+	float t = time - 8.f;
+	if (t > 1.f)
+		t = 1.f;
+	else if (t < 0.f)
+		t = 0.f;
+
+	drawQuad(*pspLogoA, 90,     72, 0xff * t, 0x00);
+	drawQuad(*pspLogoB, 90+256, 72, 0xff * t, 0x00);
+}
+
+
+void drawDots(float time, int evenFrame, float fade)
 {
 	int i;
 	int w = whiteDot->width;
@@ -293,7 +400,7 @@ void drawDots(float time, int evenFrame)
 	int visibleDots = (int)((float)(sizeof(dots) / sizeof(Dot)) * t);
 	int flashDots = (int)((float)(sizeof(dots) / sizeof(Dot)) * t1);
 	static int lastFlashDots = 0;
-	for( i = lastFlashDots; i < visibleDots; ++i)
+	for( i = 0/*lastFlashDots*/; i < visibleDots; ++i)
 	{
 		int x = dots[i].x;
 		int y = dots[i].y;
@@ -301,7 +408,7 @@ void drawDots(float time, int evenFrame)
 			continue;
 		mutalisk::data::psp_texture* v = *dots[i].p;
 		if (i < flashDots || (evenFrame ^ (i & 0x01)))
-			drawQuad(*v, x, y, 0xff, 0x00);
+			drawQuad(*v, x, y, 0xff * fade, 0x00);
 		else
 			drawQuad(*v, x, y, 0x00, 0x00);
 	}
@@ -313,14 +420,17 @@ void drawQuad(mutalisk::data::psp_texture& texture, uint32_t x, uint32_t y, int 
 {
 //	int blurSrcModifier = 200;
 //	int blurDstModifier = 160;
-uint32_t color = 0xffffffff;
+uint32_t color = 0x20ffffff;
 					sceGuEnable(GU_BLEND);
 					unsigned int srcFix = GU_ARGB(0, blurSrcModifier, blurSrcModifier, blurSrcModifier);
 					unsigned int dstFix = GU_ARGB(0, blurDstModifier, blurDstModifier, blurDstModifier);
-			if (blurSrcModifier != 0xff)
+			if (blurDstModifier != 0x00)
 					sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, srcFix, dstFix);
 			else
+			{
 					sceGuBlendFunc(GU_ADD, GU_SRC_ALPHA, GU_ONE_MINUS_SRC_ALPHA, 0, 0);
+					color = GU_ARGB(blurSrcModifier, blurSrcModifier, blurSrcModifier, blurSrcModifier);
+			}
 //	sceGuAlphaFunc(GU_ALWAYS, 0,0);
 	sceGuAmbientColor(~0U);
 	sceGuTexMode(texture.format,0,0,texture.swizzled);

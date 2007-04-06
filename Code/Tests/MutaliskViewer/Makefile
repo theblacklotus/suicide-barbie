@@ -41,6 +41,7 @@ SRCS=\
 	BallRenderer.cpp\
 	callbacks.c\
 	CharRenderer.cpp\
+	intro.cpp\
 	PostProcess.cpp\
 	TestDemo.cpp\
 	TimeBlock.cpp\
