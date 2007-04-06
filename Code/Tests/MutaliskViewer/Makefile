@@ -39,6 +39,7 @@ CC_FLAGS=\
 
 SRCS=\
 	BallRenderer.cpp\
+	BlinkyBlinky.cpp\
 	callbacks.c\
 	CharRenderer.cpp\
 	intro.cpp\

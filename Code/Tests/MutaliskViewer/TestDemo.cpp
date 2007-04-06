@@ -1,6 +1,7 @@
 #include "TestDemo.h"
 #include "BallRenderer.h"
 #include "CharRenderer.h"
+#include "BlinkyBlinky.h"
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -15,6 +16,16 @@ void TestDemo::doFrame(float t)
 	{
 		count = 0;
 		updateTextures();
+	}
+	{
+		float val = getBlinkyValue(time());
+		if (val != 0.f)
+		{
+			FlashScreenJob* job = new FlashScreenJob;
+			job->renderContext = &renderContext;
+			job->intensity = val;
+			mJobQueue.push_back(job);
+		}
 	}
 }
 
@@ -35,7 +46,7 @@ void TestDemo::onStart()
 		Item(23,	ms(05),		S_FUNC(logo)),
 		Item(32,	ms(75)/*ms(05)*/,
 								S_FUNC(logo_x_flower)),
-		Item(34,	ms(71),		S_FUNC(face_on_flower)),
+		Item(34.5,	ms(71),		S_FUNC(face_on_flower)),
 		Item(48,	ms(80),		S_FUNC(flower)),
 
 		Item(61,	ms(46),		S_FUNC(phone1)),

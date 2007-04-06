@@ -48,6 +48,43 @@ public:
 protected:
 	virtual void onStart();
 
+	struct FlashScreenJob : public BaseDemoPlayer::IJob
+	{
+		mutalisk::RenderContextT*	renderContext;
+		float						intensity;
+		void process()
+		{
+		#if defined(MUTALISK_DX9)
+		// -- disabled
+		#elif defined(MUTALISK_PSP)
+			unsigned c = (unsigned)(intensity * 0xff);
+			sceGuEnable(GU_BLEND);
+			unsigned int srcFix = GU_ARGB(0, c, c, c);
+			sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, srcFix, 0xffffff);
+
+			sceGuTexFunc(GU_TFX_MODULATE,GU_TCC_RGB);
+			sceGuDisable(GU_TEXTURE_2D);
+			sceGuColor(0xffffffff);
+			sceGuDisable(GU_LIGHTING);
+			sceGuDisable(GU_DEPTH_TEST);
+			sceGuDepthMask(1);
+	
+			struct QuadVertexTex
+			{
+				short x,y,z;
+			};
+			QuadVertexTex* vertices = reinterpret_cast<QuadVertexTex*>(sceGuGetMemory(2 * sizeof(QuadVertexTex)));
+			vertices[0].x = 0; vertices[0].y = 0; vertices[0].z = 0;
+			vertices[1].x = 480; vertices[1].y = 272; vertices[1].z = 0;
+
+			sceGuDrawArray(GU_SPRITES,GU_VERTEX_16BIT|GU_TRANSFORM_2D,2,0,vertices);
+			sceGuDepthMask(0);
+			sceGuDisable(GU_BLEND);
+			sceGuEnable(GU_DEPTH_TEST);
+		#endif
+		}
+	};
+
 	void walk(); void walk_far();
 	void logo();
 	void logo_x_flower();
