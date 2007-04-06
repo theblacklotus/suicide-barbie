@@ -37,15 +37,15 @@ void streamWavePause(int pause);
 void streamWaveNudge(int offset);
 void streamAT3File(const char *file);
 
-#define streamWavePause(x) 
-#define streamWaveNudge(x) 
+//#define streamWavePause(x) 
+//#define streamWaveNudge(x) 
 
 #include "intro.h"
 
 PSP_MODULE_INFO("TimelineViewer", PSP_MODULE_USER, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
-static unsigned int __attribute__((aligned(16))) list[262144];
+static unsigned int __attribute__((aligned(16))) list[2][262144];
 extern unsigned char logo_start[];
 
 
@@ -197,9 +197,6 @@ int main(int argc, char* argv[])
 			float speedModifier = 1.0f;
 			//if (pad.Buttons != oldPad.Buttons)
 			{
-				if ((pad.Buttons & PSP_CTRL_START) && !(oldPad.Buttons & PSP_CTRL_START))
-					doPrintInfo = !doPrintInfo;
-
 				if (pad.Buttons & PSP_CTRL_CROSS)
 					speedModifier = 0.25;
 
@@ -216,16 +213,14 @@ int main(int argc, char* argv[])
 				if (pad.Buttons & PSP_CTRL_TRIANGLE)				
 					gTimeControl.to(gTimeControl.time());
 
-				if (pad.Buttons & PSP_CTRL_SELECT)
+				if ((pad.Buttons & PSP_CTRL_START) && !(oldPad.Buttons & PSP_CTRL_START))
+					doPrintInfo = !doPrintInfo;
+				if ((pad.Buttons & PSP_CTRL_SELECT) && !(oldPad.Buttons & PSP_CTRL_SELECT))
 				{
-					gTimeControl.pause(true);
-					streamWavePause(true);
+					gTimeControl.pause(!gTimeControl.isPaused());
+					streamWavePause(gTimeControl.isPaused());
 				}
-				if (pad.Buttons & PSP_CTRL_START)
-				{
-					gTimeControl.pause(false);
-					streamWavePause(false);
-				}
+
 
 				if (pad.Buttons & PSP_CTRL_LEFT)
 					gTimeControl.scroll(-5.0f * speedModifier);
@@ -243,10 +238,12 @@ int main(int argc, char* argv[])
 		{
 			streamWaveNudge((int)(d /*seconds*/ * 44100 /*samples per sec*/ * 4/*bytes per sample*/ * 4));
 		}
-;;mutalisk::TimeBlock updateTime, /*processTime, renderTime,*/ loopTime, finishAndSyncTime;
+;;mutalisk::TimeBlock updateTime, /*processTime, */renderTime, loopTime, finishAndSyncTime;
 ;;loopTime.peek();
 
-		sceGuStart(GU_DIRECT,list);
+		static int listId = 0;
+		listId = 1-listId;
+		sceGuStart(GU_DIRECT,list[listId]);
 
 		//if(0)
 		{
@@ -286,13 +283,21 @@ int main(int argc, char* argv[])
 				gumMultMatrix(&projMatrix,&projMatrix,&t);
 			}
 
-;;updateTime.peek();
-			gDemo->doFrame(gTimeControl.update(getDeltaTime()));
-;;updateTime.peek();
+;;renderTime.peek();
+			static float ttt = 0; ttt += 0.033f;
+//			gDemo->doFrame(gTimeControl.update(getDeltaTime()));
+			gDemo->processJobQueue();
+;;renderTime.peek();
 		}
 
-;;finishAndSyncTime.peek();
 		sceGuFinish();
+
+;;updateTime.peek();
+		//gDemo->processJobQueue();
+		gDemo->doFrame(gTimeControl.update(getDeltaTime()));
+;;updateTime.peek();
+
+;;finishAndSyncTime.peek();
 		sceGuSync(0,0);
 ;;finishAndSyncTime.peek();
 
@@ -305,7 +310,7 @@ int main(int argc, char* argv[])
 			pspDebugScreenSetXY(0,0);
 			pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
 			pspDebugScreenPrintf("\n");
-			pspDebugScreenPrintf("mutalisk: update(%f) sceneTime(%f)", updateTime.ms(), gTimeControl.time());
+			pspDebugScreenPrintf("mutalisk: update(%f) render(%f) sceneTime(%f)", updateTime.ms(), renderTime.ms(), gTimeControl.time());
 			pspDebugScreenPrintf("\n");
 			pspDebugScreenPrintf("allocated memory = %i", allocated_memory);
 		}
