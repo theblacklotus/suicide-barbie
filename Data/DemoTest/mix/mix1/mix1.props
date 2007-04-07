@@ -3,7 +3,6 @@ scene = {}
 
 scene.RootNode = {}
 scene.RootNode.shader = 'baked'
-scene.RootNode.globalScale = 100
 
 scene.addENV = {}
 scene.addENV.shader = 'shiny'

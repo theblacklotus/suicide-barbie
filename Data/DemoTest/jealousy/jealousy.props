@@ -20,16 +20,34 @@ scene.gun1.blendOp = 'Lerp'
 scene.gun1.zOp = 'ReadOnly'
 scene.gun1.slice = 3
 
-scene.jealousy = {}
-scene.jealousy.zOp = 'ReadOnly'
-scene.jealousy.blendOp = 'Mul'
-scene.jealousy.slice = 4
+jealousy = {}
+jealousy.zOp = 'ReadOnly'
+jealousy.blendOp = 'Mul'
+jealousy.slice = 4
+
+scene.j = jealousy
+scene.e = jealousy
+scene.a = jealousy
+scene.l = jealousy
+scene.o = jealousy
+scene.u = jealousy
+scene.s = jealousy
+scene.y = jealousy
+
+scene.pPlane1 = {}
+scene.pPlane1.blendOp = 'Lerp'
+scene.pPlane1.zOp = 'ReadOnly'
+scene.pPlane1.slice = 5
+
+scene.pPlane2 = {}
+scene.pPlane2.blendOp = 'Lerp'
+scene.pPlane2.zOp = 'ReadOnly'
+scene.pPlane2.slice = 5
 
 scene.snurrig = {}
---scene.snurrig.blendOp = 'Lerp'
-scene.snurrig.zOp = 'ReadOnly'
 scene.snurrig.blendOp = 'Mul'
-scene.snurrig.slice = 5
+scene.snurrig.zOp = 'ReadOnly'
+scene.snurrig.slice = 7
 
 
 return scene
