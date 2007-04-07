@@ -52,6 +52,7 @@ protected:
 	{
 		mutalisk::RenderContextT*	renderContext;
 		float						intensity;
+		unsigned					color;
 		void process()
 		{
 		#if defined(MUTALISK_DX9)
@@ -60,11 +61,14 @@ protected:
 			unsigned c = (unsigned)(intensity * 0xff);
 			sceGuEnable(GU_BLEND);
 			unsigned int srcFix = GU_ARGB(0, c, c, c);
-			sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, srcFix, 0xffffff);
+			unsigned int dstFix = 0xffffff;
+			if (intensity == 1.f && (color & 0xffffff) != 0xffffff)
+				dstFix = 0x000000;
+			sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, srcFix, dstFix);
 
 			sceGuTexFunc(GU_TFX_MODULATE,GU_TCC_RGB);
 			sceGuDisable(GU_TEXTURE_2D);
-			sceGuColor(0xffffffff);
+			sceGuColor(color);
 			sceGuDisable(GU_LIGHTING);
 			sceGuDisable(GU_DEPTH_TEST);
 			sceGuDepthMask(1);

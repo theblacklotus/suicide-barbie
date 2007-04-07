@@ -18,12 +18,14 @@ void TestDemo::doFrame(float t)
 		updateTextures();
 	}
 	{
-		float val = getBlinkyValue(time());
+		unsigned color;
+		float val = getBlinkyValue(time(), color);
 		if (val != 0.f)
 		{
 			FlashScreenJob* job = new FlashScreenJob;
 			job->renderContext = &renderContext;
 			job->intensity = val;
+			job->color = color;
 			mJobQueue.push_back(job);
 		}
 	}
