@@ -38,6 +38,7 @@ CC_FLAGS=\
 	-Wno-unknown-pragmas\
 
 SRCS=\
+	AnimCreator.cpp\
 	BallRenderer.cpp\
 	BlinkyBlinky.cpp\
 	callbacks.c\

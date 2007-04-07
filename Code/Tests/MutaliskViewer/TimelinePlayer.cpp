@@ -15,6 +15,7 @@
 
 #include "callbacks.h"
 #include "vram.h"
+#include "AnimCreator.h"
 
 #include <mutalisk/psp/pspPlatform.h>
 #include <mutalisk/mutalisk.h>
@@ -89,7 +90,18 @@ float getDeltaTime()
 	sceRtcGetCurrentTick(&currTick);
 	u64 delta = currTick - gPrevTick;
 	gPrevTick = currTick;
-	return static_cast<float>((delta) * mutalisk::tickFrequency()) / (1000.0f * 1000.0f);
+	float realTime = static_cast<float>((delta) * mutalisk::tickFrequency()) / (1000.0f * 1000.0f);
+	if (s_createAnim)
+	{
+		float simTime = 1.f / 60.f;
+		float ratio = simTime / realTime;
+		printf("simulating @ %3.1f%% of realtime\n", ratio * 100.f);
+		return simTime;
+	}
+	else
+	{
+		return realTime;
+	}
 }
 
 void bloom(mutalisk::Texture& mainRenderTarget, mutalisk::Texture& renderTarget, mutalisk::Texture& renderTarget2,
@@ -214,7 +226,7 @@ int main(int argc, char* argv[])
 	IntroRenderTarget irt[2];
 	memcpy(&irt[0], &mainRenderTarget, sizeof(mutalisk::Texture));
 	memcpy(&irt[1], &mainRenderTarget2, sizeof(mutalisk::Texture));
-	SceUID intro = startIntro(irt);
+//	SceUID intro = startIntro(irt);
 
 	int val = 0;
 
@@ -226,7 +238,7 @@ int main(int argc, char* argv[])
 	gDemo->start();
 	printf("ScenePlayer: created and loaded\n");
 
-	sceKernelWaitThreadEnd(intro, 0);
+//	sceKernelWaitThreadEnd(intro, 0);
 	unloadIntro();
 
 	SceCtrlData oldPad;
@@ -390,6 +402,8 @@ int main(int argc, char* argv[])
 		sceDisplayWaitVblankStart();
 		mainRenderTarget2.vramAddr = mainRenderTarget.vramAddr;
 		mainRenderTarget.vramAddr = sceGuSwapBuffers();
+
+		saveAnimFrame(mainRenderTarget2.vramAddr);
 
 		val++;
 	}

@@ -8,6 +8,7 @@
 
 #include <pspdisplay.h>
 #include "intro.h"
+#include "AnimCreator.h"
 
 /*
 
@@ -92,6 +93,7 @@ int tbl_intro(SceSize args, void *argp)
 		s_renderTarget2.vramAddr = s_renderTarget.vramAddr;
 		s_renderTarget.vramAddr = sceGuSwapBuffers();
 
+		saveAnimFrame(s_renderTarget2.vramAddr);
 	}
 	return 0;
 }
