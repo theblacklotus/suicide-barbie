@@ -144,6 +144,7 @@ void CommonEffectImpl::setupSurface(BaseEffect::Input const& input)
 
 	BaseEffect::Input::Surface const& surface = *input.surface;
 	sceGuModelColor(surface.emissive, surface.diffuse, surface.diffuse, 0);
+//	sceGuSendCommandi(88, 0xff);
 
 	sceGuBlendFunc(GU_ADD, surface.srcBlend, surface.dstBlend, 
 		surface.srcFix, surface.dstFix);
@@ -184,7 +185,7 @@ void CommonEffectImpl::setupSurface(BaseEffect::Input const& input)
 			}
 			sceGuTexMode(texture.format,0,0,texture.swizzled);
 			sceGuTexImage(texture.mipmap,texture.width,texture.height,texture.stride,texture.data);
-			sceGuTexWrap(GU_CLAMP, GU_CLAMP);
+			sceGuTexWrap(input.surface->xTexWrap, input.surface->yTexWrap);
 			sceGuTexFilter(GU_LINEAR_MIPMAP_NEAREST, GU_LINEAR_MIPMAP_NEAREST);
 			sceGuTexFunc(GU_TFX_MODULATE, GU_TCC_RGBA);
 			sceGuEnable(GU_TEXTURE_2D);

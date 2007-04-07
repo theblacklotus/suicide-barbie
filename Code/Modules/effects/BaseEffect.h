@@ -83,6 +83,8 @@ public:
 			unsigned int	srcFix;
 			unsigned int	dstFix;
 		#endif
+			int				xTexWrap;
+			int				yTexWrap;
 
 			VecT			aux0;
 		};

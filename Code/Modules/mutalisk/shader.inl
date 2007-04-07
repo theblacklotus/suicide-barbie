@@ -42,6 +42,8 @@ inline template <typename In> In& operator>> (In& i, shader_fixed& data)
 
 		i.readType(data.frameBufferOp);
 		i.readType(data.zBufferOp);
+		i.readType(data.xTexWrapOp);
+		i.readType(data.yTexWrapOp);
 
 		i.readType(data.aux0);
 	} catch( EIoEof& ) {
@@ -73,6 +75,8 @@ inline template <typename Out> Out& operator<< (Out& o, shader_fixed const& data
 
 		o.writeDword(data.frameBufferOp);
 		o.writeDword(data.zBufferOp);
+		o.writeDword(data.xTexWrapOp);
+		o.writeDword(data.yTexWrapOp);
 
 		o.writeType(data.aux0);
 	} catch( EIoEof& ) {

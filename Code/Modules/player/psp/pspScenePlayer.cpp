@@ -233,6 +233,24 @@ namespace {
 			dst.dstBlend = GU_FIX; dst.dstFix = ~0U;
 			break;
 		}
+		switch(src.xTexWrapOp)
+		{
+		case Op::twoClamp:
+			dst.xTexWrap = GU_CLAMP;
+			break;
+		case Op::twoRepeat:
+			dst.xTexWrap = GU_REPEAT;
+			break;
+		}
+		switch(src.yTexWrapOp)
+		{
+		case Op::twoClamp:
+			dst.yTexWrap = GU_CLAMP;
+			break;
+		case Op::twoRepeat:
+			dst.yTexWrap = GU_REPEAT;
+			break;
+		}
 
 		toNative(dst.aux0, src.aux0);
 //;;printf("!blastSurfaceInputs -- toNative\n");

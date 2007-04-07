@@ -13,6 +13,8 @@ shader_fixed::shader_fixed()
 ,	transparency(0.0f)
 ,	frameBufferOp(fboReplace)
 ,	zBufferOp(zboReadWrite)
+,	xTexWrapOp(twoClamp)
+,	yTexWrapOp(twoClamp)
 {
 	ambient.r = ambient.g = ambient.b = ambient.a = 0.0f;
 	diffuse.r = diffuse.g = diffuse.b = diffuse.a = 0.0f;

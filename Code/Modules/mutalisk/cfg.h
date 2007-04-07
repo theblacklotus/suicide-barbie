@@ -13,7 +13,12 @@
 	#define ASSERT(exp) (void)( (exp) || (_assert(#exp, __FILE__, -1), 0) )
 #else
 	#include <cassert>
+	#include <stdio.h>
+#ifdef __psp__
+	#define ASSERT(exp) {if (!(exp)) { printf("ASSERT : %s in %s(%i)\n", #exp, __FILE__, __LINE__); int* p = (int*)1; int i = *p; }}
+#else
 	#define ASSERT(exp) assert(exp)
+#endif
 #endif
 
 #endif // MUTALISK_CFG_H_

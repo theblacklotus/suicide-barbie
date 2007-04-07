@@ -149,6 +149,8 @@ struct OutputScene
 		//Shader*				shader;
 		std::string				frameBufferOp;
 		std::string				zBufferOp;
+		std::string				xTexWrapOp;
+		std::string				yTexWrapOp;
 	};
 	typedef std::vector<Material>						MaterialsT;
 
@@ -910,6 +912,15 @@ namespace
 			m["TwoPassReadWrite"]	= mutalisk::data::shader_fixed::zboTwoPassReadWrite;
 		}
 	};
+	struct TexWrapOpByName : ValueByName<mutalisk::data::shader_fixed::TexWrapOp>
+	{
+		TexWrapOpByName()
+		{
+			defaultValue		= mutalisk::data::shader_fixed::twoClamp;
+			m["Clamp"]			= mutalisk::data::shader_fixed::twoClamp;
+			m["Repeat"]			= mutalisk::data::shader_fixed::twoRepeat;
+		}
+	};
 }
 
 void blit(OutputScene const& scene, mutalisk::data::scene& data)
@@ -1159,6 +1170,16 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 				{
 					static ZBufferOpByName opByName;
 					data.actors[q].materials[w].shaderInput.zBufferOp = opByName(i->materials[w].zBufferOp);
+				}
+				if(i->materials[w].xTexWrapOp != "")
+				{
+					static TexWrapOpByName opByName;
+					data.actors[q].materials[w].shaderInput.xTexWrapOp = opByName(i->materials[w].xTexWrapOp);
+				}
+				if(i->materials[w].yTexWrapOp != "")
+				{
+					static TexWrapOpByName opByName;
+					data.actors[q].materials[w].shaderInput.yTexWrapOp = opByName(i->materials[w].yTexWrapOp);
 				}
 			}
 
@@ -1645,6 +1666,28 @@ fbxDouble3 readColorFromProperties(OutputScene::Properties& properties, std::str
 
 void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& properties)
 {
+	if(properties.hasString("xTexWrap"))
+	{
+		std::string const& value = properties.strings["texWrapX"];
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+			actor.materials[w].xTexWrapOp = value;
+	}
+	if(properties.hasString("yTexWrap"))
+	{
+		std::string const& value = properties.strings["texWrapY"];
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+			actor.materials[w].xTexWrapOp = value;
+	}
+	if(properties.hasString("texWrap"))
+	{
+		std::string const& value = properties.strings["texWrap"];
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+		{
+			actor.materials[w].xTexWrapOp = value;
+			actor.materials[w].yTexWrapOp = value;
+		}
+	}
+
 	if(properties.hasString("diffuseMap"))
 	{
 		for(size_t w = 0; w < actor.materials.size(); ++w)

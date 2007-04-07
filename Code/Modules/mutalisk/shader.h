@@ -10,7 +10,7 @@ namespace mutalisk { namespace data
 
 	struct shader_fixed
 	{
-		enum { Version = 0x0101 };
+		enum { Version = 0x0103 };
 
 		Color			ambient;
 		Color			diffuse;
@@ -39,9 +39,14 @@ namespace mutalisk { namespace data
 			zboWrite = 2,
 			zboReadWrite = zboRead|zboWrite,
 			zboTwoPassReadWrite = 5 };
+		enum TexWrapOp {
+			twoRepeat,
+			twoClamp };
 
 		FrameBufferOp	frameBufferOp;
 		ZBufferOp		zBufferOp;
+		TexWrapOp		xTexWrapOp;
+		TexWrapOp		yTexWrapOp;
 
 		Vec4			aux0;
 		
