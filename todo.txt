@@ -12,7 +12,7 @@ _Scenes_
 
 
 _Demo_
-.	TGA exporter
++	TGA exporter
 +	rendering glitch
 .	fix deltatime calc
 +	blur in timeline
