@@ -1,8 +1,23 @@
+_Scenes_
+.	'logo' scale uv scroller
+.	'tele2' mirror missing
+.	setup shaders in 'mix' scenes
+.	setup shaders in 'gun' scenes
++	fix letters-on-char in 'text' scene
++	'jealousy' text wrong animation
++	fix 'mix' scenes
++	'reload' gun/hands are not visible
++	'reload' gun/clip translations are wrong (bake?)
+
+
+
 _Demo_
-.	rendering glitch
+.	TGA exporter
++	rendering glitch
 .	fix deltatime calc
-.	blur in timeline
-.	scene-specific blur
++	blur in timeline
++	scene-specific blur
++	flashing
 .	shadows
 .	mirror
 ?	clear color from camera
