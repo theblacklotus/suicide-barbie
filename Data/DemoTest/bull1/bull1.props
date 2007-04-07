@@ -1,0 +1,30 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'baked'
+scene.disableScalingPivots = 0
+
+
+smoke = {}
+smoke.blendOp = 'Lerp'
+smoke.zOp = 'ReadOnly'
+
+scene.alphafastsmoke = smoke
+scene.alphasnoke = smoke
+
+scene.addflash = {}
+scene.addflash.blendOp = 'Add'
+scene.addflash.zOp = 'ReadOnly'
+--scene.addflash.slice = 1
+
+uvscroll = {}
+uvscroll.blendOp = 'MAdd'
+uvscroll.zOp = 'ReadOnly'
+
+scene.pCube4 = uvscroll
+scene.pCube5 = uvscroll
+scene.pCube9 = uvscroll
+scene.pCube10 = uvscroll
+
+return scene
