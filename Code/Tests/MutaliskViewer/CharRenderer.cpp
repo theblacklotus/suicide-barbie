@@ -74,10 +74,14 @@ namespace
 		size_t primCount = mesh->mBlueprint.vertexCount / 2;
 		for (size_t j = 0; j < primCount; ++j)
 		{
-			vertexData0->u = vertexData0->v = 0.f; ++vertexData0;
-			vertexData0->u = vertexData0->v = 1.f; ++vertexData0;
-			vertexData1->u = vertexData1->v = 0.f; ++vertexData1;
-			vertexData1->u = vertexData1->v = 1.f; ++vertexData1;
+			size_t x = rand() & 0x3;
+			size_t y = rand() & 0x3;
+			float u = 0.25f * (float)x;
+			float v = 0.25f * (float)y;
+			vertexData0->u = u;			vertexData0->v = v;			++vertexData0;
+			vertexData0->u = u + 0.25f;	vertexData0->v = v + 0.25f;	++vertexData0;
+			vertexData1->u = u;			vertexData1->v = v;			++vertexData1;
+			vertexData1->u = u + 0.25f;	vertexData1->v = v + 0.25f;	++vertexData1;
 		}
 
 		;;printf("done processing \"ball render\"(tm) technique\n");
