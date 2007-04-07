@@ -28,6 +28,11 @@ class TestDemo : public mutalisk::BaseDemoPlayer
 		Scene	phoneTrans;
 
 		//
+		Scene	textWalk;
+		Scene	textBG;
+		Scene	text;
+		Scene	jealousy;
+
 		Scene	beer1;
 		Scene	beer2;
 		Scene	garlic1;
@@ -35,6 +40,14 @@ class TestDemo : public mutalisk::BaseDemoPlayer
 		Scene	mix1;
 		Scene	mix2;
 		Scene	mix3;
+
+		//
+		Scene	reload;
+		Scene	m16;
+		Scene	gun;
+		Scene	bullet;
+		Scene	expGirl1BG;
+		Scene	expGirl2BG;
 
 	};
 	Scenes							scn;
@@ -98,6 +111,9 @@ protected:
 	void phone1_x__(); void phone2_x__(); void phone3_x__();
 	void phone__x_2(); void phone__x_3(); void phone__x_4();
 
+	void text();
+	void jealousy();
+
 	void beer1();
 	void beer2();
 	void garlic1();
@@ -105,6 +121,14 @@ protected:
 	void mix1();
 	void mix2();
 	void mix3();
+
+	void reload();
+	void m16();
+	void gun();
+	void bullet();
+	void explodeGirl1();
+	void explodeGirl2();
+
 
 	// load points
 	void loadFlower();

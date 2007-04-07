@@ -38,7 +38,7 @@ namespace
 		return static_cast<int>(round(static_cast<float>(v) * 0.3f));
 	}
 }
-#if 1
+#if 0
 void TestDemo::onStart()
 {
 	{Item items[] = {
@@ -91,8 +91,11 @@ void TestDemo::onStart()
 #if 0
 void TestDemo::onStart()
 {
-	timeOffset = 120;
+	timeOffset = 92;
 	{Item items[] = {
+		Item(92,	ms(18),		S_FUNC(text)),
+		Item(115,	ms(22),		S_FUNC(jealousy)),
+
 		Item(122,	ms(90),		S_FUNC(beer1)),
 		Item(130,	ms(71),		S_FUNC(beer2)),
 		Item(138,	ms(51),		S_FUNC(garlic1)),
@@ -106,6 +109,11 @@ void TestDemo::onStart()
 	timeline.addScript(items);}
 
 	mutalisk::gDelayedTextureLoading = false;
+	load(scn.textWalk,	"text\\psp\\text.msk");
+	load(scn.textBG,	"text\\psp\\back.msk");
+	load(scn.text,		"text\\psp\\undertext.msk");
+	load(scn.jealousy,	"jealousy\\psp\\jealousy.msk");
+
 	load(scn.beer1,		"beer\\beer1\\psp\\beer1.msk");
 	load(scn.beer2,		"beer\\beer2\\psp\\beer2.msk");
 	
@@ -115,6 +123,35 @@ void TestDemo::onStart()
 	load(scn.mix1,		"mix\\mix1\\psp\\mix1.msk");
 	load(scn.mix2,		"mix\\mix2\\psp\\mix2.msk");
 	load(scn.mix3,		"mix\\mix3\\psp\\mix3.msk");
+
+	prepareChars(*scn.textWalk.renderable);
+
+}
+#endif
+
+#if 1
+void TestDemo::onStart()
+{
+	timeOffset = 184;
+	{Item items[] = {
+		Item(184,	ms(34),		S_FUNC(reload)),
+		Item(186,	ms(50),		S_FUNC(m16)),
+		Item(196,	ms(94),		S_FUNC(gun)),
+		Item(207,	ms(38),		S_FUNC(bullet)),
+		Item(217,	ms(06),		S_FUNC(explodeGirl1)),
+		Item(333,	ms(64),		S_FUNC(explodeGirl2)),
+
+		Item()
+	};
+	timeline.addScript(items);}
+
+	mutalisk::gDelayedTextureLoading = false;
+	load(scn.reload,	"reload\\psp\\reload.msk");
+	load(scn.m16,		"weapon3\\psp\\weapon3.msk");
+	load(scn.gun,		"weapon2\\psp\\gun.msk");
+	load(scn.bullet,	"bull1\\psp\\bull1.msk");
+	load(scn.expGirl1BG,"back_01\\psp\\back_01.msk");
+	load(scn.expGirl2BG,"back_02\\psp\\back_02.msk");
 }
 #endif
 
@@ -251,36 +288,91 @@ void TestDemo::phone__x_4()
 }
 
 
+void TestDemo::text()
+{
+	draw(scn.textBG);
+	clearZ();
+	draw(scn.text);
+	clearZ();
+	draw(scn.textWalk, &mutalisk::renderChars);
+
+	ppBloom(0);
+}
+void TestDemo::jealousy()
+{
+	draw(scn.jealousy, updateAnimatedProperties);
+	ppBloom(0.2f, 114, 200, 160);
+}
+
 void TestDemo::beer1()
 {
 	draw(scn.beer1);
+	ppBloom(0.3f, 0, 200, 32);
 }
 void TestDemo::beer2()
 {
 	draw(scn.beer2);
+	ppBloom(0.3f, 0, 200, 32);
 }
 void TestDemo::garlic1()
 {
 	draw(scn.garlic1);
+	ppBloom(0.3f, 0, 200, 32);
 }
 void TestDemo::garlic2()
 {
 	draw(scn.garlic2);
+	ppBloom(0.3f, 0, 200, 32);
 }
 void TestDemo::mix1()
 {
 	draw(scn.mix1);
+	ppBloom(0.25f, 0, 255, 64);
 }
 void TestDemo::mix2()
 {
 	draw(scn.mix2);
+	ppBloom(0.25f, 0, 255, 64);
 }
 void TestDemo::mix3()
 {
 	draw(scn.mix3);
+	ppBloom(0.25f, 0, 255, 64);
 }
 
+void TestDemo::reload()
+{
+	scn.reload.znear = 0.1;
+	scn.reload.zfar = 8;
 
+	draw(scn.reload);
+	ppBloom(0);
+}
+void TestDemo::m16()
+{
+	draw(scn.m16, updateAnimatedProperties);
+	ppBloom(0);
+}
+void TestDemo::gun()
+{
+	draw(scn.gun, updateAnimatedProperties);
+	ppBloom(0);
+}
+void TestDemo::bullet()
+{
+	draw(scn.bullet, updateAnimatedProperties);
+	ppBloom(0);
+}
+void TestDemo::explodeGirl1()
+{
+	draw(scn.expGirl1BG);
+	ppBloom(0);
+}
+void TestDemo::explodeGirl2()
+{
+	draw(scn.expGirl2BG);
+	ppBloom(0);
+}
 
 
 
