@@ -11,8 +11,8 @@
 #include <mutalisk/platform.h>
 #include <mutalisk/mutalisk.h>
 
-#include "animator/Animators.h"
-#include "animator/AnimatorAlgos.h"
+#include "Animators.h"
+#include "AnimatorAlgos.h"
 
 namespace mutalisk
 {
@@ -127,26 +127,8 @@ struct RenderableScene
 				this->transforms.begin(), this->transforms.end());
 		}
 
-		void process(mutalisk::data::scene const& blueprint, SharedResources& sharedResources)	
+		void processActiveCamera(mutalisk::data::scene const& blueprint)
 		{
-//;;printf("process -- 0\n");
-			ASSERT(this->hierarchy);
-//;;printf("process -- 1\n");
-			CAnimatorAlgos::transformHierarchy(
-				this->matrices.begin(), this->matrices.end(),
-				this->transforms.begin(), *this->hierarchy );
-//;;printf("process -- 2\n");
-
-			for(size_t q = 0; q < this->bone2XformIndex.size(); ++q)
-				if( !this->bone2XformIndex[q].empty() )
-				{
-//;;printf("process -- processSkinMesh0\n");
-					ASSERT(sharedResources.meshes[q].renderable.get());
-					CSkinnedAlgos::processSkinMesh(*sharedResources.meshes[q].renderable, this->bone2XformIndex[q], &this->matrices[0]);
-//;;printf("process -- processSkinMesh0\n");
-				}
-//;;printf("process -- 3\n");
-
 			static bool animatedActors = true;//gSettings.forceAnimatedActors;
 			static bool animatedCamera = true;//gSettings.forceAnimatedCamera;
 
@@ -187,9 +169,31 @@ struct RenderableScene
 						blueprint.cameras[this->activeCameraIndex].worldMatrix.data);
 				}
 			}
-//;;printf("process -- 4\n");
 		}
 
+		void process(mutalisk::data::scene const& blueprint, SharedResources& sharedResources)	
+		{
+//;;printf("process -- 0\n");
+			ASSERT(this->hierarchy);
+//;;printf("process -- 1\n");
+			CAnimatorAlgos::transformHierarchy(
+				this->matrices.begin(), this->matrices.end(),
+				this->transforms.begin(), *this->hierarchy );
+//;;printf("process -- 2\n");
+
+			for(size_t q = 0; q < this->bone2XformIndex.size(); ++q)
+				if( !this->bone2XformIndex[q].empty() )
+				{
+//;;printf("process -- processSkinMesh0\n");
+					ASSERT(sharedResources.meshes[q].renderable.get());
+					CSkinnedAlgos::processSkinMesh(*sharedResources.meshes[q].renderable, this->bone2XformIndex[q], &this->matrices[0]);
+//;;printf("process -- processSkinMesh0\n");
+				}
+//;;printf("process -- 3\n");
+
+			processActiveCamera(blueprint);
+//;;printf("process -- 4\n");
+		}
 	};
 
 	RenderableScene(mutalisk::data::scene const& blueprint) : mBlueprint(blueprint) {}
@@ -249,6 +253,12 @@ struct RenderableScene
 
 		mState.activeCameraIndex = mBlueprint.defaultClipIndex;
 		mState.cameraMatrix = CTransform::identityMatrix();
+	}
+	unsigned int setActiveCameraIndex(unsigned int cameraIndex)
+	{
+		std::swap(cameraIndex, mState.activeCameraIndex);
+		mState.processActiveCamera(mBlueprint);
+		return cameraIndex;
 	}
 	void update(float time) { mState.update(mBlueprint, time); }
 	void process() { mState.process(mBlueprint, mResources); }

@@ -10,8 +10,8 @@
 #include <mutalisk/psp/pspPlatform.h>
 #include <mutalisk/mutalisk.h>
 
-#include "animator/Animators.h"
-#include "animator/AnimatorAlgos.h"
+#include "../Animators.h"
+#include "../AnimatorAlgos.h"
 
 namespace mutalisk
 {

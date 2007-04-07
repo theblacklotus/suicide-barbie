@@ -18,8 +18,8 @@
 #include "callbacks.h"
 #include "vram.h"
 
-#include <animator/Animators.h>
-#include <animator/AnimatorAlgos.h>
+#include <player/Animators.h>
+#include <player/AnimatorAlgos.h>
 
 #include <mutalisk/psp/pspPlatform.h>
 #include <mutalisk/mutalisk.h>
