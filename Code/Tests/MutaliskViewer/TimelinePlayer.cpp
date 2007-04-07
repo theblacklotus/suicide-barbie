@@ -16,6 +16,7 @@
 #include "callbacks.h"
 #include "vram.h"
 #include "AnimCreator.h"
+#include <psppower.h>
 
 #include <mutalisk/psp/pspPlatform.h>
 #include <mutalisk/mutalisk.h>
@@ -404,6 +405,7 @@ int main(int argc, char* argv[])
 		mainRenderTarget.vramAddr = sceGuSwapBuffers();
 
 		saveAnimFrame(mainRenderTarget2.vramAddr);
+		scePowerTick(0);
 
 		val++;
 	}
