@@ -291,8 +291,9 @@ struct ClearZJob : public BaseDemoPlayer::IJob
 	void process()
 	{
 	#if defined(MUTALISK_DX9)
+		ASSERT(renderContext);
 		DX_MSG("Depth clear") = 
-			renderContext.device->Clear(0, NULL, D3DCLEAR_ZBUFFER, D3DXCOLOR(0.0f,0.0f,0.0f,0.0f), 1.0f, 0);
+			renderContext->device->Clear(0, NULL, D3DCLEAR_ZBUFFER, D3DXCOLOR(0.0f,0.0f,0.0f,0.0f), 1.0f, 0);
 	#elif defined(MUTALISK_PSP)
 		sceGuClearDepth(0xffff);
 		sceGuClear(GU_DEPTH_BUFFER_BIT);

@@ -9,8 +9,8 @@
 
 #include <mutalisk/mutalisk.h>
 
-#include "animator/Animators.h"
-#include "animator/AnimatorAlgos.h"
+#include "../Animators.h"
+#include "../AnimatorAlgos.h"
 
 #include "../ScenePlayer.h"
 
@@ -28,6 +28,9 @@ struct RenderContext
 	D3DXMATRIX					viewMatrix;
 	D3DXMATRIX					projMatrix;
 	D3DXMATRIX					viewProjMatrix;
+
+	float						znear;
+	float						zfar;
 };
 
 struct RenderableMesh
