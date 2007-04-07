@@ -141,7 +141,19 @@ float getDeltaTime()
 	sceRtcGetCurrentTick(&currTick);
 	u64 delta = currTick - gPrevTick;
 	gPrevTick = currTick;
-	return static_cast<float>((delta) * mutalisk::tickFrequency()) / (1000.0f * 1000.0f);
+	// code left here because of sleep depravation.. should be moved to timelineviewer
+	float realTime = static_cast<float>((delta) * mutalisk::tickFrequency()) / (1000.0f * 1000.0f);
+	if (0)
+	{
+		float simTime = 1.f / 60.f;
+		float ratio = simTime / realTime;
+		printf("simulating @ %3.1f%% of realtime\n", ratio * 100.f);
+		return simTime;
+	}
+	else
+	{
+		return realTime;
+	}
 }
 
 mutalisk::TimeControl gTimeControl;
@@ -453,6 +465,65 @@ int main(int argc, char* argv[])
 		sceDisplayWaitVblankStart();
 		mainRenderTarget2.vramAddr = mainRenderTarget.vramAddr;
 		mainRenderTarget.vramAddr = sceGuSwapBuffers();
+
+		// code left here because of sleep depravation.. should be moved to timelineviewer
+		void* screen = mapVramBufferToTexture(mainRenderTarget.vramAddr);
+		const char* baseFileName = "host1:DemoTest/out";
+		if (0)
+		{
+			char buf[255];
+			sprintf(buf, "%s%05i.tga", baseFileName, val);
+			int fd = sceIoOpen(buf, PSP_O_CREAT|PSP_O_WRONLY, 0777);
+			unsigned scrbuf[BUF_WIDTH];
+			if (fd>0)
+			{
+				struct TGAHeader
+				{
+					uint16_t pad0;
+					uint8_t mode;
+					uint32_t pad1;
+					uint8_t pad2;
+					uint16_t originx;
+					uint16_t originy;
+					uint16_t width;
+					uint16_t height;
+					uint8_t bpp;
+					uint8_t desc;
+				} __attribute__((packed));
+				TGAHeader header;
+				memset(&header, 0x00, sizeof(header));
+				header.mode = 0x02;
+				header.width = mainRenderTarget.width;
+				header.height = mainRenderTarget.height/2;
+				uint32_t bpp = mainRenderTarget.format == GU_PSM_8888 ? 3 : 2;
+				uint32_t scrbpp = mainRenderTarget.format == GU_PSM_8888 ? 4 : 2;
+				header.bpp = bpp * 8;
+				header.desc = 0x20; // write file with reveresed y set
+				if (false)		// saving alpha?
+				{
+					bpp = scrbpp;
+					header.desc |= 8; // hardcoded 8 bits alpha (RGBA32)
+				}
+				sceIoWrite(fd, &header, sizeof(header));
+				for (unsigned y = 0; y < header.height; ++y)
+				{
+					memcpy(scrbuf, screen, sizeof(scrbuf));
+					if (header.bpp != scrbpp)			// pack 4 guns to 3 (in-place); discarding alpha
+					{
+						unsigned char* bytes = (unsigned char*)scrbuf;
+						for( int x = 0; x < header.width; ++x)
+						{
+							bytes[x*3+0] = bytes[x*4+0];
+							bytes[x*3+1] = bytes[x*4+1];
+							bytes[x*3+2] = bytes[x*4+2];
+						}
+					}
+					screen = (void*)((unsigned)screen + mainRenderTarget.stride * scrbpp);
+					sceIoWrite(fd, scrbuf, header.width * bpp);
+				}
+				sceIoClose(fd);
+			}
+		}
 
 		val++;
 	}
