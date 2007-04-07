@@ -12,6 +12,15 @@ namespace mutalisk { namespace effects {
 	IndexT getIndexByName(std::string const& name);
 	BaseEffect* getByIndex(IndexT index);
 
+	enum nSystemTexture {
+		ShadowBuffer,
+		MirrorBuffer,
+
+		nSystemTexture_Count
+	};
+	bool isSystemTexture(std::string const& name);
+	nSystemTexture getSystemTextureIndexByName(std::string const& name);
+
 	unsigned version();
 
 } // namespace effects 

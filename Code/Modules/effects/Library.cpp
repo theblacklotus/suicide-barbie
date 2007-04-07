@@ -87,3 +87,19 @@ BaseEffect* mutalisk::effects::getByIndex(IndexT index)
 		gRepository.reset(new Repository(false));
 	return gRepository->getByIndex(index);
 }
+
+
+bool mutalisk::effects::isSystemTexture(std::string const& name)
+{
+	unsigned index = static_cast<unsigned>(getSystemTextureIndexByName(name));
+	return (index != ~0U && index < nSystemTexture_Count);
+}
+
+nSystemTexture mutalisk::effects::getSystemTextureIndexByName(std::string const& name)
+{
+	if(name == "shadow")
+		return ShadowBuffer;
+	else if(name == "mirror")
+		return MirrorBuffer;
+	return static_cast<nSystemTexture>(~0U);
+}
