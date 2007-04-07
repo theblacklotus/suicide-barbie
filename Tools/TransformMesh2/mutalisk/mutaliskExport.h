@@ -1397,7 +1397,7 @@ KFbxVector4 getPivot(KFbxNode* pNode)
 	assertWarning(rotationPivot[0] == scalingPivot[0], "Scaling and rotation pivot must be the same");
 	assertWarning(rotationPivot[1] == scalingPivot[1], "Scaling and rotation pivot must be the same");
 	assertWarning(rotationPivot[2] == scalingPivot[2], "Scaling and rotation pivot must be the same");
-	return rotationPivot;
+	return scalingPivot;
 }
 
 void processMesh(KFbxNode* pNode)
@@ -2423,7 +2423,44 @@ std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode
 		for(; curTime < totalTime; curTime += deltaTime)
 		{
 			keys.push_back(static_cast<float>(curTime.GetSecondDouble()));
-			
+
+/*/
+			KFbxVector4 localT = pNode->GetLocalTFromCurrentTake(curTime);
+			KFbxVector4 localR = pNode->GetLocalRFromCurrentTake(curTime);
+			KFbxVector4 localS = pNode->GetLocalSFromCurrentTake(curTime);
+
+			KFbxVector4 rotateAroundX(localR[0], 0, 0);
+			KFbxVector4 rotateAroundY(0, localR[1], 0);
+			KFbxVector4 rotateAroundZ(0, 0, localR[2]);
+
+			values.push_back(static_cast<float>(localT[0] + pivotOffset[0])* gGlobalScale);
+			values.push_back(static_cast<float>(localT[1] + pivotOffset[1])* gGlobalScale);
+			values.push_back(static_cast<float>(localT[2] + pivotOffset[2])* gGlobalScale);
+
+			KFbxXMatrix r[3];
+			r[0].SetR(rotateAroundX);
+			r[1].SetR(rotateAroundY);
+			r[2].SetR(rotateAroundZ);
+
+			KFbxXMatrix matRotation;
+			matRotation = r[2] * r[1] * r[0];
+
+			Quat quat;
+			KFbxQuaternion quatRotation = matRotation.GetQ();
+			quat.x = static_cast<float>(quatRotation[0]);
+			quat.y = static_cast<float>(quatRotation[1]);
+			quat.z = static_cast<float>(quatRotation[2]);
+			quat.w = static_cast<float>(quatRotation[3]);
+
+			values.push_back(quat.x);
+			values.push_back(quat.y);
+			values.push_back(quat.z);
+			values.push_back(quat.w);
+
+			values.push_back(static_cast<float>(localS[0]));
+			values.push_back(static_cast<float>(localS[1]));
+			values.push_back(static_cast<float>(localS[2]));	
+/*/
 			// position
 			values.push_back((tx(curTime) + static_cast<float>(pivotOffset[0]))* gGlobalScale);
 			values.push_back((ty(curTime) + static_cast<float>(pivotOffset[1]))* gGlobalScale);
@@ -2512,7 +2549,8 @@ std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode
 
 			values.push_back(sx(curTime));
 			values.push_back(sy(curTime));
-			values.push_back(sz(curTime));	
+			values.push_back(sz(curTime));
+//*/
 		}
 	}
 
