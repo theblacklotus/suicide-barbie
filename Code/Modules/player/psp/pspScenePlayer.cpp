@@ -51,10 +51,10 @@ std::auto_ptr<RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene 
 			scene->mResources.textures[q].blueprint = loadResource<mutalisk::data::texture>(pathPrefix + data.textureIds[q]);
 			scene->mResources.textures[q].renderable = prepare(rc, *scene->mResources.textures[q].blueprint);
 		}
-	}
-	for(size_t q = 0; q < data.textureIds.size(); ++q)
-	{
-		printf("¤¤ texture = %x\n", (unsigned)scene->mResources.textures[q].blueprint.get());
+		for(size_t q = 0; q < data.textureIds.size(); ++q)
+		{
+			printf("¤¤ texture = %x\n", (unsigned)scene->mResources.textures[q].blueprint.get());
+		}
 	}
 	scene->mResources.animCharSet = loadResource<mutant::anim_character_set>(pathPrefix + data.animCharId);
 
@@ -315,9 +315,9 @@ namespace {
 		unsigned char* vertexData = mesh.mBlueprint.vertexData;
 		int vertexFlag = mesh.mBlueprint.vertexDecl;
 
-		if(mesh.mAmplifiedVertexData[1-mesh.mAmplifiedBufferIndex])
+		if(mesh.mAmplifiedVertexData[mesh.mAmplifiedBufferIndex])
 		{
-			vertexData = mesh.mAmplifiedVertexData[1-mesh.mAmplifiedBufferIndex];
+			vertexData = mesh.mAmplifiedVertexData[mesh.mAmplifiedBufferIndex];
 			vertexFlag = mesh.mAmplifiedVertexDecl;
 		}
 
