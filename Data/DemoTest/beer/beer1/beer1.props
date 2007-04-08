@@ -19,7 +19,7 @@ scene.trans.shader = 'baked'
 scene.trans.blendOp = 'Lerp'
 scene.trans.zOp = 'ReadOnly'
 scene.trans.emissive = {1,1,0}
-scene.trans.transparency = 0.9
+--scene.trans.transparency = 0.9
 scene.trans.slice = 3
 
 scene.alphaG = {}
