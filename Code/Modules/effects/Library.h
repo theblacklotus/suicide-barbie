@@ -16,7 +16,7 @@ namespace mutalisk { namespace effects {
 		ShadowBuffer,
 		MirrorBuffer,
 
-		nSystemTexture_Count
+		nSystemTexture_Count = 0,
 	};
 	bool isSystemTexture(std::string const& name);
 	nSystemTexture getSystemTextureIndexByName(std::string const& name);

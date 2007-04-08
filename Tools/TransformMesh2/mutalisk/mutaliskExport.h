@@ -144,6 +144,7 @@ struct OutputScene
 	{
 		OutputTexture*			colorTexture;
 		OutputTexture*			envmapTexture;
+		unsigned				systemTextureIndex;
 		KFbxSurfaceMaterial*	parameters;
 		std::string				shader;
 		//Shader*				shader;
@@ -191,9 +192,10 @@ struct OutputScene
 
 	struct Actor
 	{
-		Actor() : mesh(0), node(0), active(true), slice(0) {}
+		Actor() : mesh(0), transparency(0), node(0), active(true), slice(0) {}
 		OutputSkinnedMesh*	mesh;
 		MaterialsT			materials;
+		float				transparency;
 		Properties			properties;
 
 		KFbxNode*			node;
@@ -934,7 +936,9 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 	}
 
 	q = 0;
-	data.textureIds.resize(scene.textureResources.size());
+	data.textureIds.resize(scene.textureResources.size() + mutalisk::effects::nSystemTexture_Count);
+	for( ;q < mutalisk::effects::nSystemTexture_Count; ++q)
+		data.textureIds[q] = "sys_texture";
 	for(OutputScene::OutputTexturesT::const_iterator i = scene.textureResources.begin(); i != scene.textureResources.end(); ++i, ++q)
 	{
 		data.textureIds[q] = textureName2FileName(i->second.name);
@@ -1127,13 +1131,19 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 		for(size_t w = 0; w < i->materials.size(); ++w)
 		{
 			{ // color texture
-				std::string textureName = "";
-				if(i->materials[w].colorTexture)
-					textureName = i->materials[w].colorTexture->source;
+				size_t textureIndex = i->materials[w].systemTextureIndex;
+				if(textureIndex == ~0U)
+				{
+					std::string textureName = "";
+					if(i->materials[w].colorTexture)
+						textureName = i->materials[w].colorTexture->source;
 
-				size_t textureIndex = std::distance(scene.textureResources.begin(), scene.textureResources.find(textureName));
-				if(textureIndex == scene.textureResources.size())
-					textureIndex = ~0U;
+					textureIndex = std::distance(scene.textureResources.begin(), scene.textureResources.find(textureName));
+					if(textureIndex == scene.textureResources.size())
+						textureIndex = ~0U;
+					else
+						textureIndex += mutalisk::effects::nSystemTexture_Count;
+				}
 
 				data.actors[q].materials[w].shaderInput.diffuseTexture = textureIndex;
 			}
@@ -1146,6 +1156,8 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 				size_t textureIndex = std::distance(scene.textureResources.begin(), scene.textureResources.find(textureName));
 				if(textureIndex == scene.textureResources.size())
 					textureIndex = ~0U;
+				else
+					textureIndex += mutalisk::effects::nSystemTexture_Count;
 
 				data.actors[q].materials[w].shaderInput.envmapTexture = textureIndex;
 			}
@@ -1181,6 +1193,8 @@ void blit(OutputScene const& scene, mutalisk::data::scene& data)
 					static TexWrapOpByName opByName;
 					data.actors[q].materials[w].shaderInput.yTexWrapOp = opByName(i->materials[w].yTexWrapOp);
 				}
+
+				data.actors[q].materials[w].shaderInput.transparency = i->transparency;
 			}
 
 			{ // surface properties
@@ -1380,6 +1394,7 @@ void processMaterials(KFbxMesh* pMesh, std::vector<OutputSkinnedMesh::IndexT> co
 			{
 				materials[combIndex].colorTexture = (lTexture)? processTextureResource(lTexture): 0;
 				materials[combIndex].envmapTexture = 0;
+				materials[combIndex].systemTextureIndex = ~0U;
 				materials[combIndex].parameters = lMaterial;
 				materials[combIndex].shader = (lMaterial)? processShaderResource(lMaterial): "";
 
@@ -1688,6 +1703,14 @@ void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& propert
 		}
 	}
 
+	if(properties.hasString("systemMap"))
+	{
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+		{
+			std::string const& textureName = properties.strings["systemMap"];
+			actor.materials[w].systemTextureIndex = mutalisk::effects::getSystemTextureIndexByName(textureName);
+		}
+	}	
 	if(properties.hasString("diffuseMap"))
 	{
 		for(size_t w = 0; w < actor.materials.size(); ++w)
@@ -1744,6 +1767,15 @@ void applyProperties(OutputScene::Actor& actor, OutputScene::Properties& propert
 		actor.slice = static_cast<unsigned>(properties.vectors["slice"][0]);
 	}
 
+
+	if(properties.hasVector("opacity"))
+	{
+		actor.transparency = 1.0f - static_cast<float>(properties.vectors["opacity"][0]);
+	}
+	if(properties.hasVector("transparency"))
+	{
+		actor.transparency = static_cast<float>(properties.vectors["transparency"][0]);
+	}
 	if(properties.hasVector("ambient") || properties.hasVector("diffuse") || properties.hasVector("specular") || properties.hasVector("emissive"))
 	{
 		for(size_t w = 0; w < actor.materials.size(); ++w)
@@ -1849,6 +1881,7 @@ namespace
 			}
 		}
 		else
+
 			mesh.GetPolygonVertexNormal(i, j, normal);
 
 		for(int w = 0; w < 3; ++w)
