@@ -57,5 +57,14 @@ float getBlinkyValue(float time, unsigned& color)
 	BLINKYFRAME(396, GU_ARGB(0xff, 0xde, 0x8c, 0x00));
 	BLINKYFRAME(682, GU_ARGB(0xff, 0xda, 0x5a, 0x25));
 	BLINKYUNIT(23.045f);
+	BLINKYUNIT(61.466f);
+	BLINKYUNIT(92.191f);
+	BLINKYUNIT(154.13f);
+	BLINKYUNIT(184.34f);
+
+	BLINKY(115.22f, 115.22f, 115.22f+ 0.928f, 1.0f);
+	BLINKY(122.90f, 122.90f, 122.90f+ 0.928f, 1.0f);
+	BLINKY(245.94f, 245.94f, 245.94f+ 0.928f, 1.0f);
+	BLINKY(276.64f, 276.64f, 276.64f+ 0.928f, 1.0f);
 	return 0.f;
 }
