@@ -196,6 +196,38 @@ void updateAnimatedProperties(mutalisk::RenderableScene const& scene)
 		//actor.active = (scene.mState.sampleAnimation(actor.nodeName, "Fadein", time+1.0f, 1.0f) > 0.0f);
 	}
 }
+
+void updateAnimatedProperties2(mutalisk::RenderableScene const& scene)
+{
+	float vScale = gVScale;
+
+	const mutalisk::array<mutalisk::data::scene::Actor>& actors = scene.mBlueprint.actors;
+	float time = scene.mState.time;
+
+	// update properties
+	for(size_t q = 0; q < actors.size(); ++q)
+	{
+		mutalisk::data::scene::Actor& actor = const_cast<mutalisk::data::scene::Actor&>(actors[q]);
+
+		bool hasUVScroll = scene.mState.hasAnimation(actor.nodeName, "UVScroll");
+		float v = scene.mState.sampleAnimation(actor.nodeName, "UVScroll", time);
+		float fadeOut = scene.mState.sampleAnimation(actor.nodeName, "Fadeout", time, 0.0f);
+		float fadeIn = scene.mState.sampleAnimation(actor.nodeName, "Fadein", time, 1.0f);
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+		{
+			if(hasUVScroll)
+			{
+				actor.materials[w].shaderInput.vOffset = 2.0f - v*2.0f;
+				actor.materials[w].shaderInput.vScale = -vScale;
+				//actor.materials[w].shaderInput.vOffset = 1.0f - v*(vScale + 1.0f);
+				//actor.materials[w].shaderInput.vScale = vScale;
+			}
+			actor.materials[w].shaderInput.transparency = 1.0f - ((1.0f - fadeOut) * fadeIn);
+		}
+		//actor.active = (scene.mState.sampleAnimation(actor.nodeName, "Fadein", time+1.0f, 1.0f) > 0.0f);
+	}
+}
+
 }
 
 void TestDemo::walk()
@@ -386,15 +418,15 @@ void TestDemo::reload()
 }
 void TestDemo::m16()
 {
-	gVScale = 3.0f;
-	draw(scn.m16, updateAnimatedProperties);
+	gVScale = 1.0f;
+	draw(scn.m16, updateAnimatedProperties2);
 	ppBloom(0);
 }
 void TestDemo::gun()
 {
-	gVScale = 3.0f;
+	gVScale = 1.0f;
 	scn.gun.zfar = 75;
-	draw(scn.gun, updateAnimatedProperties);
+	draw(scn.gun, updateAnimatedProperties2);
 	ppBloom(0);
 }
 void TestDemo::bullet1()
