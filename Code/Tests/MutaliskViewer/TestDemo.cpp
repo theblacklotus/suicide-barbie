@@ -227,6 +227,26 @@ void updateAnimatedProperties2(mutalisk::RenderableScene const& scene)
 		//actor.active = (scene.mState.sampleAnimation(actor.nodeName, "Fadein", time+1.0f, 1.0f) > 0.0f);
 	}
 }
+void updateAnimatedProperties3(mutalisk::RenderableScene const& scene)
+{
+	const mutalisk::array<mutalisk::data::scene::Actor>& actors = scene.mBlueprint.actors;
+	float time = scene.mState.time;
+
+	// update properties
+	for(size_t q = 0; q < actors.size(); ++q)
+	{
+		float f = std::min(time * 0.2f, 1.0f);
+
+		mutalisk::data::scene::Actor& actor = const_cast<mutalisk::data::scene::Actor&>(actors[q]);
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+		{
+			actor.materials[w].shaderInput.diffuse.r = f;
+			actor.materials[w].shaderInput.diffuse.g = f;
+			actor.materials[w].shaderInput.diffuse.b = f;
+		}
+	}
+}
+
 
 }
 
@@ -375,37 +395,37 @@ void TestDemo::jealousy()
 void TestDemo::beer1()
 {
 	draw(scn.beer1);
-	ppBloom(0.3f, 0, 200, 32);
+	ppBloom(0.9f, 1, 212, 114);
 }
 void TestDemo::beer2()
 {
 	draw(scn.beer2);
-	ppBloom(0.3f, 0, 200, 32);
+	ppBloom(0.9f, 1, 212, 114);
 }
 void TestDemo::garlic1()
 {
 	draw(scn.garlic1);
-	ppBloom(0.3f, 0, 200, 32);
+	ppBloom(0.9f, 1, 212, 114);
 }
 void TestDemo::garlic2()
 {
 	draw(scn.garlic2);
-	ppBloom(0.3f, 0, 200, 32);
+	ppBloom(0.9f, 1, 212, 114);
 }
 void TestDemo::mix1()
 {
 	draw(scn.mix1);
-	ppBloom(0.25f, 0, 255, 64);
+	ppBloom(0.9f, 1, 212, 114);
 }
 void TestDemo::mix2()
 {
 	draw(scn.mix2);
-	ppBloom(0.25f, 0, 255, 64);
+	ppBloom(0.9f, 1, 212, 114);
 }
 void TestDemo::mix3()
 {
 	draw(scn.mix3);
-	ppBloom(0.25f, 0, 255, 64);
+	ppBloom(0.9f, 1, 212, 114);
 }
 
 void TestDemo::reload()
@@ -438,6 +458,7 @@ void TestDemo::bullet1()
 void TestDemo::bullet2()
 {
 	gVScale = 3.0f;
+	scn.bullet2.zfar = 100;
 	draw(scn.bullet2, updateAnimatedProperties);
 	ppBloom(0);
 }
@@ -457,7 +478,7 @@ void TestDemo::explodeGirl2()
 }
 void TestDemo::windowBarbie1()
 {
-	draw(scn.windowBarbie);
+	draw(scn.windowBarbie, updateAnimatedProperties3);
 	ppBloom(0);
 }
 void TestDemo::windowBarbie2()
