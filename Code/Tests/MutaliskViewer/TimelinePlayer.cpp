@@ -44,7 +44,7 @@ void streamAT3File(const char *file);
 
 #include "intro.h"
 
-PSP_MODULE_INFO("TimelineViewer", PSP_MODULE_USER, 1, 1);
+PSP_MODULE_INFO("Suicide Barbie", PSP_MODULE_USER, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
 static unsigned int __attribute__((aligned(16))) list[2][262144];
@@ -227,7 +227,7 @@ int main(int argc, char* argv[])
 	IntroRenderTarget irt[2];
 	memcpy(&irt[0], &mainRenderTarget, sizeof(mutalisk::Texture));
 	memcpy(&irt[1], &mainRenderTarget2, sizeof(mutalisk::Texture));
-//	SceUID intro = startIntro(irt);
+	SceUID intro = startIntro(irt);
 
 	int val = 0;
 
@@ -239,7 +239,7 @@ int main(int argc, char* argv[])
 	gDemo->start();
 	printf("ScenePlayer: created and loaded\n");
 
-//	sceKernelWaitThreadEnd(intro, 0);
+	sceKernelWaitThreadEnd(intro, 0);
 	unloadIntro();
 
 	SceCtrlData oldPad;
