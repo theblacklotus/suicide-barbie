@@ -38,9 +38,10 @@ namespace
 		return static_cast<int>(round(static_cast<float>(v) * 0.3f));
 	}
 }
-#if 0
+#if 1
 void TestDemo::onStart()
 {
+	timeOffset = 23;
 	{Item items[] = {
 		Item(0,		ms(00),		S_FUNC(walk)),
 		Item(11,	ms(00),		S_FUNC(walk_far)),
@@ -129,7 +130,7 @@ void TestDemo::onStart()
 }
 #endif
 
-#if 1
+#if 0
 void TestDemo::onStart()
 {
 	timeOffset = 184;
@@ -156,8 +157,11 @@ void TestDemo::onStart()
 #endif
 
 namespace {
+float gVScale = 1.0f;
 void updateAnimatedProperties(mutalisk::RenderableScene const& scene)
 {
+	float vScale = gVScale;
+
 	const mutalisk::array<mutalisk::data::scene::Actor>& actors = scene.mBlueprint.actors;
 	float time = scene.mState.time;
 
@@ -166,12 +170,17 @@ void updateAnimatedProperties(mutalisk::RenderableScene const& scene)
 	{
 		mutalisk::data::scene::Actor& actor = const_cast<mutalisk::data::scene::Actor&>(actors[q]);
 
-		float v = scene.mState.sampleAnimation(actor.nodeName, "UVScroll", time, 0.5f);
+		bool hasUVScroll = scene.mState.hasAnimation(actor.nodeName, "UVScroll");
+		float v = scene.mState.sampleAnimation(actor.nodeName, "UVScroll", time);
 		float fadeOut = scene.mState.sampleAnimation(actor.nodeName, "Fadeout", time, 0.0f);
 		float fadeIn = scene.mState.sampleAnimation(actor.nodeName, "Fadein", time, 1.0f);
 		for(size_t w = 0; w < actor.materials.size(); ++w)
 		{
-			actor.materials[w].shaderInput.vOffset = 1.0f - v*2.0f;
+			if(hasUVScroll)
+			{
+				actor.materials[w].shaderInput.vOffset = 1.0f - v*(vScale + 1.0f);
+				actor.materials[w].shaderInput.vScale = vScale;
+			}
 			actor.materials[w].shaderInput.transparency = 1.0f - ((1.0f - fadeOut) * fadeIn);
 		}
 		//actor.active = (scene.mState.sampleAnimation(actor.nodeName, "Fadein", time+1.0f, 1.0f) > 0.0f);
@@ -204,6 +213,7 @@ void TestDemo::walk_far()
 
 void TestDemo::logo()
 {
+	gVScale = 3.0f;
 	draw(scn.logo, updateAnimatedProperties);
 }
 
@@ -355,6 +365,7 @@ void TestDemo::m16()
 }
 void TestDemo::gun()
 {
+	scn.gun.zfar = 75;
 	draw(scn.gun, updateAnimatedProperties);
 	ppBloom(0);
 }

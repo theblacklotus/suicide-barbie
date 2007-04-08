@@ -74,6 +74,8 @@ public:
 
 			float			uOffset;
 			float			vOffset;
+			float			uScale;
+			float			vScale;
 			float			transparency;
 			float			dummy;
 

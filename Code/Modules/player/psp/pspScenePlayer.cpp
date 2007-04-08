@@ -196,6 +196,8 @@ namespace {
 
 		dst.uOffset = src.uOffset;
 		dst.vOffset = src.vOffset;
+		dst.uScale = src.uScale;
+		dst.vScale = src.vScale;
 		dst.transparency = src.transparency;
 		dst.dummy = 0;
 

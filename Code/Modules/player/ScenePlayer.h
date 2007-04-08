@@ -98,13 +98,18 @@ struct RenderableScene
 
 			this->time = 0.0f;
 		}
-		float sampleAnimation(std::string const& actorName, std::string const& channelName, float t, float defaultValue = 0.0f) const
+		bool hasAnimation(std::string const& actorName, std::string const& channelName) const
 		{
 			ASSERT(this->clip);
 			if(!this->clip->has(actorName))
-				return defaultValue;
-
+				return false;
 			if(!(*this->clip)[actorName].has_ff(channelName))
+				return false;
+			return true;
+		}
+		float sampleAnimation(std::string const& actorName, std::string const& channelName, float t, float defaultValue = 0.0f) const
+		{
+			if(!hasAnimation(actorName, channelName))
 				return defaultValue;
 
 			typedef knot_data<float,float> t_float_knots;

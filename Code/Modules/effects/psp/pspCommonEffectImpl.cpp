@@ -163,6 +163,7 @@ void CommonEffectImpl::setupSurface(BaseEffect::Input const& input)
 	if (input.surface)
 	{
 		sceGuTexOffset(input.surface->uOffset, input.surface->vOffset);
+		sceGuTexScale(input.surface->uScale, input.surface->vScale);
 		mutalisk::data::psp_texture const* diffuse = input.surface->diffuseTexture;
 //		printf("¤¤ psp_texture = %x\n", diffuse);
 		if (diffuse)

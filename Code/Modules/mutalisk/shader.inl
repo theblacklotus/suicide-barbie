@@ -38,6 +38,8 @@ inline template <typename In> In& operator>> (In& i, shader_fixed& data)
 
 		i.readType(data.uOffset);
 		i.readType(data.vOffset);
+//		i.readType(data.uScale);
+//		i.readType(data.vScale);
 		i.readType(data.transparency);
 
 		i.readType(data.frameBufferOp);
@@ -71,6 +73,8 @@ inline template <typename Out> Out& operator<< (Out& o, shader_fixed const& data
 
 		o.writeType(data.uOffset);
 		o.writeType(data.vOffset);
+//		o.writeType(data.uScale);
+//		o.writeType(data.vScale);
 		o.writeType(data.transparency);
 
 		o.writeDword(data.frameBufferOp);

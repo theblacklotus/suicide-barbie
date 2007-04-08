@@ -23,6 +23,8 @@ namespace mutalisk { namespace data
 
 		float			uOffset;
 		float			vOffset;
+		float			uScale;
+		float			vScale;
 		float			transparency;
 
 		enum FrameBufferOp {
