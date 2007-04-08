@@ -5,14 +5,23 @@
 #include <stdio.h>
 
 size_t allocated_memory = 0;
+void* gVolatileMem = 0;
+int gVolatileMemSize = 0;
+int outofmem = 0;
 void* __wrap_malloc(size_t size)
 {
 	size += 16;
 	int* ptr = _malloc_r(0, size);
 	if (!ptr)
 	{
-		printf("out-of-mem trying to get %i bytes\n",size);
-		return 0;
+		printf("out-of-mem trying to get %i bytes (%i); will use volatile mem\n",size, allocated_memory);
+		char* mem = gVolatileMem;
+		mem += (size + 16) & ~0xf;
+		ptr = gVolatileMem;
+		gVolatileMem = mem;
+		printf("ptr = %x, mem = %x\n", ptr, mem);
+		outofmem = 1;
+//		return 0;
 	}
 	allocated_memory += size;
 	*ptr = size;
@@ -24,7 +33,7 @@ void* __wrap_malloc(size_t size)
 void __wrap_free(void* size)
 {
 	int* ptr = (int*)size;
-	if (!ptr)
+	if (!ptr || outofmem)
 		return;
 	ptr -=4;
 	allocated_memory -= *ptr;

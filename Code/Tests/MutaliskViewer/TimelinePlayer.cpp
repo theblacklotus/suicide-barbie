@@ -8,7 +8,6 @@
 #include <pspdisplay.h>
 #include <psprtc.h>
 #include <pspdebug.h>
-
 #include <pspctrl.h>
 #include <pspgu.h>
 #include <pspgum.h>
@@ -22,6 +21,7 @@
 #include <mutalisk/mutalisk.h>
 
 extern "C" {
+	#include <pspsuspend.h>
 	#include <Base/Math/Math.h>
 	#include <Base/Std/Std.h>
 	#include <Base/Math/Lin.h>
@@ -55,7 +55,7 @@ extern unsigned char logo_start[];
 #define SCR_WIDTH (480)
 #define SCR_HEIGHT (272)
 
-std::string gPathPrefix = "host1:DemoTest/";//"ms0:PSP/TESTDATA/";
+std::string gPathPrefix = "ms0:Data/DemoTest/";//"ms0:PSP/TESTDATA/";
 
 
 #include "TestDemo.h"
@@ -165,10 +165,17 @@ void bloom(mutalisk::Texture& mainRenderTarget, mutalisk::Texture& renderTarget,
 }
 
 mutalisk::TimeControl gTimeControl;
-
+extern "C"
+{
+	extern void* gVolatileMem;
+	extern int gVolatileMemSize;
+}
 int main(int argc, char* argv[])
 {
 	setupCallbacks();
+
+	sceKernelVolatileMemLock(0, &gVolatileMem, &gVolatileMemSize);
+	printf("gVolatileMem = %x ; gVolatileMemSize = %i\n", gVolatileMem, gVolatileMemSize);
 
 	// setup GU
 	mutalisk::Texture mainRenderTarget;
@@ -270,7 +277,7 @@ int main(int argc, char* argv[])
 	while(running())
 	{
 		SceCtrlData pad;
-		if(sceCtrlPeekBufferPositive(&pad, 1))
+		if(sceCtrlPeekBufferPositive(&pad, 1) && false)
 		{
 			float speedModifier = 1.0f;
 			//if (pad.Buttons != oldPad.Buttons)
