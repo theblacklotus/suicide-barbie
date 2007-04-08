@@ -2,18 +2,26 @@
 scene = {}
 
 scene.RootNode = {}
---scene.RootNode.shader = 'lambert'
 scene.RootNode.shader = 'baked'
 scene.RootNode.diffuse = {1,1,1}
---scene.enableScalingPivots = 0
---scene.enableScalingPivots = 0
-scene.globalScale = 100
+scene.RootNode.emissive = {1,1,1}
+scene.RootNode.globalScale = 0.001
 
+additive = {}
+additive.blendOp = 'Add'
+additive.zOp = 'ReadOnly'
 
-scene.directionalLight1 = {}
-scene.directionalLight1.typeExt = 'DirectionalExt'
-scene.directionalLight1.diffuseColor = {1.0, 1.0, 1.0}
-scene.directionalLight1.equatorColor = {0.4, 0.4, 0.5}
-scene.directionalLight1.backColor =    {0.5, 0.3, 0.1}
+credits = {}
+credits.blendOp = 'Lerp'
+credits.zOp = 'ReadOnly'
+
+scene.addmon2 = additive
+scene.addmoln = additive
+
+scene.alphacred = credits
+scene.alphacred1 = credits
+scene.alphacred2 = credits
+scene.alphacred3 = credits
+scene.alphacred4 = credits
 
 return scene
