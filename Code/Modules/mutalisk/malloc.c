@@ -10,7 +10,10 @@ void* __wrap_malloc(size_t size)
 	size += 16;
 	int* ptr = _malloc_r(0, size);
 	if (!ptr)
+	{
+		printf("out-of-mem trying to get %i bytes\n",size);
 		return 0;
+	}
 	allocated_memory += size;
 	*ptr = size;
 	ptr += 4;
@@ -33,7 +36,7 @@ void* __wrap_calloc(size_t numelems, size_t sizeofeach)
 {
 	void* p = malloc(numelems * sizeofeach);
 	if (!p)
-		return;
+		return 0;
 	memset(p, 0x00, numelems * sizeofeach);
 	return p;
 }
