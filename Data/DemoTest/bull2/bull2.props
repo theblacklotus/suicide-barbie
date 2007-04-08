@@ -8,8 +8,8 @@ scene.disableScalingPivots = 0
 scene.backADDenv = {}
 scene.backADDenv.blendOp = 'Add'
 scene.backADDenv.zOp = 'ReadOnly'
-scene.backADDenv.shader = 'shiny'
-scene.backADDenv.envMap = 'envback.tga'
+scene.backADDenv.shader = 'baked'
+--scene.backADDenv.envMap = 'envback.tga'
 
 --scene.addflash.slice = 1
 
