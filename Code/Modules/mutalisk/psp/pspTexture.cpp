@@ -21,12 +21,12 @@ void clear(psp_texture& data)
 {
 	if (data.memContainer)
 	{
-		printf("い free = %x\n", (unsigned int)data.memContainer);
+//		printf("い free = %x\n", (unsigned int)data.memContainer);
 		free(data.memContainer);
 	}
 	else if (data.data)
 	{
-		printf("い free = %x\n", (unsigned int)data.data);
+//		printf("い free = %x\n", (unsigned int)data.data);
 		free(data.data);
 	}
 	memset(&data, 0x00, sizeof(data));
@@ -51,7 +51,7 @@ void psp_texture::patchupTextureFromMemory(MtxHeader* header)
 	clut = (void*)(header->paletteOffset + (int)data);
 
 	swizzled = header->swizzle;
-	printf("い alloc = %x\n", (unsigned int)data);
+//	printf("い alloc = %x\n", (unsigned int)data);
 /*
 	printf("い width = %i\n", width);
 	printf("い height = %i\n", height);

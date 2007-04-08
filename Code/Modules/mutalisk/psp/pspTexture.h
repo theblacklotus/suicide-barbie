@@ -55,7 +55,7 @@ inline template <typename In> In& operator>> (In& i, psp_texture& texture)
 		texture.clut = (void*)(header.paletteOffset + (int)texture.data);
 		
 		texture.swizzled = header.swizzle;
-		printf("い alloc = %x\n", (unsigned int)texture.data);
+//		printf("い alloc = %x\n", (unsigned int)texture.data);
 /*
 		printf("い width = %i\n", texture.width);
 		printf("い height = %i\n", texture.height);
