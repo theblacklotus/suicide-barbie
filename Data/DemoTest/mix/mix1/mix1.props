@@ -6,10 +6,10 @@ scene.RootNode.shader = 'baked'
 
 scene.addENV = {}
 scene.addENV.shader = 'shiny'
-scene.addENV.blendOp = 'Add'
---scene.addENV.blendOp = 'Lerp'
+--scene.addENV.blendOp = 'Add'
+scene.addENV.blendOp = 'Lerp'
 scene.addENV.zOp = 'ReadOnly'
-scene.addENV.emissive = {0.4,0.4,0.4}
+scene.addENV.emissive = {0.1,0.2,0.1}
 scene.addENV.ambient = {1,1,1}
 scene.addENV.envMap = 'env1_3.tga'
 scene.addENV.slice = 4
