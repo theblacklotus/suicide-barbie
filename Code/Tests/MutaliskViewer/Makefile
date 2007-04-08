@@ -1,5 +1,10 @@
 ########################################################
 PROJECT = SuicideBarbie
+ifneq ($(CONFIG),)
+PSP_EBOOT_TITLE = Suicide Barbie ($(CONFIG))
+else
+PSP_EBOOT_TITLE = Suicide Barbie
+endif
 
 LCFILE = stripped.ld
 LIBS=\

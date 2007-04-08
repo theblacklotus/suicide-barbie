@@ -28,6 +28,7 @@ libs:
 	@$(MAKE) $(MAKEFLAGS) -C Modules/player LIB
 
 elf_debug: libs_debug
+	@$(MAKE) $(MAKEFLAGS) -C Tests/MutaliskViewer PBP
 
 elf: libs
 	@$(MAKE) $(MAKEFLAGS) -C Tests/AnimationTest ELF
@@ -37,6 +38,7 @@ elf: libs
 	@$(MAKE) $(MAKEFLAGS) -C Tests/PSPStubTest ELF
 	@$(MAKE) $(MAKEFLAGS) -C Tests/ScreenTest ELF
 	@$(MAKE) $(MAKEFLAGS) -C Tests/WavTest ELF
+	@$(MAKE) $(MAKEFLAGS) -C Tests/MutaliskViewer PBP
 
 clean:
 	rm -rf ../Build ../Output
