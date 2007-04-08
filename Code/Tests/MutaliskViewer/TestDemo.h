@@ -105,8 +105,10 @@ protected:
 	void walk(); void walk_far();
 	void logo();
 	void logo_x_flower();
+	void face_on_flower_w_logo();
 	void face_on_flower();
 	void flower();
+	void spiral();
 	void phone1(); void phone2(); void phone3(); void phone4();
 	void phone1_x__(); void phone2_x__(); void phone3_x__();
 	void phone__x_2(); void phone__x_3(); void phone__x_4();
@@ -129,13 +131,22 @@ protected:
 	void explodeGirl1();
 	void explodeGirl2();
 
+	static int loadTextThreaded(SceSize args, void *argp);
+	static int loadWeaponThreaded(SceSize args, void *argp);
 
 	// load points
 	void loadFlower();
-	void loadPhone1();
-	void loadPhone2();
-	void loadWalk();
+	void loadTextScene();
+	void loadPhoneA();
+	void loadPhoneB();
+	void loadText();
 	void loadXXX();
+
+	void loadDreamA();
+	void loadDreamB();
+	void loadWeaponScenes();
+	void loadWeaponA();
+	void loadWeaponB();
 };
 
 #endif // TEST_DEMO_H_

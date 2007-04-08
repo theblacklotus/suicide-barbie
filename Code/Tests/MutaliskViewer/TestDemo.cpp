@@ -38,10 +38,9 @@ namespace
 		return static_cast<int>(round(static_cast<float>(v) * 0.3f));
 	}
 }
-#if 1
 void TestDemo::onStart()
 {
-	timeOffset = 23;
+	timeOffset = 0;
 	{Item items[] = {
 		Item(0,		ms(00),		S_FUNC(walk)),
 		Item(11,	ms(00),		S_FUNC(walk_far)),
@@ -49,8 +48,10 @@ void TestDemo::onStart()
 		Item(23,	ms(05),		S_FUNC(logo)),
 		Item(32,	ms(75)/*ms(05)*/,
 								S_FUNC(logo_x_flower)),
-		Item(34.5,	ms(71),		S_FUNC(face_on_flower)),
+		Item(35,	ms(71),		S_FUNC(face_on_flower)),
 		Item(48,	ms(80),		S_FUNC(flower)),
+
+		Item(55,	ms(00),		S_FUNC(spiral)),
 
 		Item(61,	ms(46),		S_FUNC(phone1)),
 		Item(68,	ms(64),		S_FUNC(phone1_x__)),
@@ -66,34 +67,6 @@ void TestDemo::onStart()
 		Item(84,	ms(50),		S_FUNC(phone__x_4)),
 		Item(85,	ms(00),		S_FUNC(phone4)),			// (32 + 82)/2
 
-		Item()
-	};
-	timeline.addScript(items);}
-
-	mutalisk::gDelayedTextureLoading = false;
-	load(scn.walk,		"walk\\psp\\walk.msk");
-	load(scn.walkBG,	"walk\\psp\\back.msk");
-
-	load(scn.logo,		"logo\\psp\\logo.msk");
-	load(scn.flower,	"flower\\psp\\flower.msk");
-	load(scn.face,		"head\\psp\\head.msk");
-	
-	load(scn.phone1,	"telephone_s1\\psp\\telephone_s1.msk");
-	load(scn.phone2,	"telephone_s2\\psp\\telephone_s2.msk");
-	load(scn.phone3,	"telephone_s3\\psp\\telephone_s3.msk");
-	load(scn.phone4,	"telephone_s4\\psp\\telephone_s4.msk");
-	load(scn.phoneTrans,"telephone_trans\\psp\\telephone_trans.msk");
-
-	prepareBalls(*scn.face.renderable);
-//	prepareChars(*scn.walk.renderable);
-}
-#endif
-
-#if 0
-void TestDemo::onStart()
-{
-	timeOffset = 92;
-	{Item items[] = {
 		Item(92,	ms(18),		S_FUNC(text)),
 		Item(115,	ms(22),		S_FUNC(jealousy)),
 
@@ -105,12 +78,34 @@ void TestDemo::onStart()
 		Item(164,	ms(13),		S_FUNC(mix2)),
 		Item(169,	ms(13),		S_FUNC(mix3)),
 
+		Item(184,	ms(34),		S_FUNC(reload)),
+		Item(186,	ms(50),		S_FUNC(gun)),
+		Item(196,	ms(94),		S_FUNC(m16)),
+		Item(207,	ms(38),		S_FUNC(bullet)),
+		Item(217,	ms(06),		S_FUNC(explodeGirl1)),
+		Item(333,	ms(64),		S_FUNC(explodeGirl2)),
+
 		Item()
 	};
 	timeline.addScript(items);}
 
-	mutalisk::gDelayedTextureLoading = false;
-	load(scn.textWalk,	"text\\psp\\text.msk");
+	mutalisk::gDelayedTextureLoading = true;
+	load(scn.walk,		"walk\\psp\\walk.msk");
+	load(scn.walkBG,	"walk\\psp\\back.msk");
+	load(scn.logo,		"logo\\psp\\logo.msk");
+
+	load(scn.flower,	"flower\\psp\\flower.msk");
+	load(scn.face,		"head\\psp\\head.msk");
+	prepareBalls(*scn.face.renderable);
+	
+	load(scn.phone1,	"telephone_s1\\psp\\telephone_s1.msk");
+	load(scn.phone2,	"telephone_s2\\psp\\telephone_s2.msk");
+	load(scn.phone3,	"telephone_s3\\psp\\telephone_s3.msk");
+	load(scn.phone4,	"telephone_s4\\psp\\telephone_s4.msk");
+	load(scn.phoneTrans,"telephone_trans\\psp\\telephone_trans.msk");
+
+//	load(scn.textWalk,	"text\\psp\\text.msk");
+//	prepareChars(*scn.textWalk.renderable);
 	load(scn.textBG,	"text\\psp\\back.msk");
 	load(scn.text,		"text\\psp\\undertext.msk");
 	load(scn.jealousy,	"jealousy\\psp\\jealousy.msk");
@@ -124,37 +119,43 @@ void TestDemo::onStart()
 	load(scn.mix1,		"mix\\mix1\\psp\\mix1.msk");
 	load(scn.mix2,		"mix\\mix2\\psp\\mix2.msk");
 	load(scn.mix3,		"mix\\mix3\\psp\\mix3.msk");
-
-	prepareChars(*scn.textWalk.renderable);
-
-}
-#endif
-
-#if 0
-void TestDemo::onStart()
-{
-	timeOffset = 184;
-	{Item items[] = {
-		Item(184,	ms(34),		S_FUNC(reload)),
-		Item(186,	ms(50),		S_FUNC(m16)),
-		Item(196,	ms(94),		S_FUNC(gun)),
-		Item(207,	ms(38),		S_FUNC(bullet)),
-		Item(217,	ms(06),		S_FUNC(explodeGirl1)),
-		Item(333,	ms(64),		S_FUNC(explodeGirl2)),
-
-		Item()
-	};
-	timeline.addScript(items);}
-
-	mutalisk::gDelayedTextureLoading = false;
+/*
 	load(scn.reload,	"reload\\psp\\reload.msk");
 	load(scn.m16,		"weapon3\\psp\\weapon3.msk");
 	load(scn.gun,		"weapon2\\psp\\gun.msk");
 	load(scn.bullet,	"bull1\\psp\\bull1.msk");
 	load(scn.expGirl1BG,"back_01\\psp\\back_01.msk");
 	load(scn.expGirl2BG,"back_02\\psp\\back_02.msk");
+*/
+
+	if (mutalisk::gDelayedTextureLoading == false)
+		return;
+
+	{Item items[] = {
+		Item(0,		ms(00),		S_FUNC(loadFlower),		Item::Once),
+		Item(40,	ms(71),		S_FUNC(loadTextScene),		Item::Once),
+		Item(44,	ms(00),		S_FUNC(loadPhoneA),		Item::Once),
+		Item(55.5,	ms(00),		S_FUNC(loadPhoneB),		Item::Once),
+
+		Item(69,	ms(64),		S_FUNC(loadText),		Item::Once),
+
+		Item(92,	ms(18),		S_FUNC(loadDreamA),		Item::Once),
+		Item(115.5,	ms(22),		S_FUNC(loadWeaponScenes),		Item::Once),
+		Item(122,	ms(90),		S_FUNC(loadDreamB),		Item::Once),
+
+		Item(154.5,	ms(13),		S_FUNC(loadWeaponA),	Item::Once),
+		Item(184,	ms(34),		S_FUNC(loadWeaponB),	Item::Once),
+
+
+
+		Item()
+	};
+	timeline.addScript(items);}
+
+	loadTextures(scn.walk, false);
+	loadTextures(scn.walkBG, false);
+	loadTextures(scn.logo, false);
 }
-#endif
 
 namespace {
 float gVScale = 1.0f;
@@ -224,6 +225,14 @@ void TestDemo::logo_x_flower()
 	draw(scn.logo, updateAnimatedProperties);
 }
 
+void TestDemo::face_on_flower_w_logo()
+{
+	draw(scn.flower);
+	draw(scn.face, &mutalisk::renderBalls);
+	clearZ();
+	draw(scn.logo, updateAnimatedProperties);
+}
+
 void TestDemo::face_on_flower()
 {
 	draw(scn.flower);
@@ -233,6 +242,11 @@ void TestDemo::face_on_flower()
 void TestDemo::flower()
 {
 	draw(scn.flower);
+}
+
+void TestDemo::spiral()
+{
+//	draw(scn.spiral);
 }
 
 void TestDemo::phone1()
@@ -400,31 +414,167 @@ void TestDemo::loadFlower()
 {
 	printf("%s\n", __FUNCTION__);
 	loadTextures(scn.flower);
+	loadTextures(scn.face);
 }
 
-void TestDemo::loadPhone1()
+int TestDemo::loadTextThreaded(SceSize args, void *argp)
+{
+	TestDemo* demo = *(TestDemo**)argp;
+
+	printf("running loadTextThreaded.\n");
+	printf("%x\n", demo);
+	printf("%x\n", &demo->scn.textWalk);
+	demo->load(demo->scn.textWalk, "text\\psp\\text.msk");
+	printf("done loadTextThreaded.***********************************************\n");
+	printf("done loadTextThreaded.***********************************************\n");
+	printf("done loadTextThreaded.***********************************************\n");
+	printf("done loadTextThreaded.***********************************************\n");
+	printf("done loadTextThreaded.***********************************************\n");
+	printf("done loadTextThreaded.***********************************************\n");
+	printf("done loadTextThreaded.***********************************************\n");
+	printf("%x\n", demo->scn.textWalk.renderable);
+	prepareChars(*demo->scn.textWalk.renderable);
+	sceKernelDeleteThread(0);
+	sceKernelExitThread(0);
+	return 0;
+}
+
+void TestDemo::loadTextScene()
+{
+	unloadTextures(scn.walk);
+	unloadTextures(scn.walkBG);
+	unloadTextures(scn.logo);
+	scn.walk.renderable->mResources.animCharSet.reset();
+	{
+		SceUID textth = sceKernelCreateThread("loadTextThreaded", loadTextThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
+		if (textth < 0)
+		{
+			printf("Error creating loadTextThreaded.\n");
+			load(scn.textWalk,	"text\\psp\\text.msk");
+			return;
+		}
+
+		printf("%x\n", this);
+		printf("%x\n", &scn.text);
+		void* p = this;
+		sceKernelStartThread(textth, sizeof(void*), &p);
+		sceKernelChangeThreadPriority(textth, 0x40);
+	}
+}
+
+void TestDemo::loadPhoneA()
 {
 	printf("%s\n", __FUNCTION__);
 	loadTextures(scn.phone1);
+	loadTextures(scn.phoneTrans);
 }
 
-void TestDemo::loadPhone2()
+void TestDemo::loadPhoneB()
 {
 	printf("%s\n", __FUNCTION__);
-	loadTextures(scn.phone2);
-	unloadTextures(scn.logo);
-}
-
-void TestDemo::loadWalk()
-{
-	printf("%s\n", __FUNCTION__);
-	loadTextures(scn.walk);
 	unloadTextures(scn.flower);
+	unloadTextures(scn.face);
+	loadTextures(scn.phone2);
+	loadTextures(scn.phone3);
+	loadTextures(scn.phone4);
 }
 
-void TestDemo::loadXXX()
+void TestDemo::loadText()
 {
 	printf("%s\n", __FUNCTION__);
 	unloadTextures(scn.phone1);
+	loadTextures(scn.textWalk);
+	loadTextures(scn.textBG);
+	loadTextures(scn.text);
+	loadTextures(scn.jealousy);
+}
+
+void TestDemo::loadDreamA()
+{
 	unloadTextures(scn.phone2);
+	unloadTextures(scn.phone3);
+	unloadTextures(scn.phone4);
+	loadTextures(scn.beer1);
+	loadTextures(scn.beer2);
+	loadTextures(scn.garlic1);
+	loadTextures(scn.garlic2);
+}
+
+void TestDemo::loadDreamB()
+{
+	unloadTextures(scn.textWalk);
+	unloadTextures(scn.textBG);
+	unloadTextures(scn.text);
+	unloadTextures(scn.jealousy);
+	loadTextures(scn.mix1);
+	loadTextures(scn.mix2);
+	loadTextures(scn.mix3);
+}
+
+int TestDemo::loadWeaponThreaded(SceSize args, void *argp)
+{
+	TestDemo* demo = *(TestDemo**)argp;
+
+	printf("running loadWeaponThreaded.\n");
+	demo->load(demo->scn.reload,	"reload\\psp\\reload.msk");
+	demo->load(demo->scn.m16,		"weapon3\\psp\\weapon3.msk");
+	demo->load(demo->scn.gun,		"weapon2\\psp\\gun.msk");
+	demo->load(demo->scn.bullet,	"bull1\\psp\\bull1.msk");
+	demo->load(demo->scn.expGirl1BG,"back_01\\psp\\back_01.msk");
+	demo->load(demo->scn.expGirl2BG,"back_02\\psp\\back_02.msk");
+	printf("done loadTextThreaded.***********************************************\n");
+	printf("done loadTextThreaded.***********************************************\n");
+	printf("done loadTextThreaded.***********************************************\n");
+	printf("done loadTextThreaded.***********************************************\n");
+	printf("done loadTextThreaded.***********************************************\n");
+	printf("done loadTextThreaded.***********************************************\n");
+	printf("done loadTextThreaded.***********************************************\n");
+	sceKernelDeleteThread(0);
+	sceKernelExitThread(0);
+	return 0;
+}
+
+void TestDemo::loadWeaponScenes()
+{
+	scn.textWalk.renderable->mResources.animCharSet.reset();
+
+	SceUID th = sceKernelCreateThread("loadWeaponThreaded", loadWeaponThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
+	if (th < 0)
+	{
+		printf("Error creating loadWeaponThreaded.\n");
+		load(scn.reload,	"reload\\psp\\reload.msk");
+		load(scn.m16,		"weapon3\\psp\\weapon3.msk");
+		load(scn.gun,		"weapon2\\psp\\gun.msk");
+		load(scn.bullet,	"bull1\\psp\\bull1.msk");
+		load(scn.expGirl1BG,"back_01\\psp\\back_01.msk");
+		load(scn.expGirl2BG,"back_02\\psp\\back_02.msk");
+		return;
+	}
+
+	void* p = this;
+	sceKernelStartThread(th, sizeof(void*), &p);
+	sceKernelChangeThreadPriority(th, 0x40);
+}
+
+void TestDemo::loadWeaponA()
+{
+	unloadTextures(scn.beer1);
+	unloadTextures(scn.beer2);
+	unloadTextures(scn.garlic1);
+	unloadTextures(scn.garlic2);
+
+	loadTextures(scn.reload);
+	loadTextures(scn.gun);
+	loadTextures(scn.m16);
+	loadTextures(scn.bullet);
+}
+
+void TestDemo::loadWeaponB()
+{
+	unloadTextures(scn.mix1);
+	unloadTextures(scn.mix2);
+	unloadTextures(scn.mix3);
+
+	loadTextures(scn.expGirl1BG);
+	loadTextures(scn.expGirl2BG);
 }
