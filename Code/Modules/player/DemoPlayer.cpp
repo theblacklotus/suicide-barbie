@@ -216,9 +216,9 @@ void BaseDemoPlayer::setPath(std::string const& pathPrefix)
 namespace {
 void onDrawDefault(RenderableSceneT const& scene) {}
 }
-void BaseDemoPlayer::draw(Scene const& scene)
+void BaseDemoPlayer::draw(Scene const& scene, float timeScale)
 {
-	draw(scene, &::onDrawDefault);
+	draw(scene, &::onDrawDefault, timeScale);
 }
 
 struct RenderJob : public BaseDemoPlayer::IJob
@@ -233,17 +233,17 @@ struct RenderJob : public BaseDemoPlayer::IJob
 	}
 };
 
-void BaseDemoPlayer::draw(Scene const& scene, OnDrawT onDraw)
+void BaseDemoPlayer::draw(Scene const& scene, OnDrawT onDraw, float timeScale)
 {
 	if(scene.startTime <= 0.0f)
 		scene.startTime = time();
 
 	ASSERT(scene.renderable);
 #if defined(MUTALISK_DX9)
-	mutalisk::update(*scene.renderable, time() - scene.startTime);
+	mutalisk::update(*scene.renderable, (time() - scene.startTime) * timeScale);
 	mutalisk::process(*scene.renderable);
 #elif defined(MUTALISK_PSP)
-	scene.renderable->update(time() - scene.startTime);
+	scene.renderable->update((time() - scene.startTime) * timeScale);
 	scene.renderable->process();
 #endif
 	//renderContext.znear = scene.znear;

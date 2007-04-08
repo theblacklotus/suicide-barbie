@@ -44,8 +44,8 @@ namespace mutalisk
 		void clearColor();
 
 		Scene const& load(Scene& scene, std::string const& sceneName);
-		void draw(Scene const& scene, OnDrawT onDraw);
-		void draw(Scene const& scene);
+		void draw(Scene const& scene, OnDrawT onDraw, float timeScale = 1.0f);
+		void draw(Scene const& scene, float timeScale = 1.0f);
 		void pause(Scene const& scene) {}
 		void restart(Scene const& scene);
 		float sceneTime(Scene const& scene);

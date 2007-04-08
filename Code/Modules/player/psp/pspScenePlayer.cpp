@@ -46,7 +46,7 @@ std::auto_ptr<RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene 
 	if (!gDelayedTextureLoading)
 	{
 		scene->mResources.textures.resize(data.textureIds.size());
-		for(size_t q = 0; q < data.textureIds.size(); ++q)
+		for(size_t q = mutalisk::effects::nSystemTexture_Count-1; q < data.textureIds.size(); ++q)
 		{
 			scene->mResources.textures[q].blueprint = loadResource<mutalisk::data::texture>(pathPrefix + data.textureIds[q]);
 			scene->mResources.textures[q].renderable = prepare(rc, *scene->mResources.textures[q].blueprint);

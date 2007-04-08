@@ -45,9 +45,14 @@ class TestDemo : public mutalisk::BaseDemoPlayer
 		Scene	reload;
 		Scene	m16;
 		Scene	gun;
-		Scene	bullet;
+		Scene	bullet1;
+		Scene	bullet2;
 		Scene	expGirl1BG;
 		Scene	expGirl2BG;
+		Scene	expGirl1;
+		Scene	expGirl2;
+		Scene	windowBarbie;
+		Scene	window;
 
 	};
 	Scenes							scn;
@@ -127,12 +132,16 @@ protected:
 	void reload();
 	void m16();
 	void gun();
-	void bullet();
+	void bullet1();
+	void bullet2();
 	void explodeGirl1();
 	void explodeGirl2();
+	void windowBarbie1();
+	void windowBarbie2();
 
 	static int loadTextThreaded(SceSize args, void *argp);
 	static int loadWeaponThreaded(SceSize args, void *argp);
+	static int loadWindowThreaded(SceSize args, void *argp);
 
 	// load points
 	void loadFlower();
@@ -147,6 +156,8 @@ protected:
 	void loadWeaponScenes();
 	void loadWeaponA();
 	void loadWeaponB();
+	void loadWindowScenes();
+	void loadWindow();
 };
 
 #endif // TEST_DEMO_H_

@@ -1,0 +1,13 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'shiny'
+--scene.RootNode.shader = 'baked'
+scene.RootNode.emissive = {1,1,1}
+scene.RootNode.ambient = {1,1,1}
+scene.RootNode.envMap = 'envglas.tga'
+scene.RootNode.blendOp = 'Lerp'
+
+
+return scene
