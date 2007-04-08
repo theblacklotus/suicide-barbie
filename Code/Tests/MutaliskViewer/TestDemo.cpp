@@ -89,8 +89,8 @@ void TestDemo::onStart()
  		Item(241,	ms(94),		S_FUNC(windowBarbie1)),
  		Item(245,	ms(94),		S_FUNC(windowBarbie2)),
  		Item(250,	ms(20),		S_FUNC(endBarbie0)),
- 		Item(252,	ms(20),		S_FUNC(endBarbie1)),
- 		Item(276,	ms(64),		S_FUNC(endBarbie2)),
+ 		Item(250+1,	ms(20),		S_FUNC(endBarbie1)),
+ 		Item(276+1+6,	ms(64),		S_FUNC(endBarbie2)),
 
 		Item()
 	};
@@ -168,7 +168,6 @@ void TestDemo::onStart()
 		Item(226,	ms(00),		S_FUNC(loadWindow),	Item::Once),
 
  		Item(250,	ms(20),		S_FUNC(loadEndScenes),	Item::Once),
- 		Item(251,	ms(20),		S_FUNC(loadEnd),	Item::Once),
 
 		Item()
 	};
@@ -823,25 +822,27 @@ void TestDemo::loadEndScenes()
 	scn.bullet2.renderable->mResources.animCharSet.reset();	
 	scn.expGirl2BG.renderable->mResources.animCharSet.reset();
 	scn.expGirl2.renderable->mResources.animCharSet.reset();	
-	scn.windowBarbie.renderable->mResources.animCharSet.reset();	
-	scn.window.renderable->mResources.animCharSet.reset();
+//	scn.windowBarbie.renderable->mResources.animCharSet.reset();	
+//	scn.window.renderable->mResources.animCharSet.reset();
 
 	scn.expGirl1BG.renderable->mResources.meshes.resize(0);
 	scn.expGirl1.renderable->mResources.meshes.resize(0);	
 	scn.bullet2.renderable->mResources.meshes.resize(0);	
 	scn.expGirl2BG.renderable->mResources.meshes.resize(0);
 	scn.expGirl2.renderable->mResources.meshes.resize(0);	
-	scn.windowBarbie.renderable->mResources.meshes.resize(0);	
-	scn.window.renderable->mResources.meshes.resize(0);
+//	scn.windowBarbie.renderable->mResources.meshes.resize(0);	
+//	scn.window.renderable->mResources.meshes.resize(0);
 
 	unloadTextures(scn.bullet2);
 	unloadTextures(scn.expGirl2BG);
 	unloadTextures(scn.expGirl2);
-	unloadTextures(scn.windowBarbie);
-	unloadTextures(scn.window);
+//	unloadTextures(scn.windowBarbie);
+//	unloadTextures(scn.window);
 
 		load(scn.endBack,	"suicidebarbie2\\psp\\suicidebarbie_back2.msk");
 		load(scn.end,	"suicidebarbie2\\psp\\suicidebarbie2.msk");
+		loadTextures(scn.endBack, false);
+		loadTextures(scn.end, false);
 	return;
 
 	SceUID th = sceKernelCreateThread("loadEndThreaded", loadEndThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
@@ -860,7 +861,6 @@ void TestDemo::loadEndScenes()
 
 void TestDemo::loadEnd()
 {
-
-	loadTextures(scn.endBack);
-	loadTextures(scn.end);
+//	loadTextures(scn.endBack);
+//	loadTextures(scn.end);
 }
