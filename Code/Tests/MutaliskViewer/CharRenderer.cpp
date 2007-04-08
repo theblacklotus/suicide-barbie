@@ -68,6 +68,7 @@ namespace
 		mutalisk::data::mesh& dataHack = const_cast<mutalisk::data::mesh&>(data);
 		delete dataHack.indexData; dataHack.indexData = 0;				// $HACK ; will force raw vertex data when rendering
 		dataHack.primitiveType = GU_SPRITES;							// $HACK ; primtype is now sprites
+		dataHack.vertexCount &= ~0x1;									// $HACK ; make sure we have even number of vertices
 
 		Vertex* vertexData0 = (Vertex*)mesh->mAmplifiedVertexData[0];
 		Vertex* vertexData1 = (Vertex*)mesh->mAmplifiedVertexData[1];
@@ -84,7 +85,7 @@ namespace
 			vertexData1->u = u + 0.25f;	vertexData1->v = v + 0.25f;	++vertexData1;
 		}
 
-		;;printf("done processing \"ball render\"(tm) technique\n");
+		;;printf("done processing \"char render\"(tm) technique\n");
 	}
 }
 	void prepareChars(mutalisk::RenderableScene& scene)
