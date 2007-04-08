@@ -2,8 +2,8 @@
 scene = {}
 
 scene.RootNode = {}
---scene.RootNode.shader = 'lambert'
-scene.RootNode.shader = 'baked'
+scene.RootNode.shader = 'lambert'
+--scene.RootNode.shader = 'baked'
 --scene.RootNode.emissive = {1,1,1}
 scene.RootNode.diffuse = {1,1,1}
 
