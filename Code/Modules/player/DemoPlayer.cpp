@@ -177,7 +177,7 @@ int BaseDemoPlayer::updateTextures()
 			sceIoLseek(m_currentLoad, 0, PSP_SEEK_SET);
 //			printf("file size = %i\n", size);
 			m_currentTexture = (data::MtxHeader*)malloc(size + sizeof(data::MtxHeader));
-			printf("mem ptr = %x\n", (unsigned)m_currentTexture);
+//			printf("mem ptr = %x\n", (unsigned)m_currentTexture);
 			if (sceIoChangeAsyncPriority(m_currentLoad, 0x8))
 			{
 				printf("sceIoChangeAsyncPriority failed\n");
