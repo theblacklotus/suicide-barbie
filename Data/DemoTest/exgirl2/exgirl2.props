@@ -1,0 +1,29 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'baked'
+scene.RootNode.emissive = {1,1,1}
+scene.RootNode.ambient = {1,1,1}
+
+scene.tranSmoke = {}
+scene.tranSmoke.blendOp = 'Lerp'
+scene.tranSmoke.zOp = 'ReadOnly'
+
+scene.parts1 = {}
+scene.parts1.blendOp = 'Lerp'
+scene.parts1.zOp = 'ReadOnly'
+
+scene.parts2 = {}
+scene.parts2.blendOp = 'Lerp'
+scene.parts2.zOp = 'ReadOnly'
+
+scene.addflash = {}
+scene.addflash.blendOp = 'Add'
+scene.addflash.zOp = 'ReadOnly'
+
+--scene.reed = {}
+--scene.pajreed1
+--scene.pajreed2
+
+return scene
