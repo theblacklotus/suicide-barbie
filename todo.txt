@@ -1,8 +1,8 @@
 _Scenes_
-.	'logo' scale uv scroller
 .	'tele2' mirror missing
 .	setup shaders in 'mix' scenes
 .	setup shaders in 'gun' scenes
++	'logo' scale uv scroller
 +	fix letters-on-char in 'text' scene
 +	'jealousy' text wrong animation
 +	fix 'mix' scenes
@@ -12,16 +12,16 @@ _Scenes_
 
 
 _Demo_
-+	TGA exporter
-+	rendering glitch
 .	fix deltatime calc
-+	blur in timeline
-+	scene-specific blur
-+	flashing
 .	shadows
 .	mirror
 ?	clear color from camera
 ?	'visibility' tracks
++	TGA exporter
++	rendering glitch
++	blur in timeline
++	scene-specific blur
++	flashing
 +	add audio to TimelineViewerPSP
 +	add time control to TimelineViewerPSP/ScenePlayerPSP
 +	blockReads for sequential containers
