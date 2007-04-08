@@ -1,0 +1,58 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'baked'
+scene.disableScalingPivots = 0
+
+scene.backADDenv = {}
+scene.backADDenv.blendOp = 'Add'
+scene.backADDenv.zOp = 'ReadOnly'
+scene.backADDenv.shader = 'shiny'
+scene.backADDenv.envMap = 'envback.tga'
+
+--scene.addflash.slice = 1
+
+bullet = {}
+bullet.shader = 'shiny'
+bullet.ambient = {1,1,1}
+bullet.emissive = {1,1,1}
+bullet.envMap = 'env1_2.tga'
+
+scene.bull = bullet
+scene.bull1 = bullet
+scene.bull2 = bullet
+scene.bull3 = bullet
+scene.bull4 = bullet
+scene.bull5 = bullet
+scene.bull6 = bullet
+scene.bull7 = bullet
+scene.bull8 = bullet
+scene.bull9 = bullet
+scene.bull10 = bullet
+scene.bull11 = bullet
+scene.bull12 = bullet
+scene.bull13 = bullet
+scene.bull14 = bullet
+scene.bull15 = bullet
+scene.bull16 = bullet
+scene.bull17 = bullet
+scene.bull18 = bullet
+scene.bull19 = bullet
+
+uvscroll = {}
+uvscroll.blendOp = 'MAdd'
+uvscroll.zOp = 'ReadOnly'
+
+scene.strip = uvscroll
+scene.strip1 = uvscroll
+scene.strip2 = uvscroll
+scene.strip3 = uvscroll
+scene.strip4 = uvscroll
+scene.strip5 = uvscroll
+scene.strip6 = uvscroll
+scene.strip7 = uvscroll
+scene.strip8 = uvscroll
+
+
+return scene
