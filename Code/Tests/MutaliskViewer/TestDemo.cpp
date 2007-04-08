@@ -12,7 +12,7 @@ void TestDemo::doFrame(float t)
 	setTime(t + timeOffset);
 	timeline.update(*this, frame());
 	static char count= 0;
-	if (count++ == 10)
+	if (count++ == 3)
 	{
 		count = 0;
 		updateTextures();
@@ -51,6 +51,7 @@ void TestDemo::onStart()
 		Item(35,	ms(71),		S_FUNC(face_on_flower)),
 		Item(48,	ms(80),		S_FUNC(flower)),
 
+		Item(50,	ms(00),		S_FUNC(flower_x_spiral)),
 		Item(55,	ms(00),		S_FUNC(spiral)),
 
 		Item(61,	ms(46),		S_FUNC(phone1)),
@@ -71,12 +72,12 @@ void TestDemo::onStart()
 		Item(115,	ms(22),		S_FUNC(jealousy)),
 
 		Item(122,	ms(90),		S_FUNC(beer1)),
-		Item(130,	ms(71),		S_FUNC(beer2)),
-		Item(138,	ms(51),		S_FUNC(garlic1)),
-		Item(146,	ms(32),		S_FUNC(garlic2)),
-		Item(154,	ms(13),		S_FUNC(mix1)),
-		Item(164,	ms(13),		S_FUNC(mix2)),
-		Item(169,	ms(13),		S_FUNC(mix3)),
+		Item(129.75,	ms(71),		S_FUNC(beer2)),
+		Item(137.75,	ms(51),		S_FUNC(garlic1)),
+		Item(145.60,	ms(32),		S_FUNC(garlic2)),
+		Item(153.50,	ms(13),		S_FUNC(mix1)),
+		Item(164.25,	ms(13),		S_FUNC(mix2)),
+		Item(169.25,	ms(13),		S_FUNC(mix3)),
 
 		Item(184,	ms(34),		S_FUNC(reload)),
 		Item(186,	ms(50),		S_FUNC(gun)),
@@ -87,6 +88,9 @@ void TestDemo::onStart()
  		Item(233,	ms(64),		S_FUNC(explodeGirl2)),
  		Item(241,	ms(94),		S_FUNC(windowBarbie1)),
  		Item(245,	ms(94),		S_FUNC(windowBarbie2)),
+ 		Item(250,	ms(20),		S_FUNC(endBarbie0)),
+ 		Item(252,	ms(20),		S_FUNC(endBarbie1)),
+ 		Item(276,	ms(64),		S_FUNC(endBarbie2)),
 
 		Item()
 	};
@@ -100,6 +104,8 @@ void TestDemo::onStart()
 	load(scn.flower,	"flower\\psp\\flower.msk");
 	load(scn.face,		"head\\psp\\head.msk");
 	prepareBalls(*scn.face.renderable);
+
+	load(scn.spiral,	"snake\\psp\\snake.msk");
 	
 	load(scn.phone1,	"telephone_s1\\psp\\telephone_s1.msk");
 	load(scn.phone2,	"telephone_s2\\psp\\telephone_s2.msk");
@@ -142,20 +148,27 @@ void TestDemo::onStart()
 
 	{Item items[] = {
 		Item(0,		ms(00),		S_FUNC(loadFlower),		Item::Once),
+		Item(23,	ms(15),		S_FUNC(loadSpiral),		Item::Once),
 		Item(40,	ms(71),		S_FUNC(loadTextScene),		Item::Once),
 		Item(44,	ms(00),		S_FUNC(loadPhoneA),		Item::Once),
 		Item(55.5,	ms(00),		S_FUNC(loadPhoneB),		Item::Once),
 
 		Item(69,	ms(64),		S_FUNC(loadText),		Item::Once),
+		Item(85,	ms(18),		S_FUNC(loadDreamPre),		Item::Once),
 
 		Item(92,	ms(18),		S_FUNC(loadDreamA),		Item::Once),
 		Item(115.5,	ms(22),		S_FUNC(loadWeaponScenes),		Item::Once),
-		Item(122,	ms(90),		S_FUNC(loadDreamB),		Item::Once),
+		Item(123,	ms(90),		S_FUNC(loadDreamB),		Item::Once),
 
 		Item(154.5,	ms(13),		S_FUNC(loadWeaponA),	Item::Once),
+		Item(165,	ms(13),		S_FUNC(loadExploScenes),	Item::Once),
 		Item(184,	ms(34),		S_FUNC(loadWeaponB),	Item::Once),
 
+		Item(208,	ms(00),		S_FUNC(loadWindowScenes),	Item::Once),
+		Item(226,	ms(00),		S_FUNC(loadWindow),	Item::Once),
 
+ 		Item(250,	ms(20),		S_FUNC(loadEndScenes),	Item::Once),
+ 		Item(251,	ms(20),		S_FUNC(loadEnd),	Item::Once),
 
 		Item()
 	};
@@ -307,9 +320,16 @@ void TestDemo::flower()
 	draw(scn.flower);
 }
 
+void TestDemo::flower_x_spiral()
+{
+	draw(scn.spiral, updateAnimatedProperties);
+	clearZ();
+	draw(scn.flower);
+}
+
 void TestDemo::spiral()
 {
-//	draw(scn.spiral);
+	draw(scn.spiral, updateAnimatedProperties);
 }
 
 void TestDemo::phone1()
@@ -479,17 +499,33 @@ void TestDemo::explodeGirl2()
 void TestDemo::windowBarbie1()
 {
 	draw(scn.windowBarbie, updateAnimatedProperties3);
-	ppBloom(0);
+	ppBloom(0.2f, 114, 200, 160);
 }
 void TestDemo::windowBarbie2()
 {
 	draw(scn.windowBarbie);
 	clearZ();
 	draw(scn.window, 2.5f);
-	ppBloom(0);
+	ppBloom(0.2f, 114, 200, 160);
 }
 
+void TestDemo::endBarbie0()
+{
+}
 
+void TestDemo::endBarbie1()
+{
+	draw(scn.endBack);
+	clearZ();
+	draw(scn.end);
+	ppBloom(0.2f, 114, 200, 160);
+}
+
+void TestDemo::endBarbie2()
+{
+	draw(scn.endBack);
+	ppBloom(0.2f, 114, 200, 160);
+}
 
 
 
@@ -506,22 +542,21 @@ void TestDemo::loadFlower()
 	loadTextures(scn.face);
 }
 
+void TestDemo::loadSpiral()
+{
+	printf("%s\n", __FUNCTION__);
+	unloadTextures(scn.walk);
+	unloadTextures(scn.walkBG);
+	loadTextures(scn.spiral);
+}
+
 int TestDemo::loadTextThreaded(SceSize args, void *argp)
 {
 	TestDemo* demo = *(TestDemo**)argp;
 
 	printf("running loadTextThreaded.\n");
-	printf("%x\n", demo);
-	printf("%x\n", &demo->scn.textWalk);
 	demo->load(demo->scn.textWalk, "text\\psp\\text.msk");
 	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("%x\n", demo->scn.textWalk.renderable);
 	prepareChars(*demo->scn.textWalk.renderable);
 	sceKernelExitDeleteThread(0);
 	return 0;
@@ -529,8 +564,6 @@ int TestDemo::loadTextThreaded(SceSize args, void *argp)
 
 void TestDemo::loadTextScene()
 {
-	unloadTextures(scn.walk);
-	unloadTextures(scn.walkBG);
 	unloadTextures(scn.logo);
 	scn.walk.renderable->mResources.animCharSet.reset();
 	{
@@ -542,8 +575,6 @@ void TestDemo::loadTextScene()
 			return;
 		}
 
-		printf("%x\n", this);
-		printf("%x\n", &scn.text);
 		void* p = this;
 		sceKernelStartThread(textth, sizeof(void*), &p);
 		sceKernelChangeThreadPriority(textth, 0x40);
@@ -570,6 +601,8 @@ void TestDemo::loadPhoneB()
 void TestDemo::loadText()
 {
 	printf("%s\n", __FUNCTION__);
+	scn.spiral.renderable->mResources.animCharSet.reset();
+	unloadTextures(scn.spiral);
 	unloadTextures(scn.phone1);
 	loadTextures(scn.textWalk);
 	loadTextures(scn.textBG);
@@ -577,19 +610,26 @@ void TestDemo::loadText()
 	loadTextures(scn.jealousy);
 }
 
-void TestDemo::loadDreamA()
+void TestDemo::loadDreamPre()
 {
+	printf("%s\n", __FUNCTION__);
 	unloadTextures(scn.phone2);
 	unloadTextures(scn.phone3);
-	unloadTextures(scn.phone4);
 	loadTextures(scn.beer1);
 	loadTextures(scn.beer2);
+}
+
+void TestDemo::loadDreamA()
+{
+	printf("%s\n", __FUNCTION__);
+	unloadTextures(scn.phone4);
 	loadTextures(scn.garlic1);
 	loadTextures(scn.garlic2);
 }
 
 void TestDemo::loadDreamB()
 {
+	printf("%s\n", __FUNCTION__);
 	unloadTextures(scn.textWalk);
 	unloadTextures(scn.textBG);
 	unloadTextures(scn.text);
@@ -603,30 +643,18 @@ int TestDemo::loadWeaponThreaded(SceSize args, void *argp)
 {
 	TestDemo* demo = *(TestDemo**)argp;
 
-	printf("running loadWeaponThreaded.\n");
 	demo->load(demo->scn.reload,	"reload\\psp\\reload.msk");
 	demo->load(demo->scn.m16,		"weapon3\\psp\\weapon3.msk");
 	demo->load(demo->scn.gun,		"weapon2\\psp\\gun.msk");
-	demo->load(demo->scn.bullet1,	"bull1\\psp\\bull1.msk");
-	demo->load(demo->scn.bullet2,	"bull2\\psp\\bull2.msk");
-	demo->load(demo->scn.expGirl1BG,"back_01\\psp\\back_01.msk");
-	demo->load(demo->scn.expGirl2BG,"back_02\\psp\\back_02.msk");
-	demo->load(demo->scn.expGirl1,	"exgirl1\\psp\\exgirl1.msk");
-	demo->load(demo->scn.expGirl2,	"exgirl2\\psp\\exgirl2.msk");
 
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
+	printf("done loadWeaponThreaded.***********************************************\n");
 	sceKernelExitDeleteThread(0);
 	return 0;
 }
 
 void TestDemo::loadWeaponScenes()
 {
+	printf("%s\n", __FUNCTION__);
 	scn.textWalk.renderable->mResources.animCharSet.reset();
 
 	SceUID th = sceKernelCreateThread("loadWeaponThreaded", loadWeaponThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
@@ -636,6 +664,78 @@ void TestDemo::loadWeaponScenes()
 		load(scn.reload,	"reload\\psp\\reload.msk");
 		load(scn.m16,		"weapon3\\psp\\weapon3.msk");
 		load(scn.gun,		"weapon2\\psp\\gun.msk");
+		return;
+	}
+
+	void* p = this;
+	sceKernelStartThread(th, sizeof(void*), &p);
+	sceKernelChangeThreadPriority(th, 0x40);
+}
+
+void TestDemo::loadWeaponA()
+{
+	printf("%s\n", __FUNCTION__);
+	unloadTextures(scn.beer1);
+	unloadTextures(scn.beer2);
+	unloadTextures(scn.garlic1);
+	unloadTextures(scn.garlic2);
+
+	loadTextures(scn.reload);
+	loadTextures(scn.gun);
+	loadTextures(scn.m16);
+}
+
+void TestDemo::loadWeaponB()
+{
+	printf("%s\n", __FUNCTION__);
+	unloadTextures(scn.mix1);
+	unloadTextures(scn.mix2);
+	unloadTextures(scn.mix3);
+
+	loadTextures(scn.bullet1);
+	loadTextures(scn.bullet2);
+	loadTextures(scn.expGirl1BG);
+	loadTextures(scn.expGirl2BG);
+	loadTextures(scn.expGirl1);
+	loadTextures(scn.expGirl2);
+}
+
+int TestDemo::loadExploThreaded(SceSize args, void *argp)
+{
+	TestDemo* demo = *(TestDemo**)argp;
+
+	printf("running loadExploThreaded.\n");
+	demo->load(demo->scn.bullet1,	"bull1\\psp\\bull1.msk");
+	demo->load(demo->scn.bullet2,	"bull2\\psp\\bull2.msk");
+	demo->load(demo->scn.expGirl1BG,"back_01\\psp\\back_01.msk");
+	demo->load(demo->scn.expGirl2BG,"back_02\\psp\\back_02.msk");
+	demo->load(demo->scn.expGirl1,	"exgirl1\\psp\\exgirl1.msk");
+	demo->load(demo->scn.expGirl2,	"exgirl2\\psp\\exgirl2.msk");
+
+	printf("done loadExploThreaded.***********************************************\n");
+	sceKernelExitDeleteThread(0);
+	return 0;
+}
+
+void TestDemo::loadExploScenes()
+{
+	scn.phone1.renderable->mResources.animCharSet.reset();	
+	scn.phone2.renderable->mResources.animCharSet.reset();	
+	scn.phone3.renderable->mResources.animCharSet.reset();	
+	scn.phone4.renderable->mResources.animCharSet.reset();	
+	scn.phoneTrans.renderable->mResources.animCharSet.reset();
+	scn.textBG.renderable->mResources.animCharSet.reset();	
+	scn.text.renderable->mResources.animCharSet.reset();		
+	scn.jealousy.renderable->mResources.animCharSet.reset();	
+	scn.beer1.renderable->mResources.animCharSet.reset();		
+	scn.beer2.renderable->mResources.animCharSet.reset();		
+	scn.garlic1.renderable->mResources.animCharSet.reset();	
+	scn.garlic2.renderable->mResources.animCharSet.reset();	
+
+	SceUID th = sceKernelCreateThread("loadExploThreaded", loadExploThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
+	if (th < 0)
+	{
+		printf("Error creating loadWeaponThreaded.\n");
 		load(scn.bullet1,	"bull1\\psp\\bull1.msk");
 		load(scn.bullet2,	"bull2\\psp\\bull2.msk");
 		load(scn.expGirl1BG,"back_01\\psp\\back_01.msk");
@@ -650,32 +750,6 @@ void TestDemo::loadWeaponScenes()
 	sceKernelChangeThreadPriority(th, 0x40);
 }
 
-void TestDemo::loadWeaponA()
-{
-	unloadTextures(scn.beer1);
-	unloadTextures(scn.beer2);
-	unloadTextures(scn.garlic1);
-	unloadTextures(scn.garlic2);
-
-	loadTextures(scn.reload);
-	loadTextures(scn.gun);
-	loadTextures(scn.m16);
-	loadTextures(scn.bullet1);
-}
-
-void TestDemo::loadWeaponB()
-{
-	unloadTextures(scn.mix1);
-	unloadTextures(scn.mix2);
-	unloadTextures(scn.mix3);
-
-	loadTextures(scn.bullet2);
-	loadTextures(scn.expGirl1BG);
-	loadTextures(scn.expGirl2BG);
-	loadTextures(scn.expGirl1);
-	loadTextures(scn.expGirl2);
-}
-
 int TestDemo::loadWindowThreaded(SceSize args, void *argp)
 {
 	TestDemo* demo = *(TestDemo**)argp;
@@ -685,31 +759,28 @@ int TestDemo::loadWindowThreaded(SceSize args, void *argp)
 						"suicidebarbie1\\psp\\suicidebarbie1.msk");
 	demo->load(demo->scn.window,	"window\\psp\\window.msk");
 
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
-	printf("done loadTextThreaded.***********************************************\n");
+	printf("done loadWindowThreaded.***********************************************\n");
 	sceKernelExitDeleteThread(0);
 	return 0;
 }
 
 void TestDemo::loadWindowScenes()
 {
+	scn.mix1.renderable->mResources.animCharSet.reset();	
+	scn.mix2.renderable->mResources.animCharSet.reset();	
+	scn.mix3.renderable->mResources.animCharSet.reset();	
 	scn.reload.renderable->mResources.animCharSet.reset();
 	scn.m16.renderable->mResources.animCharSet.reset();		
 	scn.gun.renderable->mResources.animCharSet.reset();
-	scn.bullet1.renderable->mResources.animCharSet.reset();
-	scn.expGirl1BG.renderable->mResources.animCharSet.reset();
-	scn.expGirl1.renderable->mResources.animCharSet.reset();	
+//	scn.bullet1.renderable->mResources.animCharSet.reset();
+//	scn.expGirl1BG.renderable->mResources.animCharSet.reset();
+//	scn.expGirl1.renderable->mResources.animCharSet.reset();	
 //	scn.bullet2.renderable->mResources.animCharSet.reset();	
 
-	SceUID th = sceKernelCreateThread("loadWeaponThreaded", loadWeaponThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
+	SceUID th = sceKernelCreateThread("loadWindowThreaded", loadWindowThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
 	if (th < 0)
 	{
-		printf("Error creating loadWeaponThreaded.\n");
+		printf("Error creating loadWindowThreaded.\n");
 		load(scn.windowBarbie,	
 						"suicidebarbie1\\psp\\suicidebarbie1.msk");
 		load(scn.window,	"window\\psp\\window.msk");
@@ -723,10 +794,73 @@ void TestDemo::loadWindowScenes()
 
 void TestDemo::loadWindow()
 {
-	unloadTextures(scn.bullet2);
+	unloadTextures(scn.bullet1);
 	unloadTextures(scn.expGirl1BG);
 	unloadTextures(scn.expGirl1);
 
 	loadTextures(scn.windowBarbie);
 	loadTextures(scn.window);
+}
+
+int TestDemo::loadEndThreaded(SceSize args, void *argp)
+{
+	TestDemo* demo = *(TestDemo**)argp;
+
+	printf("running loadEndThreaded.\n");
+	demo->load(demo->scn.endBack,	"suicidebarbie2\\psp\\suicidebarbie_back2.msk");
+	demo->load(demo->scn.end,	"suicidebarbie2\\psp\\suicidebarbie2.msk");
+
+	printf("done loadEndThreaded.***********************************************\n");
+	sceKernelExitDeleteThread(0);
+	return 0;
+}
+
+void TestDemo::loadEndScenes()
+{
+	scn.bullet1.renderable->mResources.animCharSet.reset();
+	scn.expGirl1BG.renderable->mResources.animCharSet.reset();
+	scn.expGirl1.renderable->mResources.animCharSet.reset();	
+	scn.bullet2.renderable->mResources.animCharSet.reset();	
+	scn.expGirl2BG.renderable->mResources.animCharSet.reset();
+	scn.expGirl2.renderable->mResources.animCharSet.reset();	
+	scn.windowBarbie.renderable->mResources.animCharSet.reset();	
+	scn.window.renderable->mResources.animCharSet.reset();
+
+	scn.expGirl1BG.renderable->mResources.meshes.resize(0);
+	scn.expGirl1.renderable->mResources.meshes.resize(0);	
+	scn.bullet2.renderable->mResources.meshes.resize(0);	
+	scn.expGirl2BG.renderable->mResources.meshes.resize(0);
+	scn.expGirl2.renderable->mResources.meshes.resize(0);	
+	scn.windowBarbie.renderable->mResources.meshes.resize(0);	
+	scn.window.renderable->mResources.meshes.resize(0);
+
+	unloadTextures(scn.bullet2);
+	unloadTextures(scn.expGirl2BG);
+	unloadTextures(scn.expGirl2);
+	unloadTextures(scn.windowBarbie);
+	unloadTextures(scn.window);
+
+		load(scn.endBack,	"suicidebarbie2\\psp\\suicidebarbie_back2.msk");
+		load(scn.end,	"suicidebarbie2\\psp\\suicidebarbie2.msk");
+	return;
+
+	SceUID th = sceKernelCreateThread("loadEndThreaded", loadEndThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
+	if (th < 0)
+	{
+		printf("Error creating loadEndThreaded.\n");
+		load(scn.endBack,	"suicidebarbie2\\psp\\suicidebarbie_back2.msk");
+		load(scn.end,	"suicidebarbie2\\psp\\suicidebarbie2.msk");
+		return;
+	}
+
+	void* p = this;
+	sceKernelStartThread(th, sizeof(void*), &p);
+	sceKernelChangeThreadPriority(th, 0x40);
+}
+
+void TestDemo::loadEnd()
+{
+
+	loadTextures(scn.endBack);
+	loadTextures(scn.end);
 }

@@ -20,6 +20,7 @@ class TestDemo : public mutalisk::BaseDemoPlayer
 		Scene	logo;
 		Scene	flower;
 		Scene	face;
+		Scene	spiral;
 
 		Scene	phone1;
 		Scene	phone2;
@@ -53,6 +54,8 @@ class TestDemo : public mutalisk::BaseDemoPlayer
 		Scene	expGirl2;
 		Scene	windowBarbie;
 		Scene	window;
+		Scene	endBack;
+		Scene	end;
 
 	};
 	Scenes							scn;
@@ -113,6 +116,7 @@ protected:
 	void face_on_flower_w_logo();
 	void face_on_flower();
 	void flower();
+	void flower_x_spiral();
 	void spiral();
 	void phone1(); void phone2(); void phone3(); void phone4();
 	void phone1_x__(); void phone2_x__(); void phone3_x__();
@@ -138,26 +142,37 @@ protected:
 	void explodeGirl2();
 	void windowBarbie1();
 	void windowBarbie2();
+	void endBarbie0();
+	void endBarbie1();
+	void endBarbie2();
 
 	static int loadTextThreaded(SceSize args, void *argp);
 	static int loadWeaponThreaded(SceSize args, void *argp);
+	static int loadExploThreaded(SceSize args, void *argp);
 	static int loadWindowThreaded(SceSize args, void *argp);
+	static int loadEndThreaded(SceSize args, void *argp);
 
 	// load points
 	void loadFlower();
+	void loadSpiral();
 	void loadTextScene();
 	void loadPhoneA();
 	void loadPhoneB();
 	void loadText();
 	void loadXXX();
 
+	void loadDreamPre();
 	void loadDreamA();
 	void loadDreamB();
 	void loadWeaponScenes();
 	void loadWeaponA();
+	void loadExploScenes();
 	void loadWeaponB();
 	void loadWindowScenes();
 	void loadWindow();
+
+	void loadEndScenes();
+	void loadEnd();
 };
 
 #endif // TEST_DEMO_H_
