@@ -18,10 +18,11 @@ credits.zOp = 'ReadOnly'
 scene.addmon2 = additive
 scene.addmoln = additive
 
-scene.alphacred = credits
 scene.alphacred1 = credits
 scene.alphacred2 = credits
-scene.alphacred3 = credits
-scene.alphacred4 = credits
+scene.aplhacred = credits
+scene.aplhacred2 = credits
+scene.aplhacred3 = credits
+scene.aplhacred4 = credits
 
 return scene
