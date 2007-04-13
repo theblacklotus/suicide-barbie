@@ -48,6 +48,8 @@ namespace mutalisk
 	void drawFullscreenQuad(Texture const& texture, Sampler const& sampler);
 
 	void gpuBlur(Texture& srcRenderTarget, Texture& dstRenderTarget, float blur);
+	void gpuBlurFast(Texture& srcRenderTarget, Texture& dstRenderTarget, float blur);
+	void gpuBlurFast2(Texture& srcRenderTarget, Texture& dstRenderTarget, float blur);
 
 }
 
