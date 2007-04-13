@@ -7,6 +7,7 @@ scene.RootNode.shader = 'lambert'
 --scene.RootNode.emissive = {1,1,1}
 scene.RootNode.diffuse = {1,1,1}
 --scene.RootNode.ambient = {1,1,1}
+scene.RootNode.enableAnimatedProperties = 1
 
 
 scene.tranSmoke = {}

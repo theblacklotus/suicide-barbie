@@ -37,12 +37,12 @@ scene.y = jealousy
 scene.pPlane1 = {}
 scene.pPlane1.blendOp = 'Lerp'
 scene.pPlane1.zOp = 'ReadOnly'
-scene.pPlane1.slice = 5
+scene.pPlane1.slice = 9
 
 scene.pPlane2 = {}
 scene.pPlane2.blendOp = 'Lerp'
 scene.pPlane2.zOp = 'ReadOnly'
-scene.pPlane2.slice = 5
+scene.pPlane2.slice = 9
 
 scene.snurrig = {}
 scene.snurrig.blendOp = 'Mul'

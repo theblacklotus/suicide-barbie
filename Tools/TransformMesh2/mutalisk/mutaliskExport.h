@@ -229,6 +229,7 @@ OutputScene gOutputScene;
 mutalisk::lua::PropertiesByNameT gProperties;
 float gGlobalScale = 0.01f;
 bool gEnableScalingPivots = true;
+bool gEnableAnimatedProperties = false;
 
 struct Curve
 {
@@ -1611,10 +1612,10 @@ void processAnimatedProperties(KFbxNode* pNode, OutputScene::Properties& propert
 	for (int i=0; i<count; i++)
 	{
 		KFbxUserProperty lProperty = pNode->GetProperty(i);
-		if (!lProperty.GetFlag(KFbxUserProperty::eUSER))
+		std::string propName(lProperty.GetLabel().Buffer());
+		if (!lProperty.GetFlag(KFbxUserProperty::eUSER) && propName != "Visibility")
 			continue; // process only user properties
 
-		std::string propName(lProperty.GetLabel().Buffer());
 		EFbxType propType = lProperty.GetPropertyDataType().GetType();
 
 		if (!lCurrentTakeNode->GetPropertyAnimation(&lProperty, 0))
@@ -2636,39 +2637,42 @@ std::auto_ptr<mutant::anim_bundle> processChannels(KFbxNode* pNode, KFbxTakeNode
 	std::auto_ptr<mutant::anim_bundle> animBundle(new mutant::anim_bundle());
 	animBundle->insertData(mutant::sTypeNames::VEC_QUAT_VEC, vqv);
 
-	// animated properties
-	OutputScene::Properties properties;
-	processAnimatedProperties(pNode, properties);
-	for(OutputScene::Properties::CurvePropertyMapT::iterator propAnimIt = properties.curves.begin();
-		propAnimIt != properties.curves.end(); ++propAnimIt)
+	if(gEnableAnimatedProperties)
 	{
-		// $TBD: support non-scalar properties
-		assert(propAnimIt->second[0]);
-		CurveSequentialSampler s(propAnimIt->second[0], 0.0f);
-
-		std::vector<float> keys;
-		std::vector<float> values;
-
+		// animated properties
+		OutputScene::Properties properties;
+		processAnimatedProperties(pNode, properties);
+		for(OutputScene::Properties::CurvePropertyMapT::iterator propAnimIt = properties.curves.begin();
+			propAnimIt != properties.curves.end(); ++propAnimIt)
 		{
-			KTime deltaTime; deltaTime.SetSecondDouble(ANIM_SAMPLING_FREQ);
-			KTime curTime = from;
-			KTime totalTime = last;
-			if(curTime == totalTime) totalTime += deltaTime;
+			// $TBD: support non-scalar properties
+			assert(propAnimIt->second[0]);
+			CurveSequentialSampler s(propAnimIt->second[0], 0.0f);
 
-			size_t keyCount = static_cast<size_t>(totalTime.GetSecondDouble()/ANIM_SAMPLING_FREQ+1);
-			keys.reserve(keyCount);
-			values.reserve(keyCount);
+			std::vector<float> keys;
+			std::vector<float> values;
 
-			for(; curTime < totalTime; curTime += deltaTime)
 			{
-				keys.push_back(static_cast<float>(curTime.GetSecondDouble()));		
-				values.push_back(s(curTime));
-			}
-		}
+				KTime deltaTime; deltaTime.SetSecondDouble(ANIM_SAMPLING_FREQ);
+				KTime curTime = from;
+				KTime totalTime = last;
+				if(curTime == totalTime) totalTime += deltaTime;
 
-		gCurves.push_back(CurveT(keys, values, 1));
-		mutant::knot_data<float,float>& vqv = gCurves.back().data;
-		animBundle->insertData(propAnimIt->first, vqv);
+				size_t keyCount = static_cast<size_t>(totalTime.GetSecondDouble()/ANIM_SAMPLING_FREQ+1);
+				keys.reserve(keyCount);
+				values.reserve(keyCount);
+
+				for(; curTime < totalTime; curTime += deltaTime)
+				{
+					keys.push_back(static_cast<float>(curTime.GetSecondDouble()));		
+					values.push_back(s(curTime));
+				}
+			}
+
+			gCurves.push_back(CurveT(keys, values, 1));
+			mutant::knot_data<float,float>& vqv = gCurves.back().data;
+			animBundle->insertData(propAnimIt->first, vqv);
+		}
 	}
 
 	return animBundle;
@@ -2773,7 +2777,14 @@ void beginScene(char const* sceneFileName)
 			if(properties.vectors[GlobalScale].size() > 0)
 				gGlobalScale = static_cast<float>(properties.vectors[GlobalScale][0]);
 		}
-		
+
+		const std::string EnableAnimatedProperties = "enableAnimatedProperties";
+		if(properties.hasVector(EnableAnimatedProperties))
+		{
+			if(properties.vectors[EnableAnimatedProperties].size() > 0)
+				gEnableAnimatedProperties = (properties.vectors[EnableAnimatedProperties][0] > 0);
+		}
+
 		const std::string EnableScalingPivots = "enableScalingPivots";
 		if(properties.hasVector(EnableScalingPivots))
 		{

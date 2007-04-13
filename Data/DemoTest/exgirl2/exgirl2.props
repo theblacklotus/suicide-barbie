@@ -4,6 +4,7 @@ scene = {}
 scene.RootNode = {}
 scene.RootNode.shader = 'lambert'
 scene.RootNode.diffuse = {1,1,1}
+scene.RootNode.enableAnimatedProperties = 1
 
 scene.tranSmoke = {}
 scene.tranSmoke.shader = 'baked'
