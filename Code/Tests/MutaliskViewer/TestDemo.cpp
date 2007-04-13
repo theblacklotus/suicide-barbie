@@ -40,7 +40,13 @@ namespace
 }
 void TestDemo::onStart()
 {
+	mutalisk::gDelayedTextureLoading = true;
 	timeOffset = 0;
+
+//	mutalisk::gDelayedTextureLoading = false;
+//	timeOffset = 91;
+
+
 	{Item items[] = {
 		Item(0,		ms(00),		S_FUNC(walk)),
 		Item(11,	ms(00),		S_FUNC(walk_far)),
@@ -90,13 +96,21 @@ void TestDemo::onStart()
  		Item(245,	ms(94),		S_FUNC(windowBarbie2)),
  		Item(250,	ms(20),		S_FUNC(endBarbie0)),
  		Item(250+1,	ms(20),		S_FUNC(endBarbie1)),
- 		Item(276+1+6,	ms(64),		S_FUNC(endBarbie2)),
+ 		Item(276+1+10,	ms(64),		S_FUNC(endBarbie2)),
 
 		Item()
 	};
 	timeline.addScript(items);}
 
-	mutalisk::gDelayedTextureLoading = true;
+	if(timeOffset >= 93)
+		goto __skipUntilText;
+	if(timeOffset >= 184)
+		goto __skipUntilGun;
+	if(timeOffset >= 208)
+		goto __skipUntilExpode;
+	if(timeOffset >= 242)
+		goto __skipUntilWindow;
+
 	load(scn.walk,		"walk\\psp\\walk.msk");
 	load(scn.walkBG,	"walk\\psp\\back.msk");
 	load(scn.logo,		"logo\\psp\\logo.msk");
@@ -113,8 +127,12 @@ void TestDemo::onStart()
 	load(scn.phone4,	"telephone_s4\\psp\\telephone_s4.msk");
 	load(scn.phoneTrans,"telephone_trans\\psp\\telephone_trans.msk");
 
-//	load(scn.textWalk,	"text\\psp\\text.msk");
-//	prepareChars(*scn.textWalk.renderable);
+__skipUntilText:
+	if (!mutalisk::gDelayedTextureLoading)
+	{
+		load(scn.textWalk,	"text\\psp\\text.msk");
+		prepareChars(*scn.textWalk.renderable);
+	}
 	load(scn.textBG,	"text\\psp\\back.msk");
 	load(scn.text,		"text\\psp\\undertext.msk");
 	load(scn.jealousy,	"jealousy\\psp\\jealousy.msk");
@@ -129,57 +147,94 @@ void TestDemo::onStart()
 	load(scn.mix2,		"mix\\mix2\\psp\\mix2.msk");
 	load(scn.mix3,		"mix\\mix3\\psp\\mix3.msk");
 
-/*	load(scn.reload,	"reload\\psp\\reload.msk");
-	load(scn.m16,		"weapon3\\psp\\weapon3.msk");
-	load(scn.gun,		"weapon2\\psp\\gun.msk");
-	load(scn.bullet1,	"bull1\\psp\\bull1.msk");
-	load(scn.bullet2,	"bull2\\psp\\bull2.msk");
-	load(scn.expGirl1BG,"back_01\\psp\\back_01.msk");
-	load(scn.expGirl2BG,"back_02\\psp\\back_02.msk");
-	load(scn.expGirl1,	"exgirl1\\psp\\exgirl1.msk");
-	load(scn.expGirl2,	"exgirl2\\psp\\exgirl2.msk");
-	load(scn.windowBarbie,	
-						"suicidebarbie1\\psp\\suicidebarbie1.msk");
-	load(scn.window,	"window\\psp\\window.msk");
-*/
+__skipUntilGun:
+	if (!mutalisk::gDelayedTextureLoading)
+	{
+		load(scn.reload,	"reload\\psp\\reload.msk");
+		load(scn.m16,		"weapon3\\psp\\weapon3.msk");
+		load(scn.gun,		"weapon2\\psp\\gun.msk");
+	}
 
-	if (mutalisk::gDelayedTextureLoading == false)
-		return;
+__skipUntilExpode:
+	if (!mutalisk::gDelayedTextureLoading)
+	{
+		load(scn.bullet1,	"bull1\\psp\\bull1.msk");
+		load(scn.bullet2,	"bull2\\psp\\bull2.msk");
+		load(scn.expGirl1BG,"back_01\\psp\\back_01.msk");
+		load(scn.expGirl2BG,"back_02\\psp\\back_02.msk");
+		load(scn.expGirl1,	"exgirl1\\psp\\exgirl1.msk");
+		load(scn.expGirl2,	"exgirl2\\psp\\exgirl2.msk");
+	}
 
-	{Item items[] = {
-		Item(0,		ms(00),		S_FUNC(loadFlower),		Item::Once),
-		Item(23,	ms(15),		S_FUNC(loadSpiral),		Item::Once),
-		Item(40,	ms(71),		S_FUNC(loadTextScene),		Item::Once),
-		Item(44,	ms(00),		S_FUNC(loadPhoneA),		Item::Once),
-		Item(55.5,	ms(00),		S_FUNC(loadPhoneB),		Item::Once),
+__skipUntilWindow:
+	if (!mutalisk::gDelayedTextureLoading)
+	{
+		load(scn.windowBarbie,	
+							"suicidebarbie1\\psp\\suicidebarbie1.msk");
+		load(scn.window,	"window\\psp\\window.msk");
+	}
 
-		Item(69,	ms(64),		S_FUNC(loadText),		Item::Once),
-		Item(85,	ms(18),		S_FUNC(loadDreamPre),		Item::Once),
+	if (!mutalisk::gDelayedTextureLoading)
+	{
+		load(scn.endBack,	"suicidebarbie2\\psp\\suicidebarbie_back2.msk");
+		load(scn.end,		"suicidebarbie2\\psp\\suicidebarbie2.msk");
+	}
 
-		Item(92,	ms(18),		S_FUNC(loadDreamA),		Item::Once),
-		Item(115.5,	ms(22),		S_FUNC(loadWeaponScenes),		Item::Once),
-		Item(123,	ms(90),		S_FUNC(loadDreamB),		Item::Once),
+	if (mutalisk::gDelayedTextureLoading)
+	{
+		{Item items[] = {
+			Item(0,		ms(00),		S_FUNC(loadFlower),		Item::Once),
+			Item(23,	ms(15),		S_FUNC(loadSpiral),		Item::Once),
+			Item(40,	ms(71),		S_FUNC(loadTextScene),		Item::Once),
+			Item(44,	ms(00),		S_FUNC(loadPhoneA),		Item::Once),
+			Item(55.5,	ms(00),		S_FUNC(loadPhoneB),		Item::Once),
 
-		Item(154.5,	ms(13),		S_FUNC(loadWeaponA),	Item::Once),
-		Item(165,	ms(13),		S_FUNC(loadExploScenes),	Item::Once),
-		Item(184,	ms(34),		S_FUNC(loadWeaponB),	Item::Once),
+			Item(69,	ms(64),		S_FUNC(loadText),		Item::Once),
+			Item(85,	ms(18),		S_FUNC(loadDreamPre),		Item::Once),
 
-		Item(208,	ms(00),		S_FUNC(loadWindowScenes),	Item::Once),
-		Item(226,	ms(00),		S_FUNC(loadWindow),	Item::Once),
+			Item(92,	ms(18),		S_FUNC(loadDreamA),		Item::Once),
+			Item(115.5,	ms(22),		S_FUNC(loadWeaponScenes),		Item::Once),
+			Item(123,	ms(90),		S_FUNC(loadDreamB),		Item::Once),
 
- 		Item(250,	ms(20),		S_FUNC(loadEndScenes),	Item::Once),
+			Item(154.5,	ms(13),		S_FUNC(loadWeaponA),	Item::Once),
+			Item(165,	ms(13),		S_FUNC(loadExploScenes),	Item::Once),
+			Item(184,	ms(34),		S_FUNC(loadWeaponB),	Item::Once),
 
-		Item()
-	};
-	timeline.addScript(items);}
+			Item(208,	ms(00),		S_FUNC(loadWindowScenes),	Item::Once),
+			Item(226,	ms(00),		S_FUNC(loadWindow),	Item::Once),
 
-	loadTextures(scn.walk, false);
-	loadTextures(scn.walkBG, false);
-	loadTextures(scn.logo, false);
+ 			Item(250,	ms(20),		S_FUNC(loadEndScenes),	Item::Once),
+
+			Item()
+		};
+		timeline.addScript(items);}
+
+		loadTextures(scn.walk, false);
+		loadTextures(scn.walkBG, false);
+		loadTextures(scn.logo, false);
+	}
+
+	if(timeOffset > 0)
+	{
+		timeline.jump(*this, mutalisk::timeToFrame(timeOffset));
+	}
 }
 
 namespace {
 float gVScale = 1.0f;
+void updateAnimatedVisibility(mutalisk::RenderableScene const& scene)
+{
+	const mutalisk::array<mutalisk::data::scene::Actor>& actors = scene.mBlueprint.actors;
+	float time = scene.mState.time;
+
+	// update properties
+	for(size_t q = 0; q < actors.size(); ++q)
+	{
+		mutalisk::data::scene::Actor& actor = const_cast<mutalisk::data::scene::Actor&>(actors[q]);
+		actor.active = (scene.mState.sampleAnimation(actor.nodeName, "Visibility", time, 1.0f) > 0.0f);
+	}
+}
+
 void updateAnimatedProperties(mutalisk::RenderableScene const& scene)
 {
 	float vScale = gVScale;
@@ -229,7 +284,7 @@ void updateAnimatedProperties2(mutalisk::RenderableScene const& scene)
 		{
 			if(hasUVScroll)
 			{
-				actor.materials[w].shaderInput.vOffset = 2.0f - v*2.0f;
+				actor.materials[w].shaderInput.vOffset = (vScale + 1.0f) - v*(vScale + 1.0f);//- v*2.0f;
 				actor.materials[w].shaderInput.vScale = -vScale;
 				//actor.materials[w].shaderInput.vOffset = 1.0f - v*(vScale + 1.0f);
 				//actor.materials[w].shaderInput.vScale = vScale;
@@ -259,11 +314,55 @@ void updateAnimatedProperties3(mutalisk::RenderableScene const& scene)
 	}
 }
 
+void updateAnimatedProperties4(mutalisk::RenderableScene const& scene)
+{
+	const mutalisk::array<mutalisk::data::scene::Actor>& actors = scene.mBlueprint.actors;
+	float time = scene.mState.time;
+
+	// update properties
+	for(size_t q = 0; q < actors.size(); ++q)
+	{
+		float f = std::max(std::min(8.0f - time, 1.0f), 0.0f);
+
+		mutalisk::data::scene::Actor& actor = const_cast<mutalisk::data::scene::Actor&>(actors[q]);
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+		{
+			actor.materials[w].shaderInput.diffuse.r = f;
+			actor.materials[w].shaderInput.diffuse.g = f;
+			actor.materials[w].shaderInput.diffuse.b = f;
+		}
+	}
+}
+
+void updateAnimatedProperties4_short(mutalisk::RenderableScene const& scene)
+{
+	const mutalisk::array<mutalisk::data::scene::Actor>& actors = scene.mBlueprint.actors;
+	float time = scene.mState.time;
+
+	// update properties
+	for(size_t q = 0; q < actors.size(); ++q)
+	{
+		float f = std::max(std::min((8.5f - time)*2.0f, 1.0f), 0.0f);
+
+		mutalisk::data::scene::Actor& actor = const_cast<mutalisk::data::scene::Actor&>(actors[q]);
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+		{
+			actor.materials[w].shaderInput.emissive.r = f;
+			actor.materials[w].shaderInput.emissive.g = f;
+			actor.materials[w].shaderInput.emissive.b = f;
+			actor.materials[w].shaderInput.ambient.r = f;
+			actor.materials[w].shaderInput.ambient.g = f;
+			actor.materials[w].shaderInput.ambient.b = f;
+		}
+	}
+}
 
 }
 
 void TestDemo::walk()
 {
+//	printf("TestDemo::walk\n");
+
 	scn.walk.znear = 1;
 	scn.walk.zfar = 15;
 
@@ -275,6 +374,8 @@ void TestDemo::walk()
 }
 void TestDemo::walk_far()
 {
+//	printf("TestDemo::walk_far\n");
+
 	scn.walk.znear = 3;
 	scn.walk.zfar = 8;
 
@@ -401,8 +502,6 @@ void TestDemo::text()
 	draw(scn.text);
 	clearZ();
 	draw(scn.textWalk, &mutalisk::renderChars);
-
-	ppBloom(0);
 }
 void TestDemo::jealousy()
 {
@@ -438,7 +537,7 @@ void TestDemo::mix1()
 }
 void TestDemo::mix2()
 {
-	draw(scn.mix2);
+	draw(scn.mix2, updateAnimatedVisibility);
 	ppBloom(0.9f, 1, 212, 114);
 }
 void TestDemo::mix3()
@@ -470,8 +569,8 @@ void TestDemo::gun()
 }
 void TestDemo::bullet1()
 {
-	gVScale = 3.0f;
-	draw(scn.bullet1, updateAnimatedProperties);
+	gVScale = 3.0f;//3.0f;
+	draw(scn.bullet1, updateAnimatedProperties2);
 	ppBloom(0);
 }
 void TestDemo::bullet2()
@@ -480,36 +579,46 @@ void TestDemo::bullet2()
 	scn.bullet2.zfar = 100;
 	draw(scn.bullet2, updateAnimatedProperties);
 	ppBloom(0);
+	restart(scn.expGirl1);
 }
 void TestDemo::explodeGirl1()
 {
 	draw(scn.expGirl1BG);
 	clearZ();
-	draw(scn.expGirl1);
+	draw(scn.expGirl1, updateAnimatedVisibility);
 	ppBloom(0);
 }
 void TestDemo::explodeGirl2()
 {
 	draw(scn.expGirl2BG);
 	clearZ();
-	draw(scn.expGirl2);
+	draw(scn.expGirl2, updateAnimatedVisibility);
 	ppBloom(0);
+
+	restart(scn.window);
+	restart(scn.windowBarbie);
 }
 void TestDemo::windowBarbie1()
 {
+//	printf("TestDemo::windowBarbie1\n");
+
 	draw(scn.windowBarbie, updateAnimatedProperties3);
 	ppBloom(0.2f, 114, 200, 160);
 }
 void TestDemo::windowBarbie2()
 {
-	draw(scn.windowBarbie);
+//	draw(scn.windowBarbie);
+	draw(scn.windowBarbie, updateAnimatedProperties4);
 	clearZ();
-	draw(scn.window, 2.5f);
+	draw(scn.window, updateAnimatedProperties4_short, 2.3f);//2.5f);
 	ppBloom(0.2f, 114, 200, 160);
 }
 
 void TestDemo::endBarbie0()
 {
+//	restart(scn.window);
+//	draw(scn.window, 2.5f);
+//	ppBloom(0.2f, 114, 200, 160);
 }
 
 void TestDemo::endBarbie1()

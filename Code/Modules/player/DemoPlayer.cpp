@@ -94,7 +94,7 @@ void BaseDemoPlayer::processJobQueue()
 	{
 		ASSERT(mJobQueue[q]);
 		mJobQueue[q]->process();
-		delete mJobQueue[q];
+		//delete mJobQueue[q];
 	}
 	mJobQueue.resize(0);
 }
@@ -232,6 +232,9 @@ struct RenderJob : public BaseDemoPlayer::IJob
 		mutalisk::render(*renderContext, *scene->renderable);
 	}
 };
+static const unsigned JobCacheSize = 8;
+RenderJob gRenderJob[JobCacheSize];
+unsigned gRenderJobIndex = 0;
 
 void BaseDemoPlayer::draw(Scene const& scene, OnDrawT onDraw, float timeScale)
 {
@@ -250,8 +253,8 @@ void BaseDemoPlayer::draw(Scene const& scene, OnDrawT onDraw, float timeScale)
 	//renderContext.zfar = scene.zfar;
 
 	onDraw(*scene.renderable);
-//	mutalisk::render(renderContext, *scene.renderable);
-	RenderJob* job = new RenderJob;
+//	RenderJob* job = new RenderJob;
+	RenderJob* job = &gRenderJob[gRenderJobIndex]; gRenderJobIndex = (gRenderJobIndex+1)%JobCacheSize;
 	job->scene = &scene;
 	job->renderContext = &renderContext;
 	mJobQueue.push_back(job);
@@ -300,10 +303,13 @@ struct ClearZJob : public BaseDemoPlayer::IJob
 	#endif
 	}
 };
+ClearZJob gClearZJob[JobCacheSize];
+unsigned gClearZJobIndex = 0;
 
 void BaseDemoPlayer::clearZ()
 {
-	ClearZJob* job = new ClearZJob;
+//	ClearZJob* job = new ClearZJob;
+	ClearZJob* job = &gClearZJob[gClearZJobIndex]; gClearZJobIndex = (gClearZJobIndex+1)%JobCacheSize;
 	job->renderContext = &renderContext;
 	mJobQueue.push_back(job);
 }
@@ -322,9 +328,14 @@ struct BloomJob : public BaseDemoPlayer::IJob
 		*dstSettings = srcSettings;
 	}
 };
+BloomJob gBloomJob[JobCacheSize];
+unsigned gBloomJobIndex = 0;
+
+
 void BaseDemoPlayer::ppBloom(float strength, unsigned threshold, unsigned srcModifier, unsigned dstModifier)
 {
-	BloomJob* job = new BloomJob;
+//	BloomJob* job = new BloomJob;
+	BloomJob* job = &gBloomJob[gBloomJobIndex]; gBloomJobIndex = (gBloomJobIndex+1)%JobCacheSize;
 	job->dstSettings = &mPPSettings;
 	job->srcSettings.strength = strength;
 	job->srcSettings.threshold = threshold;

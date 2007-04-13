@@ -55,7 +55,8 @@ extern unsigned char logo_start[];
 #define SCR_WIDTH (480)
 #define SCR_HEIGHT (272)
 
-std::string gPathPrefix = "ms0:Data/DemoTest/";//"ms0:PSP/TESTDATA/";
+std::string gPathPrefix = "ms0:BarbieData/";//"ms0:PSP/TESTDATA/";
+//std::string gPathPrefix = "host1:DemoTest/";
 
 
 #include "TestDemo.h"
@@ -126,7 +127,7 @@ void bloom(mutalisk::Texture& mainRenderTarget, mutalisk::Texture& renderTarget,
 		mutalisk::Sampler sampler;
 		sampler.addressU = GU_CLAMP;
 		sampler.addressV = GU_CLAMP;
-		sampler.minFilter = GU_NEAREST;
+		sampler.minFilter = GU_LINEAR;//GU_NEAREST;
 		sampler.magFilter = GU_NEAREST;
 
 		mutalisk::Region uvRegion;
@@ -140,7 +141,8 @@ void bloom(mutalisk::Texture& mainRenderTarget, mutalisk::Texture& renderTarget,
 			drawFullscreenQuad(mainRenderTargetAsSource, sampler, uvRegion);
 			sceGuDisable(GU_BLEND);
 
-			mutalisk::gpuBlur(renderTarget, renderTarget2, blurStrength);
+			//mutalisk::gpuBlur(renderTarget, renderTarget2, blurStrength);
+			mutalisk::gpuBlurFast(renderTarget, renderTarget2, blurStrength);
 		mutalisk::popState();
 	}
 
