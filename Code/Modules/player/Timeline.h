@@ -49,6 +49,18 @@ namespace mutalisk
 			mScripts.push_back(std::make_pair(newScript, -1));
 		}
 
+		void jump(Context& ctx, unsigned frame)
+		{
+			for(typename RunningScripts::iterator it = mScripts.begin(); it != mScripts.end(); ++it)
+			{
+				for(unsigned currScriptIt = 0; currScriptIt < it->first.size(); ++currScriptIt)
+				{
+					if(frame >= it->first[currScriptIt].startFrame)
+						it->second = currScriptIt;
+				}
+			}
+		}
+
 		void update(Context& ctx, unsigned frame)
 		{
 			for(typename RunningScripts::iterator it = mScripts.begin(); it != mScripts.end(); ++it)
