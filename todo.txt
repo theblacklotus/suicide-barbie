@@ -1,14 +1,14 @@
 _Scenes_
 .	'tele2' mirror missing
-.	setup shaders in 'mix' scenes
-.	setup shaders in 'gun' scenes
++	setup envmaps in 'mix' scenes
++	setup envmaps in 'gun' scenes
++	make beer less opaque
 +	'logo' scale uv scroller
 +	fix letters-on-char in 'text' scene
 +	'jealousy' text wrong animation
 +	fix 'mix' scenes
 +	'reload' gun/hands are not visible
 +	'reload' gun/clip translations are wrong (bake?)
-
 
 
 _Demo_
