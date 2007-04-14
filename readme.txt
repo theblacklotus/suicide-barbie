@@ -6,15 +6,15 @@ o	almost a party version released at Breakpoint 2007
 
 o	credits
 
-	 direction, graphics:	Louie/TBL/CNCD
+	 direction, graphics:	Louie / TBL^CNCD
 	 graphics:		Jintz
-	 code:			ReJ/Nesnausk!
-	 code:			EriQue/SonikClique
+	 code:			ReJ / Nesnausk!
+	 code:			eriQue / soniK cliQue
 	 music:			Elusive
 	 animations:		Micke
 	 animations:		Johra
 	 animations:		Duffe
-	 additional graphics:	Eracore
+	 additional graphics:	Eracore / Rebels
 	 platform consultant:	Chip
 
 o	additional credits
