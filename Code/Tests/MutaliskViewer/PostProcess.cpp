@@ -331,8 +331,8 @@ void gpuBlur(Texture& srcRenderTarget, Texture& dstRenderTarget, float blur)
 	std::swap(srcRenderTarget, dstRenderTarget);
 }
 
-void gpuBlurFast(Texture& srcRenderTarget, Texture& dstRenderTarget, float blur)
-{
+void gpuBlurFast(Texture& srcRenderTarget, Texture& dstRenderTarget, float blur, unsigned quality)
+{	
 	float halfPixelW = 0.5f;
 	float halfPixelH = 0.5f;
 	float offsetW = halfPixelW;
@@ -340,15 +340,18 @@ void gpuBlurFast(Texture& srcRenderTarget, Texture& dstRenderTarget, float blur)
 
 	float offsets[] = {
 		 1.0f,
-		 3.0f,
-		 5.0f,
-//		 7.0f,
 		-1.0f,
+		 3.0f,
 		-3.0f,
+		 5.0f,
 		-5.0f,
-//		-7.0f,
+		 7.0f,
+		-7.0f,
 	};
-	float const offsetScaler = blur * 3.0f;// 1.9f;
+	unsigned int quadCount = sizeof(offsets) / sizeof(float);
+	ASSERT(quality > 1);
+	ASSERT(quality <= quadCount/2);
+	float const offsetScaler = blur * float(2 + quadCount/2 - quality);
 
 	Sampler sampler;
 	sampler.addressU = GU_CLAMP;
@@ -356,7 +359,7 @@ void gpuBlurFast(Texture& srcRenderTarget, Texture& dstRenderTarget, float blur)
 	sampler.minFilter = GU_LINEAR;
 	sampler.magFilter = GU_LINEAR;
 
-	unsigned int quadCount = sizeof(offsets) / sizeof(float);
+	quadCount = quality * 2;
 	unsigned int blendMultiplier = GU_ARGB(0, 0x100 / quadCount, 0x100 / quadCount, 0x100 / quadCount);
 	for(int q = 0; q < 2; ++q)
 	{

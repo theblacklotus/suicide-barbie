@@ -55,7 +55,7 @@ extern unsigned char logo_start[];
 #define SCR_WIDTH (480)
 #define SCR_HEIGHT (272)
 
-std::string gPathPrefix = "ms0:BarbieData/";//"ms0:PSP/TESTDATA/";
+std::string gPathPrefix = "ms0:BarbieData/";
 //std::string gPathPrefix = "host1:DemoTest/";
 
 
@@ -107,7 +107,7 @@ float getDeltaTime()
 }
 
 void bloom(mutalisk::Texture& mainRenderTarget, mutalisk::Texture& renderTarget, mutalisk::Texture& renderTarget2,
-	float blurStrength, unsigned blurThreshold, unsigned blurSrcModifier, unsigned blurDstModifier) 
+	float blurStrength, unsigned blurThreshold, unsigned blurSrcModifier, unsigned blurDstModifier, unsigned quality) 
 {
 	{
 		mutalisk::setRenderTarget(renderTarget);
@@ -142,7 +142,7 @@ void bloom(mutalisk::Texture& mainRenderTarget, mutalisk::Texture& renderTarget,
 			sceGuDisable(GU_BLEND);
 
 			//mutalisk::gpuBlur(renderTarget, renderTarget2, blurStrength);
-			mutalisk::gpuBlurFast(renderTarget, renderTarget2, blurStrength);
+			mutalisk::gpuBlurFast(renderTarget, renderTarget2, blurStrength, quality);
 		mutalisk::popState();
 	}
 
@@ -177,7 +177,7 @@ int main(int argc, char* argv[])
 	setupCallbacks();
 
 	sceKernelVolatileMemLock(0, &gVolatileMem, &gVolatileMemSize);
-	printf("gVolatileMem = %x ; gVolatileMemSize = %i\n", gVolatileMem, gVolatileMemSize);
+	printf("gVolatileMem = %x ; gVolatileMemSize = %i\n", (unsigned)gVolatileMem, gVolatileMemSize);
 
 	// setup GU
 	mutalisk::Texture mainRenderTarget;
@@ -274,6 +274,8 @@ int main(int argc, char* argv[])
 //	streamAT3File((gPathPrefix + "music/suicidebarbie.at3").c_str());
 
 
+//;;mutalisk::TimeBlock updateTime, /*processTime, */ loopTime, renderTime, finishAndSyncTime;
+
 	bool doPrintInfo = false;
 	gTimeControl.restart(true);
 	while(running())
@@ -282,7 +284,6 @@ int main(int argc, char* argv[])
 		if(sceCtrlPeekBufferPositive(&pad, 1) && false)
 		{
 			float speedModifier = 1.0f;
-			//if (pad.Buttons != oldPad.Buttons)
 			{
 				if (pad.Buttons & PSP_CTRL_CROSS)
 					speedModifier = 0.25;
@@ -320,13 +321,47 @@ int main(int argc, char* argv[])
 			}
 			oldPad = pad;
 		}
+
+
 		float d = gTimeControl.getDiscontinuity();
 		if (d != 0.f)
 		{
 			streamWaveNudge((int)(d /*seconds*/ * 44100 /*samples per sec*/ * 4/*bytes per sample*/ * 4));
 		}
-;;mutalisk::TimeBlock updateTime, /*processTime, */renderTime, loopTime, finishAndSyncTime;
-;;loopTime.peek();
+//;;loopTime.peek();
+
+		{
+//;;updateTime.peek();
+			//gDemo->processJobQueue();
+			gDemo->updateFrame(gTimeControl.update(getDeltaTime()));
+//;;updateTime.peek();
+
+//;;finishAndSyncTime.peek();
+			sceGuSync(0,0);
+//;;finishAndSyncTime.peek();
+
+;;static mutalisk::TimeBlock frameTime; frameTime.peek();
+
+			if(doPrintInfo)
+			{
+				pspDebugScreenSetOffset((int)mainRenderTarget.vramAddr);
+				pspDebugScreenSetXY(0,0);
+				pspDebugScreenPrintf("mspf(%f)", frameTime.ms());
+				//pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
+				//pspDebugScreenPrintf("\n");
+				//pspDebugScreenPrintf("mutalisk: update(%f) render(%f) sceneTime(%f)", updateTime.ms(), renderTime.ms(), gTimeControl.time());
+				//pspDebugScreenPrintf("\n");
+				//pspDebugScreenPrintf("allocated memory = %i", allocated_memory);
+			}
+
+			sceDisplayWaitVblankStart();
+			mainRenderTarget2.vramAddr = mainRenderTarget.vramAddr;
+			mainRenderTarget.vramAddr = sceGuSwapBuffers();
+
+			saveAnimFrame(mainRenderTarget2.vramAddr);
+			scePowerTick(0);
+		}
+//;;loopTime.peek();
 
 		static int listId = 0;
 		listId = 1-listId;
@@ -370,52 +405,20 @@ int main(int argc, char* argv[])
 				gumMultMatrix(&projMatrix,&projMatrix,&t);
 			}
 
-;;renderTime.peek();
-			static float ttt = 0; ttt += 0.033f;
-//			gDemo->doFrame(gTimeControl.update(getDeltaTime()));
-			gDemo->processJobQueue();
-;;renderTime.peek();
+//;;renderTime.peek();
+			gDemo->renderFrame();
+//;;renderTime.peek();
 
 			if(gDemo->ppSettings().strength > 0.0f && gDemo->ppSettings().srcModifier > 0)
 			{
 				bloom(mainRenderTarget, *renderTarget, *renderTarget2, 
 					gDemo->ppSettings().strength, gDemo->ppSettings().threshold,
-					gDemo->ppSettings().srcModifier, gDemo->ppSettings().dstModifier);
+					gDemo->ppSettings().srcModifier, gDemo->ppSettings().dstModifier,
+					gDemo->ppSettings().quality);
 			}
 		}
 
 		sceGuFinish();
-
-;;updateTime.peek();
-		//gDemo->processJobQueue();
-		gDemo->doFrame(gTimeControl.update(getDeltaTime()));
-;;updateTime.peek();
-
-;;finishAndSyncTime.peek();
-		sceGuSync(0,0);
-;;finishAndSyncTime.peek();
-
-;;loopTime.peek();
-;;static mutalisk::TimeBlock frameTime; frameTime.peek();
-
-		if(doPrintInfo)
-		{
-			pspDebugScreenSetOffset((int)mainRenderTarget.vramAddr);
-			pspDebugScreenSetXY(0,0);
-			pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
-			pspDebugScreenPrintf("\n");
-			pspDebugScreenPrintf("mutalisk: update(%f) render(%f) sceneTime(%f)", updateTime.ms(), renderTime.ms(), gTimeControl.time());
-			pspDebugScreenPrintf("\n");
-			pspDebugScreenPrintf("allocated memory = %i", allocated_memory);
-		}
-
-		sceDisplayWaitVblankStart();
-		mainRenderTarget2.vramAddr = mainRenderTarget.vramAddr;
-		mainRenderTarget.vramAddr = sceGuSwapBuffers();
-
-		saveAnimFrame(mainRenderTarget2.vramAddr);
-		scePowerTick(0);
-
 		val++;
 	}
 

@@ -31,9 +31,11 @@ namespace mutalisk
 
 	private:
 		typedef std::vector<Item>							ScriptT;
-		typedef std::vector<std::pair<ScriptT, unsigned> >	RunningScripts;
+		typedef std::vector<std::pair<ScriptT, unsigned> >	RunningScriptsT;
+		typedef std::vector<TimelineFuncT>					TimelineFuncsT;
 
-		RunningScripts	mScripts;
+		RunningScriptsT	mScripts;
+		TimelineFuncsT	mGatheredFuncs;
 
 	public:
 		void addScript(Item items[])
@@ -47,11 +49,18 @@ namespace mutalisk
 			ScriptT newScript(itemCount);
 			std::copy(items, items + itemCount, newScript.begin());
 			mScripts.push_back(std::make_pair(newScript, -1));
+			mGatheredFuncs.reserve(mScripts.size());
+		}
+
+		void update(Context& ctx, unsigned frame)
+		{
+			gather(ctx, frame);
+			run(ctx);
 		}
 
 		void jump(Context& ctx, unsigned frame)
 		{
-			for(typename RunningScripts::iterator it = mScripts.begin(); it != mScripts.end(); ++it)
+			for(typename RunningScriptsT::iterator it = mScripts.begin(); it != mScripts.end(); ++it)
 			{
 				for(unsigned currScriptIt = 0; currScriptIt < it->first.size(); ++currScriptIt)
 				{
@@ -61,9 +70,22 @@ namespace mutalisk
 			}
 		}
 
-		void update(Context& ctx, unsigned frame)
+		void run(Context& ctx)
 		{
-			for(typename RunningScripts::iterator it = mScripts.begin(); it != mScripts.end(); ++it)
+			for(typename TimelineFuncsT::iterator it = mGatheredFuncs.begin(); it != mGatheredFuncs.end(); ++it)
+			{
+				TimelineFuncT func = *it;
+				if (func == 0)
+					printf("func is 0!!\n");
+				else
+					(ctx.*func)();
+			}
+		}
+
+		void gather(Context& ctx, unsigned frame)
+		{
+			mGatheredFuncs.resize(0);
+			for(typename RunningScriptsT::iterator it = mScripts.begin(); it != mScripts.end(); ++it)
 			{
 				unsigned& currScriptIt = it->second;
 				if(currScriptIt == it->first.size())
@@ -82,7 +104,8 @@ namespace mutalisk
 							TimelineFuncT func = it->first[currScriptIt].func;
 							if (func == 0)
 								printf("func is 0!!\n");
-							(ctx.*func)();
+							else
+								(ctx.*func)();
 						}
 					}
 				}
@@ -99,7 +122,6 @@ namespace mutalisk
 							TimelineFuncT func = it->first[currScriptIt].func;
 							if (func == 0)
 								printf("func is 0!!\n");
-//							(ctx.*func)();
 						}
 					}
 				}
@@ -108,13 +130,10 @@ namespace mutalisk
 					continue;
 
 				TimelineFuncT func = it->first[currScriptIt].func;
-//				ASSERT(func);
-				if (func == 0)
-					printf("func is 0!!\n");
-				else
-					(ctx.*func)();
+				mGatheredFuncs.push_back(func);
 			}
 		}
+
 	};
 
 } // namespace mutalisk

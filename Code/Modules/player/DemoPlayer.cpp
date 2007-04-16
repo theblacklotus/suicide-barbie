@@ -70,23 +70,6 @@ void BaseDemoPlayer::restart(Scene const& scene)
 {
 	scene.startTime = -1.0f;
 }
-/*
-void BaseDemoPlayer::processJobQueue()
-{
-	for(size_t q = 0; q < mJobQueue.size(); ++q)
-	{
-		ASSERT(mJobQueue[q].scene->renderable);
-	#if defined(MUTALISK_DX9)
-		mutalisk::update(*mJobQueue[q].scene->renderable, mJobQueue[q].time);
-		mutalisk::process(*mJobQueue[q].scene->renderable);
-	#elif defined(MUTALISK_PSP)
-		mJobQueue[q].scene->renderable->update(mJobQueue[q].time);
-		mJobQueue[q].scene->renderable->process();
-	#endif
-		mJobQueue[q].onDraw(*mJobQueue[q].scene->renderable);
-	}
-	mJobQueue.resize(0);
-}*/
 
 void BaseDemoPlayer::processJobQueue()
 {
@@ -196,6 +179,11 @@ int BaseDemoPlayer::updateTextures()
 }
 #endif
 
+void BaseDemoPlayer::setPhase(nPhase phase)
+{
+	mPhase = phase;
+}
+
 void BaseDemoPlayer::setTime(float t)
 {
 	mCurrTime = t;
@@ -221,6 +209,7 @@ void BaseDemoPlayer::draw(Scene const& scene, float timeScale)
 	draw(scene, &::onDrawDefault, timeScale);
 }
 
+/*
 struct RenderJob : public BaseDemoPlayer::IJob
 {
 	BaseDemoPlayer::Scene const*	scene;
@@ -234,60 +223,51 @@ struct RenderJob : public BaseDemoPlayer::IJob
 };
 static const unsigned JobCacheSize = 8;
 RenderJob gRenderJob[JobCacheSize];
-unsigned gRenderJobIndex = 0;
+unsigned gRenderJobIndex = 0;*/
 
 void BaseDemoPlayer::draw(Scene const& scene, OnDrawT onDraw, float timeScale)
 {
-	if(scene.startTime <= 0.0f)
-		scene.startTime = time();
-
-	ASSERT(scene.renderable);
-#if defined(MUTALISK_DX9)
-	mutalisk::update(*scene.renderable, (time() - scene.startTime) * timeScale);
-	mutalisk::process(*scene.renderable);
-#elif defined(MUTALISK_PSP)
-	scene.renderable->update((time() - scene.startTime) * timeScale);
-	scene.renderable->process();
-#endif
-	//renderContext.znear = scene.znear;
-	//renderContext.zfar = scene.zfar;
-
-	onDraw(*scene.renderable);
-//	RenderJob* job = new RenderJob;
-	RenderJob* job = &gRenderJob[gRenderJobIndex]; gRenderJobIndex = (gRenderJobIndex+1)%JobCacheSize;
-	job->scene = &scene;
-	job->renderContext = &renderContext;
-	mJobQueue.push_back(job);
-}
-/*
-void BaseDemoPlayer::draw(Scene const& scene, OnDrawT onDraw)
-{
-	if(scene.startTime <= 0.0f)
+	if(mPhase == UpdatePhase)
 	{
-		scene.startTime = time();
+		if(scene.startTime <= 0.0f)
+			scene.startTime = time();
 
-		scene.renderable->update(0.0f);
+		ASSERT(scene.renderable);
+#if defined(MUTALISK_DX9)
+		mutalisk::update(*scene.renderable, (time() - scene.startTime) * timeScale);
+		mutalisk::process(*scene.renderable);
+#elif defined(MUTALISK_PSP)
+		scene.renderable->update((time() - scene.startTime) * timeScale);
 		scene.renderable->process();
+#endif
+		//renderContext.znear = scene.znear;
+		//renderContext.zfar = scene.zfar;
+
 		onDraw(*scene.renderable);
 	}
-//	else
+	else if(mPhase == RenderPhase)
 	{
 		renderContext.znear = scene.znear;
 		renderContext.zfar = scene.zfar;
 		mutalisk::render(renderContext, *scene.renderable);
-	}
 
-	Job job;
-	job.scene = &scene;
-	job.time = time() - scene.startTime;
-	job.onDraw = onDraw;
-	mJobQueue.push_back(job);
-}*/
+	/*
+		RenderJob* job = &gRenderJob[gRenderJobIndex]; gRenderJobIndex = (gRenderJobIndex+1)%JobCacheSize;
+		job->scene = &scene;
+		job->renderContext = &renderContext;
+		job->process();
+	//	mJobQueue.push_back(job);*/
+	}
+}
 
 void BaseDemoPlayer::clear()
 {
+	if(mPhase == UpdatePhase)
+	{ }
+	else if(mPhase == RenderPhase)
+	{ }
 }
-
+/*
 struct ClearZJob : public BaseDemoPlayer::IJob
 {
 	RenderContextT*					renderContext;
@@ -304,20 +284,40 @@ struct ClearZJob : public BaseDemoPlayer::IJob
 	}
 };
 ClearZJob gClearZJob[JobCacheSize];
-unsigned gClearZJobIndex = 0;
+unsigned gClearZJobIndex = 0;*/
 
 void BaseDemoPlayer::clearZ()
 {
-//	ClearZJob* job = new ClearZJob;
-	ClearZJob* job = &gClearZJob[gClearZJobIndex]; gClearZJobIndex = (gClearZJobIndex+1)%JobCacheSize;
-	job->renderContext = &renderContext;
-	mJobQueue.push_back(job);
+	if(mPhase == UpdatePhase)
+	{
+	}
+	else if(mPhase == RenderPhase)
+	{
+#if defined(MUTALISK_DX9)
+		DX_MSG("Depth clear") = 
+			renderContext.device->Clear(0, NULL, D3DCLEAR_ZBUFFER, D3DXCOLOR(0.0f,0.0f,0.0f,0.0f), 1.0f, 0);
+#elif defined(MUTALISK_PSP)
+		sceGuClearDepth(0xffff);
+		sceGuClear(GU_DEPTH_BUFFER_BIT);
+#endif
+
+	/*
+		ClearZJob* job = &gClearZJob[gClearZJobIndex]; gClearZJobIndex = (gClearZJobIndex+1)%JobCacheSize;
+		job->renderContext = &renderContext;
+		job->process();
+	//	mJobQueue.push_back(job);*/
+	}
 }
 
 void BaseDemoPlayer::clearColor()
 {
+	if(mPhase == UpdatePhase)
+	{ }
+	else if(mPhase == RenderPhase)
+	{ }
 }
 
+/*
 struct BloomJob : public BaseDemoPlayer::IJob
 {
 	BaseDemoPlayer::PostProcessSettings* dstSettings;
@@ -329,17 +329,30 @@ struct BloomJob : public BaseDemoPlayer::IJob
 	}
 };
 BloomJob gBloomJob[JobCacheSize];
-unsigned gBloomJobIndex = 0;
+unsigned gBloomJobIndex = 0;*/
 
-
-void BaseDemoPlayer::ppBloom(float strength, unsigned threshold, unsigned srcModifier, unsigned dstModifier)
+void BaseDemoPlayer::ppBloom(float strength, unsigned threshold, unsigned srcModifier, unsigned dstModifier, unsigned quality)
 {
-//	BloomJob* job = new BloomJob;
-	BloomJob* job = &gBloomJob[gBloomJobIndex]; gBloomJobIndex = (gBloomJobIndex+1)%JobCacheSize;
-	job->dstSettings = &mPPSettings;
-	job->srcSettings.strength = strength;
-	job->srcSettings.threshold = threshold;
-	job->srcSettings.srcModifier = srcModifier;
-	job->srcSettings.dstModifier = dstModifier;
-	mJobQueue.push_back(job);
+	if(mPhase == UpdatePhase)
+	{
+	}
+	else if(mPhase == RenderPhase)
+	{
+		mPPSettings.strength = strength;
+		mPPSettings.threshold = threshold;
+		mPPSettings.srcModifier = srcModifier;
+		mPPSettings.dstModifier = dstModifier;
+		mPPSettings.quality = quality;
+
+	/*
+		BloomJob* job = &gBloomJob[gBloomJobIndex]; gBloomJobIndex = (gBloomJobIndex+1)%JobCacheSize;
+		job->dstSettings = &mPPSettings;
+		job->srcSettings.strength = strength;
+		job->srcSettings.threshold = threshold;
+		job->srcSettings.srcModifier = srcModifier;
+		job->srcSettings.dstModifier = dstModifier;
+		job->srcSettings.quality = quality;
+		job->process();
+	//	mJobQueue.push_back(job);*/
+	}
 }

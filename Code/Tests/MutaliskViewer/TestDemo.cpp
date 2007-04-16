@@ -7,29 +7,81 @@
 
 #define S_FUNC(f) (&SelfT::f)
 
-void TestDemo::doFrame(float t)
+void TestDemo::updateFrame(float t)
 {
 	setTime(t + timeOffset);
-	timeline.update(*this, frame());
+	timeline.gather(*this, frame());
+	setPhase(UpdatePhase);
+	timeline.run(*this);
+
 	static char count= 0;
 	if (count++ == 3)
 	{
 		count = 0;
 		updateTextures();
 	}
+}
+
+namespace 
+{
+void flashScreen(float intensity, unsigned color )
+{
+#if defined(MUTALISK_DX9)
+// -- disabled
+#elif defined(MUTALISK_PSP)
+	unsigned c = (unsigned)(intensity * 0xff);
+	sceGuEnable(GU_BLEND);
+	unsigned int srcFix = GU_ARGB(0, c, c, c);
+	unsigned int dstFix = 0xffffff;
+	if (intensity == 1.f && (color & 0xffffff) != 0xffffff)
+		dstFix = 0x000000;
+	sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, srcFix, dstFix);
+
+	sceGuTexFunc(GU_TFX_MODULATE,GU_TCC_RGB);
+	sceGuDisable(GU_TEXTURE_2D);
+	sceGuColor(color);
+	sceGuDisable(GU_LIGHTING);
+	sceGuDisable(GU_DEPTH_TEST);
+	sceGuDepthMask(1);
+
+	struct QuadVertexTex
+	{
+		short x,y,z;
+	};
+	QuadVertexTex* vertices = reinterpret_cast<QuadVertexTex*>(sceGuGetMemory(2 * sizeof(QuadVertexTex)));
+	vertices[0].x = 0; vertices[0].y = 0; vertices[0].z = 0;
+	vertices[1].x = 480; vertices[1].y = 272; vertices[1].z = 0;
+
+	sceGuDrawArray(GU_SPRITES,GU_VERTEX_16BIT|GU_TRANSFORM_2D,2,0,vertices);
+	sceGuDepthMask(0);
+	sceGuDisable(GU_BLEND);
+	sceGuEnable(GU_DEPTH_TEST);
+#endif
+}
+} // namespace 
+
+void TestDemo::renderFrame()
+{
+	setPhase(RenderPhase);
+	timeline.run(*this);
+
 	{
 		unsigned color;
 		float val = getBlinkyValue(time(), color);
 		if (val != 0.f)
 		{
-			FlashScreenJob* job = new FlashScreenJob;
+			flashScreen(val, color);
+
+			/*FlashScreenJob* job = new FlashScreenJob;
 			job->renderContext = &renderContext;
 			job->intensity = val;
 			job->color = color;
-			mJobQueue.push_back(job);
+			job->process();
+			//mJobQueue.push_back(job);*/
 		}
 	}
 }
+
 
 namespace
 {
@@ -370,6 +422,7 @@ void TestDemo::walk()
 	clearZ();
 	draw(scn.walk);
 
+//	ppBloom(0.1f, 0, 200, 160, 2);
 	ppBloom(0);
 }
 void TestDemo::walk_far()
@@ -383,6 +436,7 @@ void TestDemo::walk_far()
 	clearZ();
 	draw(scn.walk);
 
+//	ppBloom(0.1f, 0, 200, 160, 2);
 	ppBloom(0);
 }
 
@@ -390,6 +444,7 @@ void TestDemo::logo()
 {
 	gVScale = 3.0f;
 	draw(scn.logo, updateAnimatedProperties);
+	ppBloom(0);
 }
 
 void TestDemo::logo_x_flower()

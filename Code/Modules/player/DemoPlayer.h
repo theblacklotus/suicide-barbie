@@ -28,11 +28,12 @@ namespace mutalisk
 		typedef void(*OnDrawT)(RenderableSceneT const&);
 
 		struct PostProcessSettings {
-			PostProcessSettings() : strength(0), threshold(0), srcModifier(0), dstModifier(255) {}
+			PostProcessSettings() : strength(0), threshold(0), srcModifier(0), dstModifier(255), quality(3) {}
 			float strength;
 			unsigned threshold;
 			unsigned srcModifier;
 			unsigned dstModifier;
+			unsigned quality;
 		};
 
 	public:
@@ -50,7 +51,7 @@ namespace mutalisk
 		void restart(Scene const& scene);
 		float sceneTime(Scene const& scene);
 
-		void ppBloom(float strength, unsigned threshold = 0, unsigned srcModifier = 0, unsigned dstModifier = 255);
+		void ppBloom(float strength, unsigned threshold = 0, unsigned srcModifier = 0, unsigned dstModifier = 255, unsigned quality = 3);
 		void blink() {}
 
 		// getters
@@ -60,6 +61,8 @@ namespace mutalisk
 
 	public:
 		// system interface
+		enum nPhase { UpdatePhase, RenderPhase };
+		void setPhase(nPhase phase);
 		void setTime(float t);
 		void setPath(std::string const& pathPrefix);
 #if defined(MUTALISK_DX9)
@@ -81,6 +84,7 @@ namespace mutalisk
 		std::string		mPathPrefix;
 		PostProcessSettings
 						mPPSettings;
+		nPhase			mPhase;
 
 	public:
 		struct IJob
@@ -103,7 +107,7 @@ namespace mutalisk
 #if defined(MUTALISK_PSP)					//	texture streaming
 	public:
 		BaseDemoPlayer()
-		:	m_currentLoad(0)
+		:	mPhase(UpdatePhase), m_currentLoad(0)
 		{
 		}
 		void loadTextures(Scene& scene, bool async = true);
