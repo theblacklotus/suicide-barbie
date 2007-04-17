@@ -146,9 +146,9 @@ void TestDemo::onStart()
  		Item(233,	ms(64),		S_FUNC(explodeGirl2)),
  		Item(241,	ms(94),		S_FUNC(windowBarbie1)),
  		Item(245,	ms(94),		S_FUNC(windowBarbie2)),
- 		Item(250,	ms(20),		S_FUNC(endBarbie0)),
- 		Item(250+1,	ms(20),		S_FUNC(endBarbie1)),
- 		Item(276+1+10,	ms(64),		S_FUNC(endBarbie2)),
+// 		Item(250,	ms(20),		S_FUNC(endBarbie0)),
+ 		Item(250,	ms(20),		S_FUNC(endBarbie1)),
+ 		Item(286,	ms(64),		S_FUNC(endBarbie2)),
 
 		Item()
 	};
@@ -255,7 +255,9 @@ __skipUntilWindow:
 			Item(208,	ms(00),		S_FUNC(loadWindowScenes),	Item::Once),
 			Item(226,	ms(00),		S_FUNC(loadWindow),	Item::Once),
 
- 			Item(250,	ms(20),		S_FUNC(loadEndScenes),	Item::Once),
+ 			Item(234,	ms(20),		S_FUNC(loadEndScenes),	Item::Once),
+ 			Item(246,	ms(20),		S_FUNC(loadEnd),	Item::Once),
+// 			Item(250,	ms(20),		S_FUNC(loadEndScenes),	Item::Once),
 
 			Item()
 		};
@@ -887,6 +889,12 @@ void TestDemo::loadExploScenes()
 	scn.phone3.renderable->mResources.animCharSet.reset();	
 	scn.phone4.renderable->mResources.animCharSet.reset();	
 	scn.phoneTrans.renderable->mResources.animCharSet.reset();
+	scn.phone1.renderable->mResources.meshes.resize(0);
+	scn.phone2.renderable->mResources.meshes.resize(0);	
+	scn.phone3.renderable->mResources.meshes.resize(0);	
+	scn.phone4.renderable->mResources.meshes.resize(0);
+	scn.phoneTrans.renderable->mResources.meshes.resize(0);
+
 	scn.textBG.renderable->mResources.animCharSet.reset();	
 	scn.text.renderable->mResources.animCharSet.reset();		
 	scn.jealousy.renderable->mResources.animCharSet.reset();	
@@ -894,6 +902,14 @@ void TestDemo::loadExploScenes()
 	scn.beer2.renderable->mResources.animCharSet.reset();		
 	scn.garlic1.renderable->mResources.animCharSet.reset();	
 	scn.garlic2.renderable->mResources.animCharSet.reset();	
+
+	scn.textBG.renderable->mResources.meshes.resize(0);	
+	scn.text.renderable->mResources.meshes.resize(0);		
+	scn.jealousy.renderable->mResources.meshes.resize(0);	
+	scn.beer1.renderable->mResources.meshes.resize(0);		
+	scn.beer2.renderable->mResources.meshes.resize(0);		
+	scn.garlic1.renderable->mResources.meshes.resize(0);	
+	scn.garlic2.renderable->mResources.meshes.resize(0);	
 
 	SceUID th = sceKernelCreateThread("loadExploThreaded", loadExploThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
 	if (th < 0)
@@ -935,6 +951,14 @@ void TestDemo::loadWindowScenes()
 	scn.reload.renderable->mResources.animCharSet.reset();
 	scn.m16.renderable->mResources.animCharSet.reset();		
 	scn.gun.renderable->mResources.animCharSet.reset();
+
+	scn.mix1.renderable->mResources.meshes.resize(0);	
+	scn.mix2.renderable->mResources.meshes.resize(0);	
+	scn.mix3.renderable->mResources.meshes.resize(0);	
+	scn.reload.renderable->mResources.meshes.resize(0);
+	scn.m16.renderable->mResources.meshes.resize(0);		
+	scn.gun.renderable->mResources.meshes.resize(0);
+
 //	scn.bullet1.renderable->mResources.animCharSet.reset();
 //	scn.expGirl1BG.renderable->mResources.animCharSet.reset();
 //	scn.expGirl1.renderable->mResources.animCharSet.reset();	
@@ -984,30 +1008,30 @@ void TestDemo::loadEndScenes()
 	scn.expGirl1BG.renderable->mResources.animCharSet.reset();
 	scn.expGirl1.renderable->mResources.animCharSet.reset();	
 	scn.bullet2.renderable->mResources.animCharSet.reset();	
-	scn.expGirl2BG.renderable->mResources.animCharSet.reset();
-	scn.expGirl2.renderable->mResources.animCharSet.reset();	
+//	scn.expGirl2BG.renderable->mResources.animCharSet.reset();
+//	scn.expGirl2.renderable->mResources.animCharSet.reset();	
 //	scn.windowBarbie.renderable->mResources.animCharSet.reset();	
 //	scn.window.renderable->mResources.animCharSet.reset();
 
 	scn.expGirl1BG.renderable->mResources.meshes.resize(0);
 	scn.expGirl1.renderable->mResources.meshes.resize(0);	
 	scn.bullet2.renderable->mResources.meshes.resize(0);	
-	scn.expGirl2BG.renderable->mResources.meshes.resize(0);
-	scn.expGirl2.renderable->mResources.meshes.resize(0);	
+//	scn.expGirl2BG.renderable->mResources.meshes.resize(0);
+//	scn.expGirl2.renderable->mResources.meshes.resize(0);	
 //	scn.windowBarbie.renderable->mResources.meshes.resize(0);	
 //	scn.window.renderable->mResources.meshes.resize(0);
 
 	unloadTextures(scn.bullet2);
-	unloadTextures(scn.expGirl2BG);
-	unloadTextures(scn.expGirl2);
+//	unloadTextures(scn.expGirl2BG);
+//	unloadTextures(scn.expGirl2);
 //	unloadTextures(scn.windowBarbie);
 //	unloadTextures(scn.window);
 
-		load(scn.endBack,	"suicidebarbie2\\psp\\suicidebarbie_back2.msk");
-		load(scn.end,	"suicidebarbie2\\psp\\suicidebarbie2.msk");
-		loadTextures(scn.endBack, false);
-		loadTextures(scn.end, false);
-	return;
+//		load(scn.endBack,	"suicidebarbie2\\psp\\suicidebarbie_back2.msk");
+//		load(scn.end,	"suicidebarbie2\\psp\\suicidebarbie2.msk");
+//		loadTextures(scn.endBack, false);
+//		loadTextures(scn.end, false);
+//	return;
 
 	SceUID th = sceKernelCreateThread("loadEndThreaded", loadEndThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
 	if (th < 0)
@@ -1025,6 +1049,16 @@ void TestDemo::loadEndScenes()
 
 void TestDemo::loadEnd()
 {
-//	loadTextures(scn.endBack);
-//	loadTextures(scn.end);
+//	printf("%s %s %i\n", __FILE__, __FUNCTION__, __LINE__);
+	scn.expGirl2BG.renderable->mResources.animCharSet.reset();
+	scn.expGirl2.renderable->mResources.animCharSet.reset();	
+
+	scn.expGirl2BG.renderable->mResources.meshes.resize(0);
+	scn.expGirl2.renderable->mResources.meshes.resize(0);	
+
+	unloadTextures(scn.expGirl2BG);
+	unloadTextures(scn.expGirl2);
+
+	loadTextures(scn.endBack);
+	loadTextures(scn.end);
 }

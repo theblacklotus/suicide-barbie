@@ -19,6 +19,8 @@
 
 #include <mutalisk/psp/pspPlatform.h>
 #include <mutalisk/mutalisk.h>
+#include "dlmalloc.h"
+// #include "new.h"
 
 extern "C" {
 	#include <pspsuspend.h>
@@ -46,6 +48,7 @@ void streamAT3File(const char *file);
 
 PSP_MODULE_INFO("Suicide Barbie", PSP_MODULE_USER, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
+PSP_HEAP_SIZE_KB(1);
 
 static unsigned int __attribute__((aligned(16))) list[2][262144];
 extern unsigned char logo_start[];
@@ -56,6 +59,7 @@ extern unsigned char logo_start[];
 #define SCR_HEIGHT (272)
 
 std::string gPathPrefix = "ms0:BarbieData/";
+//std::string gPathPrefix = "ms0:Data/DemoTest/";
 //std::string gPathPrefix = "host1:DemoTest/";
 
 
@@ -176,8 +180,10 @@ int main(int argc, char* argv[])
 {
 	setupCallbacks();
 
+/*
 	sceKernelVolatileMemLock(0, &gVolatileMem, &gVolatileMemSize);
 	printf("gVolatileMem = %x ; gVolatileMemSize = %i\n", (unsigned)gVolatileMem, gVolatileMemSize);
+*/
 
 	// setup GU
 	mutalisk::Texture mainRenderTarget;
@@ -249,6 +255,7 @@ int main(int argc, char* argv[])
 	printf("ScenePlayer: created and loaded\n");
 
 	sceKernelWaitThreadEnd(intro, 0);
+	sceKernelDeleteThread(intro);
 	unloadIntro();
 
 	SceCtrlData oldPad;
@@ -347,6 +354,7 @@ int main(int argc, char* argv[])
 				pspDebugScreenSetOffset((int)mainRenderTarget.vramAddr);
 				pspDebugScreenSetXY(0,0);
 				pspDebugScreenPrintf("mspf(%f)", frameTime.ms());
+				pspDebugScreenPrintf("\tmem footprint = %i\t in use = %i", dlmalloc_footprint(), dlmalloc_inuse());
 				//pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
 				//pspDebugScreenPrintf("\n");
 				//pspDebugScreenPrintf("mutalisk: update(%f) render(%f) sceneTime(%f)", updateTime.ms(), renderTime.ms(), gTimeControl.time());

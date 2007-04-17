@@ -66,6 +66,9 @@ LD_FLAGS=\
 	-Wl,-s\
 	-Wl,-x\
 	-Wl,--gc-sections\
+	-Wl,--wrap=malloc\
+	-Wl,--wrap=free\
+	-Wl,--wrap=calloc\
 	-Wl,--defsym,sceNetInetGetsockopt=0,--defsym,sceNetInetGetErrno=0,--defsym,sceNetInetSetsockopt=0\
 
 include ../../build.mak
