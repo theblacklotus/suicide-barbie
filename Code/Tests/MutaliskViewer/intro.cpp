@@ -59,7 +59,7 @@ void setRenderTarget(IntroRenderTarget& renderTarget)
 	sceGuViewport(2048,2048,renderTarget.width,renderTarget.height);
 }
 
-static unsigned int __attribute__((aligned(16))) list[4096];
+static unsigned int __attribute__((aligned(16))) list[2*1024];
 void renderIntro(float time);
 void renderPSPLogo(float time);
 
@@ -299,6 +299,8 @@ int loadAnim(const std::string name, std::vector<mutalisk::data::psp_texture*>& 
 		texture->patchupTextureFromMemory(mtxPtr);
 		textures.push_back(texture);
 	}
+	free(framePtr);
+	free(tempPtr);
 
 	sceIoClose(fd);
 	return frames;
