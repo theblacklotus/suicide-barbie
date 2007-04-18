@@ -36,6 +36,9 @@ extern "C" {
 #include <player/TimeControl.h>
 
 #include <pspsdk.h>
+
+volatile bool gStartMusic = false;
+
 void streamWaveFile(const char *file);
 void streamWavePause(int pause);
 void streamWaveNudge(int offset);
@@ -46,7 +49,7 @@ void streamAT3File(const char *file);
 
 #include "intro.h"
 
-PSP_MODULE_INFO("Suicide Barbie", PSP_MODULE_USER, 1, 1);
+PSP_MODULE_INFO("Suicide Barbie", PSP_MODULE_KERNEL, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 PSP_HEAP_SIZE_KB(1);
 
@@ -59,7 +62,6 @@ extern unsigned char logo_start[];
 #define SCR_HEIGHT (272)
 
 std::string gPathPrefix = "ms0:BarbieData/";
-//std::string gPathPrefix = "ms0:Data/DemoTest/";
 //std::string gPathPrefix = "host1:DemoTest/";
 
 
@@ -267,19 +269,7 @@ int main(int argc, char* argv[])
 	mutalisk::initTickFrequency(); getDeltaTime();
 ;;printf("tickResolution: %f, tickFrequency: %f\n", mutalisk::tickResolution(), mutalisk::tickFrequency());
 
-
-	SceUID thid1 = pspSdkLoadStartModule("flash0:/kd/audiocodec.prx", PSP_MEMORY_PARTITION_KERNEL);
-	SceUID thid2 = pspSdkLoadStartModule("flash0:/kd/libatrac3plus.prx", PSP_MEMORY_PARTITION_USER);
-	if (thid1 < 0 || thid2 < 0)
-	{
-		printf("unable to load kernel modules\n");
-		printf("thid1 = %x\n", thid1);
-		printf("thid2 = %x\n", thid2);
-	}
-
-	streamWaveFile((gPathPrefix + "music/suicidebarbie.wav").c_str());
-//	streamAT3File((gPathPrefix + "music/suicidebarbie.at3").c_str());
-
+	gStartMusic = true;
 
 //;;mutalisk::TimeBlock updateTime, /*processTime, */ loopTime, renderTime, finishAndSyncTime;
 
@@ -434,4 +424,62 @@ int main(int argc, char* argv[])
 
 	sceKernelExitGame();
 	return 0;
+}
+
+extern "C" 
+{
+int init_thread(SceSize args, void *argp)
+{
+	SceUID thid1 = pspSdkLoadStartModule("flash0:/kd/audiocodec.prx", PSP_MEMORY_PARTITION_KERNEL);
+	SceUID thid2 = pspSdkLoadStartModule("flash0:/kd/libatrac3plus.prx", PSP_MEMORY_PARTITION_USER);
+	while(!gStartMusic)
+	{
+		sceKernelDelayThread(8000);
+	}
+	if (thid1 < 0 || thid2 < 0)
+	{
+		pspDebugScreenPrintf("unable to load kernel modules\n");
+		pspDebugScreenPrintf("thid1 = %x\n", thid1);
+		pspDebugScreenPrintf("thid2 = %x\n", thid2);
+	}
+	else
+	{
+		std::string at3name = gPathPrefix + "music/suicidebarbie.at3";
+
+		SceKernelLMOption option;
+		{
+			memset(&option, 0, sizeof(option));
+			option.size = sizeof(option);
+			option.mpidtext = PSP_MEMORY_PARTITION_USER;
+			option.mpiddata = PSP_MEMORY_PARTITION_USER;
+			option.position = 0;
+			option.access = 1;
+		}
+
+		SceUID mod = sceKernelLoadModule((gPathPrefix + "music/atrac3streamer.prx").c_str(), 0, &option);
+		if (mod >= 0)
+		{
+			int res;
+			if (sceKernelStartModule(mod, at3name.size()+1, (void*)at3name.c_str(), &res, 0) < 0)
+			{
+				pspDebugScreenPrintf("Error starting module. \n");
+			}
+		}
+		else
+		{
+			pspDebugScreenPrintf("Error opening module. \n");
+		}
+	}
+	sceKernelExitDeleteThread(0);
+	return 0;
+}
+
+__attribute__ ((constructor))
+void loadKernelModules()
+{
+	SceUID initth = sceKernelCreateThread("init_thread", init_thread, 0x20, 0x10000, 0, NULL);
+
+	if (initth >= 0)
+		sceKernelStartThread(initth, 0, 0);	
+}
 }

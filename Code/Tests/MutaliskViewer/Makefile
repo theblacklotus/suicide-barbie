@@ -54,7 +54,6 @@ SRCS=\
 	TimeBlock.cpp\
 	TimelinePlayer.cpp\
 	vram.c\
-	../WavTest/player.cpp\
 
 LD_FLAGS=\
 	-T $(LCFILE)\
