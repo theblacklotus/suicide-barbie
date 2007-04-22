@@ -99,15 +99,9 @@ namespace
 			size_t y = rand() & 0x3;
 			float u = 0.25f * (float)x;
 			float v = 0.25f * (float)y;
-			vertexData0->normal.x = random[j];
-				float displace = vertexData0->normal.x;
-				printf("%f \n ", displace);
 			vertexData0->u = u;			vertexData0->v = v;			++vertexData0;
-			vertexData0->normal.x = random[j];
 			vertexData0->u = u + 0.25f;	vertexData0->v = v + 0.25f;	++vertexData0;
-			vertexData1->normal.x = random[j];
 			vertexData1->u = u;			vertexData1->v = v;			++vertexData1;
-			vertexData1->normal.x = random[j];
 			vertexData1->u = u + 0.25f;	vertexData1->v = v + 0.25f;	++vertexData1;
 		}
 
