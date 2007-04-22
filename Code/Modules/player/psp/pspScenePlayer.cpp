@@ -552,6 +552,9 @@ inline void xformPosNormal_end(ScePspFVector4* pos, ScePspFVector4* normal)
 	   : "+m"(*pos), "+m"(*normal));
 }
 
+static ScePspFVector4 accumP3 = {0.0f, 0.0f, 0.0f, 0.0f};
+static ScePspFVector4 accumN3 = {0.0f, 0.0f, 0.0f, 0.0f};
+
 void nativeProcessSkinMesh(Vec3 const* srcPositions, Vec3 const* srcNormals, float const* srcWeights, unsigned char const* srcBoneIndices,
 	Vec3 *dstPositions, Vec3* dstNormals, size_t srcVertexStride, size_t srcWeightStride, size_t srcBoneIndexStride,
 	size_t dstVertexStride, size_t vertexCount,
@@ -596,8 +599,6 @@ void nativeProcessSkinMesh(Vec3 const* srcPositions, Vec3 const* srcNormals, flo
 
 		float const* weights = reinterpret_cast<float const*>(srcWeightsRaw);
 		unsigned char const* boneIndices = srcBoneIndicesRaw;
-		ScePspFVector4 accumP3 = {0.0f, 0.0f, 0.0f, 0.0f};
-		ScePspFVector4 accumN3 = {0.0f, 0.0f, 0.0f, 0.0f};
 		
 		pspvfpu_use_matrices(0, 0, 0);
 		xformPosNormal_begin(pos3, nrm3);
