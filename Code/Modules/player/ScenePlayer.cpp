@@ -1,5 +1,7 @@
 #include "ScenePlayer.h"
 
+#include <mutant/mutant.h>
+
 namespace mutalisk {
 ////////////////////////////////////////////////
 std::string gResourcePath = "";
@@ -86,7 +88,7 @@ void CSkinnedAlgos::processSkinMesh(Vec3 const* srcPositions, Vec3 const* srcNor
 		CTransform::t_vector accumP3( 0.0f, 0.0f, 0.0f ), accumN3( 0.0f, 0.0f, 0.0f );
 		float accumWeight = 0.0f;
 		
-		for( size_t w = 0; /*w < 3 && */w < skinInfo.weightsPerVertex; ++w )
+		for( size_t w = 0; w < skinInfo.weightsPerVertex; ++w )
 		{
 			unsigned char boneId = boneIndices[w];
 			ASSERT(boneId < worldMatrices.size());
@@ -109,8 +111,6 @@ void CSkinnedAlgos::processSkinMesh(Vec3 const* srcPositions, Vec3 const* srcNor
 			Vec3_scale( &n3, &n3, boneWeight );
 			Vec3_add( &accumN3, &accumN3, &n3 );
 		}
-		if(accumWeight < 0.95f && accumWeight > 1.05f)
-			printf("bad weights\n");
 
 		*dstPositions = accumP3;
 		*dstNormals = accumN3;
