@@ -27,10 +27,10 @@ scene.mark1.blendOp = 'Lerp'
 scene.mark1.zOp = 'ReadOnly'
 scene.mark1.slice = 2
 
-scene.back = {}
-scene.back.blendOp = 'Lerp'
-scene.back.zOp = 'ReadOnly'
-scene.back.slice = 1
+--scene.back = {}
+--scene.back.blendOp = 'Lerp'
+--scene.back.zOp = 'ReadOnly'
+--scene.back.slice = 1
 
 scene.BrunetteNaked_Mesh = {}
 scene.BrunetteNaked_Mesh.shader = 'shiny'
