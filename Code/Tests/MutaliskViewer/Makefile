@@ -50,6 +50,7 @@ SRCS=\
 	CharRenderer.cpp\
 	intro.cpp\
 	PostProcess.cpp\
+	SpriteRenderer.cpp\
 	TestDemo.cpp\
 	TimeBlock.cpp\
 	TimelinePlayer.cpp\

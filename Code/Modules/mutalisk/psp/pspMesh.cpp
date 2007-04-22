@@ -14,6 +14,7 @@ psp_mesh::psp_mesh()
 , boneIndexStride(0)
 , boneIndexDataSize(0)
 , boneIndexData(0)
+, sprite(false)
 {
 }
 

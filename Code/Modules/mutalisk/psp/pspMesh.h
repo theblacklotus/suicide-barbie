@@ -23,6 +23,10 @@ namespace mutalisk { namespace data
 
 		// memory management
 		psp_mesh(); ~psp_mesh();
+
+
+		// ad-hoc data defines
+		bool sprite;
 	};
 	
 	// I/O

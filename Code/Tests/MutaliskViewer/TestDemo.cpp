@@ -1,4 +1,5 @@
 #include "TestDemo.h"
+#include "SpriteRenderer.h"
 #include "BallRenderer.h"
 #include "CharRenderer.h"
 #include "BlinkyBlinky.h"
@@ -203,6 +204,7 @@ void TestDemo::onStart()
 	load(scn.phone3,	"telephone_s3\\psp\\telephone_s3.msk");
 	load(scn.phone4,	"telephone_s4\\psp\\telephone_s4.msk");
 	load(scn.phoneTrans,"telephone_trans\\psp\\telephone_trans.msk");
+	prepareSprites(*scn.phone1.renderable);
 
 __skipUntilText:
 	if (!mutalisk::gDelayedTextureLoading)
@@ -516,7 +518,7 @@ void TestDemo::spiral()
 
 void TestDemo::phone1()
 {
-	draw(scn.phone1);
+	draw(scn.phone1, &mutalisk::renderSprites);
 	ppBloom(0.2f, 114, 200, 160);
 }
 void TestDemo::phone2()

@@ -44,6 +44,11 @@ std::auto_ptr<RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene 
 	{
 		scene->mResources.meshes[q].blueprint = loadResource<mutalisk::data::mesh>(pathPrefix + data.meshIds[q]);
 		scene->mResources.meshes[q].renderable = prepare(rc, *scene->mResources.meshes[q].blueprint);
+		if (data.meshIds[q].find("_sprite") != std::string::npos)
+		{
+			printf("%s : %s marked as 'sprite'\n", __FUNCTION__, data.meshIds[q].c_str());
+			scene->mResources.meshes[q].blueprint->sprite = true;		// mark mesh as sprite for later identification
+		}
 	}
 	if (!gDelayedTextureLoading)
 	{
