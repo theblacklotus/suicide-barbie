@@ -229,7 +229,8 @@ OutputScene gOutputScene;
 mutalisk::lua::PropertiesByNameT gProperties;
 float gGlobalScale = 0.01f;
 bool gEnableScalingPivots = true;
-bool gEnableAnimatedProperties = false;
+bool gEnableAnimatedProperties = true;
+bool gEnableVisibilityFlag = false;
 
 struct Curve
 {
@@ -1613,7 +1614,9 @@ void processAnimatedProperties(KFbxNode* pNode, OutputScene::Properties& propert
 	{
 		KFbxUserProperty lProperty = pNode->GetProperty(i);
 		std::string propName(lProperty.GetLabel().Buffer());
-		if (!lProperty.GetFlag(KFbxUserProperty::eUSER) && propName != "Visibility")
+		if (!
+			(lProperty.GetFlag(KFbxUserProperty::eUSER) || 
+			(propName == "Visibility" && gEnableVisibilityFlag)))
 			continue; // process only user properties
 
 		EFbxType propType = lProperty.GetPropertyDataType().GetType();
@@ -2783,6 +2786,12 @@ void beginScene(char const* sceneFileName)
 		{
 			if(properties.vectors[EnableAnimatedProperties].size() > 0)
 				gEnableAnimatedProperties = (properties.vectors[EnableAnimatedProperties][0] > 0);
+		}
+		const std::string EnableVisibilityFlag = "enableVisibilityFlag";
+		if(properties.hasVector(EnableVisibilityFlag))
+		{
+			if(properties.vectors[EnableVisibilityFlag].size() > 0)
+				gEnableVisibilityFlag = (properties.vectors[EnableVisibilityFlag][0] > 0);
 		}
 
 		const std::string EnableScalingPivots = "enableScalingPivots";
