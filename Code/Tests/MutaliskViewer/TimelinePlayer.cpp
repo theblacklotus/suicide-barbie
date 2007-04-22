@@ -61,9 +61,7 @@ extern unsigned char logo_start[];
 #define SCR_WIDTH (480)
 #define SCR_HEIGHT (272)
 
-std::string gPathPrefix = "ms0:BarbieData/";
-//std::string gPathPrefix = "host1:DemoTest/";
-
+std::string gPathPrefix = "host1:DemoTest/"; // this is the default data directory, DO NOT CHANGE. search for 'ms0:' to override..
 
 #include "TestDemo.h"
 #include "TimeBlock.h"
@@ -173,14 +171,39 @@ void bloom(mutalisk::Texture& mainRenderTarget, mutalisk::Texture& renderTarget,
 }
 
 mutalisk::TimeControl gTimeControl;
+/*
 extern "C"
 {
 	extern void* gVolatileMem;
 	extern int gVolatileMemSize;
 }
+*/
 int main(int argc, char* argv[])
 {
 	setupCallbacks();
+
+	char path[256];
+	char* arg0 = argv[0];
+	char* separator = strstr(arg0, ":");		// get device 'xxxx:'
+	for (char* next = strstr(separator+1, "/"); next; next = strstr(separator+1, "/")) separator = next;
+	strncpy(path, arg0, separator - arg0 + 1);
+
+	if (strncmp(gPathPrefix.c_str(), path, sizeof("host")-1) != 0)		// if not launched from hostX: use argv[0] data path
+	{
+		gPathPrefix = path; gPathPrefix += "BarbieData/";
+	}
+
+#ifndef PSP_FINAL
+	//gPathPrefix = "ms0:/PSP/GAME/__SCE__SuicideBarbie/BarbieData/";
+#endif
+	
+	printf("\n¤¤ data path = %s\n", gPathPrefix.c_str());
+
+/*
+	SceUID fd = sceIoOpen("ms0:/path.txt", PSP_O_CREAT|PSP_O_WRONLY, 0777);
+	sceIoWrite(fd, gPathPrefix.c_str(), gPathPrefix.size());
+	sceIoClose(fd);
+*/
 
 /*
 	sceKernelVolatileMemLock(0, &gVolatileMem, &gVolatileMemSize);
