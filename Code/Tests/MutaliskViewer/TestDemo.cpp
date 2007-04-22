@@ -770,7 +770,7 @@ void TestDemo::loadTextScene()
 	unloadTextures(scn.logo);
 	scn.walk.renderable->mResources.animCharSet.reset();
 	{
-		SceUID textth = sceKernelCreateThread("loadTextThreaded", loadTextThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
+		SceUID textth = sceKernelCreateThread("loadTextThreaded", loadTextThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU, NULL);
 		if (textth < 0)
 		{
 			printf("Error creating loadTextThreaded.\n");
@@ -860,7 +860,7 @@ void TestDemo::loadWeaponScenes()
 	printf("%s\n", __FUNCTION__);
 	scn.textWalk.renderable->mResources.animCharSet.reset();
 
-	SceUID th = sceKernelCreateThread("loadWeaponThreaded", loadWeaponThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
+	SceUID th = sceKernelCreateThread("loadWeaponThreaded", loadWeaponThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU, NULL);
 	if (th < 0)
 	{
 		printf("Error creating loadWeaponThreaded.\n");
@@ -949,7 +949,7 @@ void TestDemo::loadExploScenes()
 	scn.garlic1.renderable->mResources.meshes.resize(0);	
 	scn.garlic2.renderable->mResources.meshes.resize(0);	
 
-	SceUID th = sceKernelCreateThread("loadExploThreaded", loadExploThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
+	SceUID th = sceKernelCreateThread("loadExploThreaded", loadExploThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU, NULL);
 	if (th < 0)
 	{
 		printf("Error creating loadWeaponThreaded.\n");
@@ -1002,7 +1002,7 @@ void TestDemo::loadWindowScenes()
 //	scn.expGirl1.renderable->mResources.animCharSet.reset();	
 //	scn.bullet2.renderable->mResources.animCharSet.reset();	
 
-	SceUID th = sceKernelCreateThread("loadWindowThreaded", loadWindowThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
+	SceUID th = sceKernelCreateThread("loadWindowThreaded", loadWindowThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU, NULL);
 	if (th < 0)
 	{
 		printf("Error creating loadWindowThreaded.\n");
@@ -1071,7 +1071,7 @@ void TestDemo::loadEndScenes()
 //		loadTextures(scn.end, false);
 //	return;
 
-	SceUID th = sceKernelCreateThread("loadEndThreaded", loadEndThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER, NULL);
+	SceUID th = sceKernelCreateThread("loadEndThreaded", loadEndThreaded, 0x12, 0x10000, PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU, NULL);
 	if (th < 0)
 	{
 		printf("Error creating loadEndThreaded.\n");

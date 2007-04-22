@@ -50,7 +50,7 @@ void streamAT3File(const char *file);
 #include "intro.h"
 
 PSP_MODULE_INFO("Suicide Barbie", PSP_MODULE_KERNEL, 1, 1);
-PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
+PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
 PSP_HEAP_SIZE_KB(1);
 
 static unsigned int __attribute__((aligned(16))) list[2][262144];
