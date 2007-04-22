@@ -82,6 +82,7 @@ protected:
 	void phone1_x__(); void phone2_x__(); void phone3_x__();
 	void phone__x_2(); void phone__x_3(); void phone__x_4();
 
+	void text0();
 	void text();
 	void jealousy();
 

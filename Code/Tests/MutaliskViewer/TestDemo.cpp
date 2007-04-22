@@ -44,15 +44,39 @@ void flashScreen(float intensity, unsigned color )
 	sceGuDisable(GU_DEPTH_TEST);
 	sceGuDepthMask(1);
 
-	struct QuadVertexTex
+	struct QuadVertex
 	{
 		short x,y,z;
 	};
+	/*
 	QuadVertexTex* vertices = reinterpret_cast<QuadVertexTex*>(sceGuGetMemory(2 * sizeof(QuadVertexTex)));
 	vertices[0].x = 0; vertices[0].y = 0; vertices[0].z = 0;
 	vertices[1].x = 480; vertices[1].y = 272; vertices[1].z = 0;
-
 	sceGuDrawArray(GU_SPRITES,GU_VERTEX_16BIT|GU_TRANSFORM_2D,2,0,vertices);
+	*/
+
+	const int ViewportWidth = 480;
+	const int ViewportHeight = 272;
+	QuadVertex* vertices = reinterpret_cast<QuadVertex*>(sceGuGetMemory(2 * 32 * sizeof(QuadVertex)));
+	short sx = 0;
+	short sliceW = 32;
+	int vertexCount = 0;
+	for(; sx < ViewportWidth; sx += sliceW)
+	{
+		if(sx + sliceW > ViewportWidth)
+			sliceW = ViewportWidth - sx;
+
+		vertices[vertexCount].x = sx;
+		vertices[vertexCount].y = 0;
+		vertices[vertexCount].z = 0;
+		++vertexCount;
+		vertices[vertexCount].x = sx + sliceW;
+		vertices[vertexCount].y = ViewportHeight;
+		vertices[vertexCount].z = 0;
+		++vertexCount;
+	}
+	sceGuDrawArray(GU_SPRITES,GU_VERTEX_16BIT|GU_TRANSFORM_2D,vertexCount,0,vertices);
+
 	sceGuDepthMask(0);
 	sceGuDisable(GU_BLEND);
 	sceGuEnable(GU_DEPTH_TEST);
@@ -126,7 +150,8 @@ void TestDemo::onStart()
 		Item(84,	ms(50),		S_FUNC(phone__x_4)),
 		Item(85,	ms(00),		S_FUNC(phone4)),			// (32 + 82)/2
 
-		Item(92,	ms(18),		S_FUNC(text)),
+		Item(92,	ms(18),		S_FUNC(text0)),
+		Item(93,	ms(18),		S_FUNC(text)),
 		Item(115,	ms(22),		S_FUNC(jealousy)),
 
 		Item(122,	ms(90),		S_FUNC(beer1)),
@@ -552,6 +577,16 @@ void TestDemo::phone__x_4()
 }
 
 
+void TestDemo::text0()
+{
+	draw(scn.textBG);
+	clearZ();
+	draw(scn.text);
+	clearZ();
+	draw(scn.textWalk, &mutalisk::renderChars);
+	ppBloom(0.2f, 114, 200, 160);
+}
+
 void TestDemo::text()
 {
 	draw(scn.textBG);
@@ -559,7 +594,10 @@ void TestDemo::text()
 	draw(scn.text);
 	clearZ();
 	draw(scn.textWalk, &mutalisk::renderChars);
+//	ppBloom(0.2f, 114, 200, 160);
+	ppBloom(0);
 }
+
 void TestDemo::jealousy()
 {
 	gVScale = 3.0f;
