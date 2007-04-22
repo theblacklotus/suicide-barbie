@@ -375,6 +375,13 @@ int main(int argc, char* argv[])
 				//pspDebugScreenPrintf("allocated memory = %i", allocated_memory);
 			}
 
+			{	// lock to 30Hz
+				static unsigned prevVBL = 0;
+				unsigned currVBL;
+				for (currVBL = sceDisplayGetVcount(); (currVBL - prevVBL) <= 1; sceKernelDelayThread(1000), currVBL = sceDisplayGetVcount());
+				prevVBL = currVBL;
+			}
+
 			sceDisplayWaitVblankStart();
 			mainRenderTarget2.vramAddr = mainRenderTarget.vramAddr;
 			mainRenderTarget.vramAddr = sceGuSwapBuffers();
