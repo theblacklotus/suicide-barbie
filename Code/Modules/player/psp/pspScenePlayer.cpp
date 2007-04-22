@@ -6,6 +6,8 @@
 #include <effects/Library.h>
 #include <effects/BaseEffect.h>
 
+#include "pspvfpu.h"
+
 extern "C" {
 	#include <Base/Std/Std.h>
 	#include <Base/Math/Lin.h>
@@ -137,14 +139,6 @@ namespace {
 		dst.w.z = src.Move.z;
 		dst.w.w = 1.0f;
 	}
-	/*void toNative(CTransform::t_matrix& worldMatrix, float const* worldMatrixData)
-	{
-		worldMatrix = CTransform::t_matrix(
-			worldMatrixData[8], worldMatrixData[4], worldMatrixData[0],
-			worldMatrixData[9], worldMatrixData[5], worldMatrixData[1],
-			worldMatrixData[10], worldMatrixData[6], worldMatrixData[2],
-			worldMatrixData[14], worldMatrixData[13], worldMatrixData[12]);
-	}*/
 	void toNative(ScePspFMatrix4& dst, float const* srcMatrixData)	
 	{
 		memcpy(&dst, srcMatrixData, sizeof(float)*16);
@@ -351,83 +345,20 @@ void render(RenderContext& rc, RenderableScene const& scene, int maxActors)
 
 //;;printf("$render\n");
 	Vec3 cameraPos; cameraPos.x = cameraPos.y = cameraPos.z = 0.0f;
+	if(scene.mState.activeCameraIndex != ~0U)
 	{
-		/*MatrixT nativeMatrix;
-		if(scene.mBlueprint.defaultClipIndex == ~0U)
-		{
-			animatedActors = false;
-			animatedCamera = false;
-		}
+		MatrixT nativeMatrix;
+		toNative(nativeMatrix, scene.mState.cameraMatrix);
 
-		if(!animatedActors)
-			for(size_t q = 0; q < scene.mBlueprint.actors.size(); ++q)
-			{
-				ASSERT(q >= 0 && q < scene.mState.actor2XformIndex.size());
-				toNative(
-					const_cast<RenderableScene&>(scene).mState.matrices[scene.mState.actor2XformIndex[q]],
-					scene.mBlueprint.actors[q].worldMatrix.data);
-			}
+		ASSERT(scene.mState.activeCameraIndex >= 0 && scene.mState.activeCameraIndex < scene.mBlueprint.cameras.size());
+		setProjection(rc,
+			scene.mBlueprint.cameras[scene.mState.activeCameraIndex].fov,
+			scene.mBlueprint.cameras[scene.mState.activeCameraIndex].aspect);
+		setCameraMatrix(rc, nativeMatrix);
 
-		if(!animatedCamera)
-			for(size_t q = 0; q < scene.mBlueprint.cameras.size(); ++q)
-			{
-				ASSERT(q >= 0 && q < scene.mState.camera2XformIndex.size());
-				toNative(
-					const_cast<RenderableScene&>(scene).mState.matrices[scene.mState.camera2XformIndex[q]],
-					scene.mBlueprint.cameras[q].worldMatrix.data);
-			}
-
-		if(scene.mBlueprint.defaultCameraIndex != ~0U)
-		{
-			unsigned int cameraIndex = scene.mBlueprint.defaultCameraIndex;
-			if(animatedCamera)
-			{
-				ASSERT(cameraIndex >= 0 && cameraIndex < scene.mState.camera2XformIndex.size());
-				toNative(nativeMatrix, scene.mState.matrices[scene.mState.camera2XformIndex[cameraIndex]]);
-			}
-			else
-			{
-				ASSERT(cameraIndex >= 0 && cameraIndex < scene.mBlueprint.cameras.size());
-				toNative(nativeMatrix, scene.mBlueprint.cameras[cameraIndex].worldMatrix.data);
-			}
-
-			setProjection(rc, scene.mBlueprint.cameras[cameraIndex].fov, scene.mBlueprint.cameras[cameraIndex].aspect);
-			setCameraMatrix(rc, nativeMatrix);
-			getTranslation(cameraPos, nativeMatrix);
-		}*/
-
-
-		if(scene.mState.activeCameraIndex != ~0U)
-		{
-			MatrixT nativeMatrix;
-			toNative(nativeMatrix, scene.mState.cameraMatrix);
-
-			ASSERT(scene.mState.activeCameraIndex >= 0 && scene.mState.activeCameraIndex < scene.mBlueprint.cameras.size());
-			setProjection(rc,
-				scene.mBlueprint.cameras[scene.mState.activeCameraIndex].fov,
-				scene.mBlueprint.cameras[scene.mState.activeCameraIndex].aspect);
-			setCameraMatrix(rc, nativeMatrix);
-
-			cameraPos = scene.mState.cameraMatrix.Move;
-		}
+		cameraPos = scene.mState.cameraMatrix.Move;
 	}
 //;;printf(" render -- 1\n");
-
-	/*CTransform::t_matrix cameraMatrix(CTransform::identityMatrix());
-	if(scene.mBlueprint.defaultCameraIndex != ~0U)
-	{
-		unsigned int cameraIndex = scene.mBlueprint.defaultCameraIndex;
-		if(animatedCamera)
-		{
-			ASSERT(cameraIndex >= 0 && cameraIndex < scene.mState.camera2XformIndex.size());
-			cameraMatrix = scene.mState.matrices[scene.mState.camera2XformIndex[cameraIndex]];
-		}
-		else
-		{
-			ASSERT(cameraIndex >= 0 && cameraIndex < scene.mBlueprint.cameras.size());
-			toNative(cameraMatrix, scene.mBlueprint.cameras[cameraIndex].worldMatrix.data);
-		}
-	}*/
 
 	static std::vector<InstanceInput> instanceInputs;
 	static std::vector<BaseEffect::Input::Surface> surfaceInputs;
@@ -505,6 +436,210 @@ void render(RenderContext& rc, RenderableScene const& scene, int maxActors)
 }
 
 ////////////////////////////////////////////////
+namespace {
+struct pspvfpu_context *sp_vfpucontext;
+void xformPosNormal(ScePspFVector4* outPos, ScePspFVector4* outNormal, 
+	ScePspFVector3 const* inPos, ScePspFVector3 const* inNormal, ScePspFMatrix4 const* boneMatrix, float weight)
+{
+//	pspvfpu_use_matrices(sp_vfpucontext, 0, VMAT0 | VMAT1 | VMAT3); 
+
+//	vm0
+//		[m]
+//	vm1
+//		[outPos	outNormal	inPos	inNormal]
+//	vm2
+//		[tmpV.x	w	0	0]
+//		[tmpV.y	0	0	0]
+//		[tmpV.z	0	0	0]
+//		[0		0	0	0]
+
+
+	__asm__ volatile (
+       "lv.q   C100, %0\n"
+       "lv.q   C110, %1\n"
+
+	   "ulv.q   C120, %2\n"
+       "ulv.q   C130, %3\n"
+       "lv.q   C000, 0  + %4\n"
+       "lv.q   C010, 16 + %4\n"
+       "lv.q   C020, 32 + %4\n"
+       "lv.q   C030, 48 + %4\n"
+       "mtv    %5,   S210\n"
+
+
+       "vdot.t S200, R000, C120\n"
+       "vdot.t S201, R001, C120\n"
+       "vdot.t S202, R002, C120\n"
+	   "vadd.t C200, C030, C200\n" 
+
+	   "vscl.t C200, C200, S210\n"
+	   "vadd.t C100, C100, C200\n"
+
+
+       "vdot.t S200, R000, C130\n"
+       "vdot.t S201, R001, C130\n"
+       "vdot.t S202, R002, C130\n"
+
+	   "vscl.t C200, C200, S210\n"
+	   "vadd.t C110, C110, C200\n"
+
+
+       "sv.q   C100, %0\n"
+       "sv.q   C110, %1\n"
+	   : "+m"(*outPos), "+m"(*outNormal): "m"(*inPos), "m"(*inNormal), "m"(*boneMatrix), "r"(weight));
+
+}
+
+inline void xformPosNormal_begin(/*ScePspFVector4 const* pos, ScePspFVector4 const* normal,*/
+	ScePspFVector3 const* inPos, ScePspFVector3 const* inNormal)
+{
+	__asm__ volatile (
+	   "vzero.q  C100\n"
+	   "vzero.q  C110\n"
+	   "ulv.q   C120, %0\n"
+       "ulv.q   C130, %1\n"
+	   :: "m"(*inPos), "m"(*inNormal));
+/*	__asm__ volatile (
+	   "vmov.q  C100, C000[ 0, 0, 0, 0]\n"
+	   "vmov.q  C110, C000[ 0, 0, 0, 0]\n"
+	   "ulv.q   C120, %0\n"
+       "ulv.q   C130, %1\n"
+	   :: "m"(*inPos), "m"(*inNormal));*/
+}
+inline void xformPosNormal_begin2(ScePspFVector4 const* pos, ScePspFVector4 const* normal,
+	ScePspFVector3 const* inPos, ScePspFVector3 const* inNormal)
+{
+	__asm__ volatile (
+       "lv.q   C100, %0\n"
+       "lv.q   C110, %1\n"
+	   "ulv.q   C120, %2\n"
+       "ulv.q   C130, %3\n"
+	   :: "m"(*pos), "m"(*normal), "m"(*inPos), "m"(*inNormal));
+}
+inline void xformPosNormal_fn(ScePspFMatrix4 const* boneMatrix, float weight)
+{
+	__asm__ volatile (
+       "lv.q   C000, 0  + %0\n"
+       "lv.q   C010, 16 + %0\n"
+       "lv.q   C020, 32 + %0\n"
+       "lv.q   C030, 48 + %0\n"
+       "mtv    %1,   S210\n"
+
+
+       "vdot.t S200, R000, C120\n"
+       "vdot.t S201, R001, C120\n"
+       "vdot.t S202, R002, C120\n"
+	   "vadd.t C200, C030, C200\n" 
+
+	   "vscl.t C200, C200, S210\n"
+	   "vadd.t C100, C100, C200\n"
+
+
+       "vdot.t S200, R000, C130\n"
+       "vdot.t S201, R001, C130\n"
+       "vdot.t S202, R002, C130\n"
+
+	   "vscl.t C200, C200, S210\n"
+	   "vadd.t C110, C110, C200\n"
+	   :: "m"(*boneMatrix), "r"(weight));
+}
+inline void xformPosNormal_end(ScePspFVector4* pos, ScePspFVector4* normal)
+{
+	__asm__ volatile (
+       "sv.q   C100, %0\n"
+       "sv.q   C110, %1\n"
+
+	   : "+m"(*pos), "+m"(*normal));
+}
+
+void nativeProcessSkinMesh(Vec3 const* srcPositions, Vec3 const* srcNormals, float const* srcWeights, unsigned char const* srcBoneIndices,
+	Vec3 *dstPositions, Vec3* dstNormals, size_t srcVertexStride, size_t srcWeightStride, size_t srcBoneIndexStride,
+	size_t dstVertexStride, size_t vertexCount,
+	mutalisk::data::skin_info const& skinInfo, CSkinnedAlgos::BoneMapT const& boneMap, CTransform::t_matrix const* matrices)
+{
+	if (sp_vfpucontext == NULL)
+		sp_vfpucontext = pspvfpu_initcontext();
+
+	static std::vector<ScePspFMatrix4> worldMatrices;
+	worldMatrices.resize(boneMap.size());
+
+	unsigned i = 0;
+	CSkinnedAlgos::BoneMapT::const_iterator bIdIt = boneMap.begin();
+	for( ; (i < boneMap.size()) && (bIdIt != boneMap.end()); ++bIdIt, ++i )
+	{
+		CTransform::t_matrix tm;
+		float const* mat16 = skinInfo.bones[ bIdIt->first ].matrix.data;
+		setMatrix(tm, mat16);
+
+		CTransform::t_matrix itm;
+		Mat34_invertOrthogonal(&itm, &tm);
+
+		toNative(worldMatrices[i], (matrices[ bIdIt->second ] * itm));
+	}
+
+	CTransform::t_matrix identityM;
+	Mat34_setIdentity( &identityM );
+	while( i < worldMatrices.size() )
+		toNative(worldMatrices[i++], identityM);
+
+	unsigned char const* srcPositionsRaw = reinterpret_cast<unsigned char const*>(srcPositions);
+	unsigned char const* srcNormalsRaw = reinterpret_cast<unsigned char const*>(srcNormals);
+	unsigned char const* srcWeightsRaw = reinterpret_cast<unsigned char const*>(srcWeights);
+	unsigned char const* srcBoneIndicesRaw = reinterpret_cast<unsigned char const*>(srcBoneIndices);
+
+	unsigned char* dstPositionsRaw = reinterpret_cast<unsigned char*>(dstPositions);
+	unsigned char* dstNormalsRaw = reinterpret_cast<unsigned char*>(dstNormals);
+	for( size_t q = 0; q < vertexCount; ++q )
+	{
+		ScePspFVector3 const* pos3 = reinterpret_cast<ScePspFVector3 const*>(srcPositionsRaw);
+		ScePspFVector3 const* nrm3 = reinterpret_cast<ScePspFVector3 const*>(srcNormalsRaw);
+
+		float const* weights = reinterpret_cast<float const*>(srcWeightsRaw);
+		unsigned char const* boneIndices = srcBoneIndicesRaw;
+		ScePspFVector4 accumP3 = {0.0f, 0.0f, 0.0f, 0.0f};
+		ScePspFVector4 accumN3 = {0.0f, 0.0f, 0.0f, 0.0f};
+		
+		pspvfpu_use_matrices(0, 0, 0);
+		xformPosNormal_begin(pos3, nrm3);
+		for( size_t w = 0; w < skinInfo.weightsPerVertex; ++w )
+		{
+			unsigned char boneId = boneIndices[w];
+			ASSERT(boneId < worldMatrices.size());
+			float boneWeight = weights[w];
+
+			if(boneWeight < 0.001f)
+				continue;
+
+			xformPosNormal_fn(
+				&worldMatrices[boneId], boneWeight);
+
+//			xformPosNormal(
+//				&accumP3, &accumN3,
+//				pos3, nrm3,
+//				&worldMatrices[boneId], boneWeight);
+		}
+		pspvfpu_use_matrices(0, 0, 0);
+		xformPosNormal_end(&accumP3, &accumN3);
+
+		*(reinterpret_cast<float*>(dstPositionsRaw) +0) = accumP3.x;
+		*(reinterpret_cast<float*>(dstPositionsRaw) +1) = accumP3.y;
+		*(reinterpret_cast<float*>(dstPositionsRaw) +2) = accumP3.z;
+		*(reinterpret_cast<float*>(dstNormalsRaw) +0) = accumN3.x;
+		*(reinterpret_cast<float*>(dstNormalsRaw) +1) = accumN3.y;
+		*(reinterpret_cast<float*>(dstNormalsRaw) +2) = accumN3.z;
+
+		srcPositionsRaw += srcVertexStride;
+		srcNormalsRaw += srcVertexStride;
+		srcWeightsRaw += srcWeightStride;
+		srcBoneIndicesRaw += srcBoneIndexStride;
+
+		dstPositionsRaw += dstVertexStride;
+		dstNormalsRaw += dstVertexStride;
+	}
+}
+}
+
+
 void CSkinnedAlgos::processSkinMesh(RenderableMesh& mesh, BoneMapT const& boneMap, CTransform::t_matrix const* matrices)
 {
 	assert(mesh.mBlueprint.skinInfo);
@@ -527,7 +662,8 @@ void CSkinnedAlgos::processSkinMesh(RenderableMesh& mesh, BoneMapT const& boneMa
 	unsigned char const* srcBoneWeights = mesh.mBlueprint.weightData;
 	unsigned char const* srcBoneIndices = mesh.mBlueprint.boneIndexData;
 
-	processSkinMesh(
+//	processSkinMesh(
+	nativeProcessSkinMesh(
 		reinterpret_cast<Vec3 const*>(srcRaw + positionsOffset),
 		reinterpret_cast<Vec3 const*>(srcRaw + normalsOffset),
 		reinterpret_cast<float const*>(srcBoneWeights + weightsOffset),
