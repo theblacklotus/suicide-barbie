@@ -28,5 +28,7 @@ scene.s1_sprite13 = additive
 scene.s1_sprite14 = additive
 scene.s1_sprite15 = additive
 scene.s1_sprite16 = additive
+scene.s1_sprite17 = additive
+scene.s1_sprite18 = additive
 
 return scene
