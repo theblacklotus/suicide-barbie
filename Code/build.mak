@@ -44,6 +44,7 @@ CC_FLAGS_COMMON=\
 	-D__GCC__\
 	$(INCLUDE)\
 	-I. -c\
+	-include "ForcedInclude.h"\
 	-MMD    \
 	-Wall\
 	-fno-exceptions\
