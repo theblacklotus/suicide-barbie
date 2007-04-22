@@ -44,8 +44,8 @@ void streamWavePause(int pause);
 void streamWaveNudge(int offset);
 void streamAT3File(const char *file);
 
-//#define streamWavePause(x) 
-//#define streamWaveNudge(x) 
+#define streamWavePause(x) 
+#define streamWaveNudge(x) 
 
 #include "intro.h"
 
@@ -99,7 +99,7 @@ float getDeltaTime()
 	u64 delta = currTick - gPrevTick;
 	gPrevTick = currTick;
 	float realTime = static_cast<float>((delta) * mutalisk::tickFrequency()) / (1000.0f * 1000.0f);
-	if (s_createAnim)
+	if (__CREATE_ANIM)
 	{
 		float simTime = 1.f / 60.f;
 		float ratio = simTime / realTime;
@@ -343,7 +343,7 @@ int main(int argc, char* argv[])
 			{
 				pspDebugScreenSetOffset((int)mainRenderTarget.vramAddr);
 				pspDebugScreenSetXY(0,0);
-				pspDebugScreenPrintf("mspf(%f)", frameTime.ms());
+				pspDebugScreenPrintf("mspf(%3.3f)", frameTime.ms());
 				pspDebugScreenPrintf("\tmem footprint = %i\t in use = %i", dlmalloc_footprint(), dlmalloc_inuse());
 				//pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
 				//pspDebugScreenPrintf("\n");

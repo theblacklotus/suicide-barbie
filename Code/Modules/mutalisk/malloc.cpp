@@ -19,7 +19,7 @@ public:
 	{
 		if (mutex < 0)
 		{
-			mutex = sceKernelCreateSema(__FILE__, 0, 1, 1, 0);
+			mutex = sceKernelCreateSema("malloc_sema", 0, 1, 1, 0);
 		}
 		sceKernelWaitSema(mutex, 1, 0);
 	}

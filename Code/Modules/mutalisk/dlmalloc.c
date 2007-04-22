@@ -2837,7 +2837,7 @@ static struct mallinfo internal_mallinfo(mstate m) {
   return nm;
 }
 #endif /* !NO_MALLINFO */
-
+/*
 static void internal_malloc_stats(mstate m) {
   if (!PREACTION(m)) {
     size_t maxfp = 0;
@@ -2869,7 +2869,7 @@ static void internal_malloc_stats(mstate m) {
     POSTACTION(m);
   }
 }
-
+*/
 static size_t internal_malloc_getinuse(mstate m) {
   size_t inuse = 0;
   if (!PREACTION(m)) {
@@ -4394,11 +4394,11 @@ struct mallinfo dlmallinfo(void) {
   return internal_mallinfo(gm);
 }
 #endif /* NO_MALLINFO */
-
+/*
 void dlmalloc_stats() {
   internal_malloc_stats(gm);
 }
-
+*/
 
 size_t dlmalloc_usable_size(void* mem) {
   if (mem != 0) {
@@ -5126,7 +5126,7 @@ void* pspMoreCore(int size)
 	if (heap_bottom == 0)
 	{
 		size_t heap_size = sceKernelMaxFreeMemSize();
-		SceUID blockid = sceKernelAllocPartitionMemory(2, "dlmalloc", PSP_SMEM_Low, heap_size, 0);
+		SceUID blockid = sceKernelAllocPartitionMemory(2, "malloc_partition", PSP_SMEM_Low, heap_size, 0);
 		if (blockid > 0)
 		{
 			heap_bottom = sceKernelGetBlockHeadAddr(blockid);
@@ -5157,7 +5157,7 @@ void* pspMoreCore(int size)
 }
 void pspOutOfMem()
 {
-	printf("dlmalloc out of mem!\n");
+	printf("** malloc out of mem!\n");
 }
  
 #endif

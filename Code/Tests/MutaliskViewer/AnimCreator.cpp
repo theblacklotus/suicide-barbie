@@ -3,8 +3,9 @@
 #include <stdio.h>
 #include "vram.h"
 #include <pspgu.h>
+#include "AnimCreator.h"
 
-bool s_createAnim = false;
+static const bool s_createAnim = (__CREATE_ANIM == 1);
 
 static const char* s_baseFileName = "host1:Anim/out";
 void saveAnimFrame(void* vram)
