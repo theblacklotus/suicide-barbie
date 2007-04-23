@@ -5,12 +5,12 @@ namespace mutalisk
 	struct Data
 	{
 		Vec3 pos;
-		float dx, dy;
+		float extent;
 	};
 	struct Sprite
 	{
 		Vec3 pos;
-		float dx, dy;
+		float extent;
 		bool operator < (const Sprite& other) const 
 		{
 			if (pos.z > other.pos.z)
@@ -92,8 +92,7 @@ namespace
 
 			Sprite sprite;
 			sprite.pos = p;
-			sprite.dx = Vec3_length(&dx);
-			sprite.dy = Vec3_length(&dy);
+			sprite.extent = Vec3_length(&dx);
 
 			sprites.push_back(sprite);
 		}
@@ -118,8 +117,7 @@ namespace
 			v0.pos = v1.pos = zeroVec;
 			Data data;
 			data.pos = sprite.pos;
-			data.dx = sprite.dx;
-			data.dy = sprite.dy;
+			data.extent = sprite.extent;
 			*dst++ = v0;
 			*dst++ = v1;
 			*out++ = data;
@@ -134,7 +132,7 @@ namespace
 		memcpy(mesh->mAmplifiedVertexData[1], mesh->mAmplifiedVertexData[0], vertexStride * vertexCount);
 		mesh->mAmplifiedBufferIndex = 0;
 
-		;;printf("done processing \"ball render\"(tm) technique\n");
+		;;printf("done processing \"sprite render\"(tm) technique\n");
 	}
 }
 	void prepareSprites(mutalisk::RenderableScene& scene)
@@ -158,7 +156,7 @@ namespace
 			unsigned meshIndex = actors[q].meshIndex;
 			ASSERT(meshIndex >= 0 && meshIndex < meshes.size());
 			mutalisk::RenderableMesh& mesh = *meshes[meshIndex].renderable;
-			if (mesh.mUserData == 0)
+			if (!mesh.mBlueprint.sprite || mesh.mUserData == 0)
 				continue;
 			const CTransform::t_matrix& worldMatrix = scene.mState.matrices[scene.mState.actor2XformIndex[q]];
 			Mat33 wc,cw;
@@ -183,7 +181,7 @@ again:
 			for (size_t j = 0; j < primCount; ++j)
 			{
 				Data& d = data[j];
-				Vec3_scale(&v, &vec, d.dx);
+				Vec3_scale(&v, &vec, d.extent);
 				Vec3_sub(&p0, &d.pos, &v);
 				Vec3_add(&p1, &d.pos, &v);
 				vertexData[j*2+0].pos = p0;
