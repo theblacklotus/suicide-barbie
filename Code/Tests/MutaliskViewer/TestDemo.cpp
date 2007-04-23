@@ -205,6 +205,8 @@ void TestDemo::onStart()
 	load(scn.phone4,	"telephone_s4\\psp\\telephone_s4.msk");
 	load(scn.phoneTrans,"telephone_trans\\psp\\telephone_trans.msk");
 	prepareSprites(*scn.phone1.renderable);
+	prepareSprites(*scn.phone2.renderable);
+	prepareSprites(*scn.phone3.renderable);
 
 __skipUntilText:
 	if (!mutalisk::gDelayedTextureLoading)
@@ -523,13 +525,13 @@ void TestDemo::phone1()
 }
 void TestDemo::phone2()
 {
-	draw(scn.phone2);
+	draw(scn.phone2, &mutalisk::renderSprites);
 	ppBloom(0.2f, 114, 200, 160);
 	restart(scn.phoneTrans);
 }
 void TestDemo::phone3()
 {
-	draw(scn.phone3);
+	draw(scn.phone3, &mutalisk::renderSprites);
 	ppBloom(0.2f, 114, 200, 160);
 	restart(scn.phoneTrans);
 }
