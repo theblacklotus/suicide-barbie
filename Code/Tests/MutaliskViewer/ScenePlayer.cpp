@@ -35,6 +35,7 @@ extern "C" {
 #include "PostProcess.h"
 #include "BallRenderer.h"
 #include "CharRenderer.h"
+#include "SpriteRenderer.h"
 
 PSP_MODULE_INFO("ScenePlayer", 0x1000, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
@@ -61,7 +62,8 @@ struct ScenePlayerApp
 		scene.blueprint = mutalisk::loadResource<mutalisk::data::scene>(pathPrefix + sceneName);
 		scene.renderable = prepare(renderContext, *scene.blueprint, pathPrefix);
 //		mutalisk::prepareBalls(*scene.renderable);
-//		mutalisk::prepareChars(*scene.renderable);
+		mutalisk::prepareChars(*scene.renderable);
+//		mutalisk::prepareSprites(*scene.renderable);
 	}
 
 	void setProjMatrix(ScePspFMatrix4 const& projMatrix)
@@ -73,7 +75,8 @@ struct ScenePlayerApp
 	void process() { scene.renderable->process(); }
 	void render(int maxActors = -1, int maxLights = -1) { 
 //		mutalisk::renderBalls(*scene.renderable);
-//		mutalisk::renderChars(*scene.renderable);
+		mutalisk::renderChars(*scene.renderable);
+//		mutalisk::renderSprites(*scene.renderable);
 		mutalisk::render(renderContext, *scene.renderable, maxActors); }
 
 	struct Scene
@@ -144,7 +147,7 @@ float getDeltaTime()
 	gPrevTick = currTick;
 
 	float realTime = static_cast<float>((delta) * mutalisk::tickFrequency()) / (1000.0f * 1000.0f);
-	if (s_createAnim)
+	if (__CREATE_ANIM)
 	{
 		float simTime = 1.f / 60.f;
 		float ratio = simTime / realTime;
@@ -264,7 +267,7 @@ int main(int argc, char* argv[])
 ;;mutalisk::TimeBlock updateTime, processTime, renderTime, loopTime, finishAndSyncTime;
 ;;loopTime.peek();
 
-		bool doPrintInfo = false;
+		bool doPrintInfo = !false;
 		bool doBlur = false;//true;
 		static float blurStrength = 0.2f;
 		static unsigned blurThreshold = 114;
