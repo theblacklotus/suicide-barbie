@@ -296,7 +296,7 @@ int main(int argc, char* argv[])
 
 //;;mutalisk::TimeBlock updateTime, /*processTime, */ loopTime, renderTime, finishAndSyncTime;
 
-	bool doPrintInfo = false;
+	bool doPrintInfo = !false;
 	gTimeControl.restart(true);
 	while(running())
 	{
@@ -375,6 +375,7 @@ int main(int argc, char* argv[])
 				//pspDebugScreenPrintf("allocated memory = %i", allocated_memory);
 			}
 
+			if (false)
 			{	// lock to 30Hz
 				static unsigned prevVBL = 0;
 				unsigned currVBL;
@@ -474,7 +475,7 @@ int init_thread(SceSize args, void *argp)
 	}
 	else
 	{
-		std::string at3name = gPathPrefix + "music/suicidebarbie.at3";
+		std::string at3name = gPathPrefix + "music/suicidebarbie_bpv.at3";
 
 		SceKernelLMOption option;
 		{
