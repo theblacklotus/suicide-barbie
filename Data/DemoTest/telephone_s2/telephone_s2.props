@@ -5,6 +5,10 @@ scene.RootNode = {}
 scene.RootNode.shader = 'baked'
 --scene.RootNode.globalScale = 100
 
+additive = {}
+additive.blendOp = 'Add'
+additive.zOp = 'ReadOnly'
+
 scene.s2_sprite1 = additive
 scene.s2_sprite2 = additive
 scene.s2_sprite3 = additive

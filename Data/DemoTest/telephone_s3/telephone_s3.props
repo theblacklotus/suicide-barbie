@@ -4,6 +4,10 @@ scene = {}
 scene.RootNode = {}
 scene.RootNode.shader = 'baked'
 
+additive = {}
+additive.blendOp = 'Add'
+additive.zOp = 'ReadOnly'
+
 scene.s3_sprite1 = additive
 scene.s3_sprite2 = additive
 scene.s3_sprite3 = additive
