@@ -5,7 +5,7 @@ scene.RootNode = {}
 scene.RootNode.shader = 'unlit'
 scene.RootNode.emissive = {1,1,1}
 scene.RootNode.ambient = {1,1,1}
-scene.RootNode.envMap = 'env1_2.tga'
+--scene.RootNode.envMap = 'env1_2.tga'
 
 uvscroll = {}
 uvscroll.blendOp = 'MAdd'
@@ -21,14 +21,14 @@ scene.pCube7 = uvscroll
 scene.pCube8 = uvscroll
 scene.pCube9 = uvscroll
 
-scene.polySurface113 = {}
-scene.polySurface220 = {}
-scene.polySurface177 = {}
-scene.polySurface113.shader = 'shiny'
-scene.polySurface220.shader = 'shiny'
-scene.polySurface177.shader = 'shiny'
-scene.polySurface113.envMap = 'env1_1.tga'
-scene.polySurface220.envMap = 'env1_2.tga'
-scene.polySurface177.envMap = 'env1_3.tga'
+scene.gun = {}
+scene.hand = {}
+scene.gold = {}
+scene.gun.shader = 'shiny'
+scene.hand.shader = 'shiny'
+scene.gold.shader = 'shiny'
+scene.gun.envMap = 'env1_1.tga'
+scene.hand.envMap = 'env1_2.tga'
+scene.gold.envMap = 'env1_3.tga'
 
 return scene
