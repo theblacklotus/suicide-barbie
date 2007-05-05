@@ -2,10 +2,10 @@
 scene = {}
 
 scene.RootNode = {}
-scene.RootNode.shader = 'shiny'
+scene.RootNode.shader = 'unlit'
 scene.RootNode.emissive = {1,1,1}
 scene.RootNode.ambient = {1,1,1}
-scene.RootNode.envMap = 'env1_2.tga'
+--scene.RootNode.envMap = 'env1_2.tga'
 
 uvscroll = {}
 uvscroll.shader = 'unlit'
@@ -22,15 +22,14 @@ scene.pCube7 = uvscroll
 scene.pCube8 = uvscroll
 scene.pCube9 = uvscroll
 
-
-scene['M16_lodded1:clip'] = {}
-scene['M16_lodded1:gizmo'] = {}
-scene['M16_lodded1:rifle'] = {}
-scene['M16_lodded1:clip'].shader = 'shiny'
-scene['M16_lodded1:gizmo'].shader = 'shiny'
-scene['M16_lodded1:rifle'].shader = 'shiny'
-scene['M16_lodded1:clip'].envMap = 'env1_1.tga'
-scene['M16_lodded1:gizmo'].envMap = 'env1_2.tga'
-scene['M16_lodded1:rifle'].envMap = 'env1_3.tga'
+scene.clip = {}
+scene.clip.shader = 'shiny'
+scene.clip.envMap = 'env1_1.tga'
+scene.gizmo = {}
+scene.gizmo.shader = 'shiny'
+scene.gizmo.envMap = 'env1_2.tga'
+scene.rifle = {}
+scene.rifle.shader = 'shiny'
+scene.rifle.envMap = 'env1_3.tga'
 
 return scene
