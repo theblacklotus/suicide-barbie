@@ -125,16 +125,61 @@ namespace
 		};
 
 
-		static float time = 0;
+		float time = scene.mState.time;
 		float t = sinf(time += 0.1f);
 		if (t < 0)
 			t = 0;
 		float loop = 5.f;
-		t = fmodf(time*.6f, loop);
+		t = fmodf(time*.6f * 2.f, loop);
 		if (t > loop-0.5f)
 			t = 0.f;
 		if (t > loop-1.f)
 			t = loop-1.f;
+
+
+		/*
+			t E [0, t0]			wipe in
+
+			t E [t1, t2]		wipe out
+			t E [t2, t3]		wipe in
+
+			t E [t3, oo]		disable
+		*/
+
+		const float t0 = 1.f;
+		const float t1 = 10.46f;
+		const float t2 = 11.46f;
+		const float t3 = 12.46f;
+
+		uint state = 0;
+/*
+		static bool firstTime = true;
+		if (firstTime == true)
+		{
+			firstTime = false;
+			time = 0.f;
+		}
+*/
+		if (0.f <= time && time < t0)
+		{
+			t = 2.f * time / t0;
+			state = 1;
+		}
+		else if (t0 <= time && time < t1)
+		{
+			t = 2.f * 1.f;
+			state = 2;
+		}
+		else if (t1 <= time && time < t2)
+		{
+			t = 1.f + (1.f - (time - t1) / (t2-t1));
+			state = 3;
+		}
+		else if (t2 <= time && time < t3)
+		{
+			t = 1.f + (time - t2) / (t3-t2);
+			state = 4;
+		}
 
 		size_t globPrimCount = 0xffffffff;
 
@@ -199,27 +244,45 @@ namespace
 			{
 				Vec3 pos0 = vertexData0->pos;
 				Vec3 pos1 = vertexData1->pos;
+
+				if (state == 1)
+				{
+					pos1 = pos0;
+					pos0.z -= 1.f;
+				}
+				else if (state == 3)
+				{
+					pos1 = pos0;
+					pos0.z += 2.f;
+				}
+				if (state == 4)
+				{
+					pos1 = pos0;
+					pos0.z -= 2.f;
+				}
+
 				Vec3 pos3, pivot3;
 				float displace = random[j];
-//				printf("%f \n ", displace);
 				float td = t - 0.5f * (displace/(float)primCount);
 				td = std::max(td, 0.f);
 				td = std::min(td, 1.f);
-//				printf("%f -> ", td);
 				td = sinf(((td-0.5f) * 3.1415926535f)) * 0.5f + 0.5f;
-//				printf("%f \n", td);
 				Vec3_sub(&pos3, &pos1, &pos0);
 				Vec3_scale(&pos3, &pos3, td);
 				Vec3_add(&pos3, &pos3, &pos0);
+
+				if (state == 0)
+				{
 
 				Vec3_sub(&pivot3, &pivot1, &pivot0);
 				Vec3_scale(&pivot3, &pivot3, td);
 				Vec3_add(&pivot3, &pivot3, &pivot0);
 
+				td = sinf(((td) * 3.1415926535f)) * 0.75f;
 				Vec3_sub(&pivot3, &pivot3, &pos3);
-				Vec3_scale(&pivot3, &pivot3, sinf(td*3.1415956535f) * 0.75f);
+				Vec3_scale(&pivot3, &pivot3, td);
 				Vec3_add(&pos3, &pivot3, &pos3);
-
+				}
 
 				++vertexData0;
 				vertexData0->pos = pos3; ++vertexData0;
@@ -232,9 +295,10 @@ namespace
 	}
 //		printf("globPrimCount = %i\n", globPrimCount);
 
-
+		static bool s_firstTime = true;
 		for(size_t q = 0; q < actors.size(); ++q)
 		{
+			bool firstTime = s_firstTime;
 			unsigned meshIndex = actors[q].meshIndex;
 			ASSERT(meshIndex >= 0 && meshIndex < meshes.size());
 			mutalisk::RenderableMesh& mesh = *meshes[meshIndex].renderable;
@@ -248,6 +312,7 @@ namespace
 			Vec3 vec;
 			Vec3_setMat33MulVec3(&vec, &cw, &unit2d);
 
+again:
 			Vertex* vertexData = (Vertex*)mesh.mAmplifiedVertexData[mesh.mAmplifiedBufferIndex];
 			size_t primCount = mesh.mBlueprint.vertexCount / 2;
 			Vec3 p0, p1, v;
@@ -265,6 +330,13 @@ namespace
 				vertexData->pos = p0; ++vertexData;
 				vertexData->pos = p1; ++vertexData;
 			}
+			if (firstTime)
+			{
+				mesh.mAmplifiedBufferIndex = 1 - mesh.mAmplifiedBufferIndex;
+				firstTime = false;
+				goto again;
+			}
 		}
+		s_firstTime = false;
 	}
 }
