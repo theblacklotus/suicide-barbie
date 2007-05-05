@@ -20,21 +20,21 @@ float mathTan(__reg("fp0") float f)
 
 float mathASin(__reg("fp0") float f)
 {
-	return (float) asin(f);
+	return asinf(f);
 }
 
 float mathACos(__reg("fp0") float f)
 {
-	return (float) acos(f);
+	return acosf(f);
 }
 
 float mathATan(__reg("fp0") float f)
 {
-	return (float) atan(f);
+	return atanf(f);
 }
 
 float mathATan2(__reg("fp0") float x, __reg("fp1") float y)
 {
-	return (float) atan2(y, x);
+	return atan2f(y, x);
 }
 

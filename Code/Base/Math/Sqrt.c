@@ -5,10 +5,10 @@
 
 s32 mathISqrt(__reg("d0") s32 x)
 {
-	return (s32) sqrt((double) x);
+	return (s32) sqrtf((float) x);
 }
 
 float mathSqrt(__reg("fp0") float x)
 {
-	return (float) sqrt(x);
+	return (float) sqrtf(x);
 }
