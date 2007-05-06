@@ -9,5 +9,15 @@ scene.RootNode.ambient = {1,1,1}
 --scene.enableScalingPivots = 0
 --scene.enableScalingPivots = 0
 
+scene.clip1 = {}
+scene.clip1.shader = 'shiny'
+scene.clip1.envMap = 'env1_1.tga'
+scene.gizmo1 = {}
+scene.gizmo1.shader = 'shiny'
+scene.gizmo1.envMap = 'env1_2.tga'
+scene.rifle1 = {}
+scene.rifle1.shader = 'shiny'
+scene.rifle1.envMap = 'env1_3.tga'
+
 
 return scene

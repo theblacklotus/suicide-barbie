@@ -8,7 +8,7 @@ scene.RootNode.enableScalingPivots = 0
 
 
 additive = {}
-additive.blendOp = 'Add'
+additive.blendOp = 'MAdd'
 additive.zOp = 'ReadOnly'
 
 scene.s1_sprite = additive

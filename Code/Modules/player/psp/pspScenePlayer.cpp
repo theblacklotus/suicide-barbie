@@ -17,6 +17,7 @@ namespace mutalisk
 {
 	using namespace effects;
 	bool gDelayedTextureLoading = false;
+	data::psp_texture gMirrorTexture;
 
 RenderContext::RenderContext()
 :	znear(1.0f)
@@ -28,6 +29,11 @@ RenderContext::RenderContext()
 }
 
 ////////////////////////////////////////////////
+data::psp_texture& getMirrorTexture()
+{
+	return gMirrorTexture;
+}
+
 std::auto_ptr<RenderableTexture> prepare(RenderContext& rc, mutalisk::data::texture const& data)
 {
 	std::auto_ptr<RenderableTexture> texture(new RenderableTexture(data));
@@ -67,6 +73,38 @@ std::auto_ptr<RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene 
 
 	// setup scene
 	scene->setClip(data.defaultClipIndex);
+
+	// @HACK: setup mirrors
+	{
+		bool hasMirror = false;
+		for(size_t q = 0; q < data.actors.size() && !hasMirror; ++q)
+			if (data.actors[q].nodeName.find("mirror") != std::string::npos)
+				hasMirror = true;
+
+		if(hasMirror)
+		{
+			unsigned mirrorTextureIndex = scene->mResources.textures.size();
+			mutalisk::array<RenderableScene::SharedResources::Texture> textures;
+			textures.resize(mirrorTextureIndex + 1);
+			std::copy(scene->mResources.textures.begin(), scene->mResources.textures.end(), textures.begin());
+			scene->mResources.textures.swap(textures);
+//			scene->mResources.textures.resize(mirrorTextureIndex  + 1);
+			scene->mResources.textures[mirrorTextureIndex].blueprint.reset(0);
+			scene->mResources.textures[mirrorTextureIndex].renderable = prepare(rc, gMirrorTexture);
+
+			for(size_t q = 0; q < data.actors.size(); ++q)
+			{
+				if (data.actors[q].nodeName.find("mirror") != std::string::npos)
+				{
+					printf("%s : %s marked as 'mirror'\n", __FUNCTION__, data.actors[q].nodeName.c_str());
+					for(size_t w = 0; w < data.actors[q].materials.size(); ++w)
+					{
+						const_cast<unsigned&>(data.actors[q].materials[w].shaderInput.diffuseTexture) = mirrorTextureIndex;
+					}
+				}
+			}
+		}
+	}
 
 	return scene;
 }
@@ -186,8 +224,12 @@ namespace {
 
 //		printf("¤¤ src.diffuseTexture = %x\n", src.diffuseTexture);
 
-		dst.diffuseTexture = (src.diffuseTexture != ~0U) ? scene.mResources.textures[src.diffuseTexture].blueprint.get() : 0;
-		dst.envmapTexture = (src.envmapTexture != ~0U) ? scene.mResources.textures[src.envmapTexture].blueprint.get() : 0;
+		dst.diffuseTexture = 0;
+		dst.envmapTexture = 0;
+		if(src.diffuseTexture != ~0U)
+			dst.diffuseTexture = &scene.mResources.textures[src.diffuseTexture].renderable->mBlueprint;
+		if(src.envmapTexture != ~0U)
+			dst.envmapTexture = &scene.mResources.textures[src.envmapTexture].renderable->mBlueprint;
 //		printf("¤¤ dst.diffuseTexture = %x\n", dst.diffuseTexture);
 
 //		dst.diffuseTexture = (src.diffuseTexture != ~0U)? scene.mResources.textures[src.diffuseTexture] : 0;
@@ -298,7 +340,7 @@ namespace {
 		ScePspFMatrix4	invWorld;
 		ScePspFMatrix4	worldViewProj;
 
-		gumFastInverse(&invWorld, &world);
+//		gumFastInverse(&invWorld, &world);
 		gumMultMatrix(&worldViewProj, &rc.viewProjMatrix, &world);
 
 		dst[BaseEffect::WorldMatrix] = world;
@@ -306,7 +348,7 @@ namespace {
 		dst[BaseEffect::ProjMatrix] = rc.projMatrix;
 		dst[BaseEffect::ViewProjMatrix] = rc.viewProjMatrix;
 		dst[BaseEffect::WorldViewProjMatrix] = worldViewProj;
-		dst[BaseEffect::InvWorldMatrix] = invWorld;
+//		dst[BaseEffect::InvWorldMatrix] = invWorld;
 	}
 
 	void render(RenderContext& rc, RenderableMesh const& mesh, unsigned subset = 0)
@@ -363,6 +405,18 @@ void render(RenderContext& rc, RenderableScene const& scene, int maxActors)
 
 		cameraPos = scene.mState.cameraMatrix.Move;
 	}
+/*	{
+		MatrixT nativeCameraMatrix;
+		MatrixT nativeProjMatrix;
+		toNative(nativeCameraMatrix, scene.mState.cameraMatrix);
+		toNative(nativeProjMatrix, scene.mState.projMatrix);
+
+		setProjectionMatrix(rc, nativeMatrix);
+		setCameraMatrix(rc, nativeMatrix);
+
+		cameraPos = scene.mState.cameraMatrix.Move;
+	}
+*/
 //;;printf(" render -- 1\n");
 
 	static std::vector<InstanceInput> instanceInputs;

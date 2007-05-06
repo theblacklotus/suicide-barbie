@@ -29,6 +29,10 @@ struct Repository
 
 		{char const* n[] = {"shiny", ""};
 		entry(new Shiny(), n);}
+
+		{char const* n[] = {"mirror", ""};
+		entry(new Mirror(), n);}
+
 	}
 
 public:

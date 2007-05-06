@@ -62,10 +62,18 @@ class TestDemo : public mutalisk::BaseDemoPlayer
 	TimelineT						timeline;
 	float							timeOffset;
 
+	// HACK: mirror 
+	unsigned						phone2MirrorActorId;
+	unsigned						phone2ReflectorActorId;
+	bool							frameContainsMirror;
+
+
 public:
 	TestDemo() : timeOffset(0) {}
 	void updateFrame(float t);
 	void renderFrame();
+	void drawMirrorFrame(Scene const& scene, unsigned mirrorActorId, unsigned reflectedActorId);
+	bool hasMirror() const { return frameContainsMirror; }
 
 protected:
 	virtual void onStart();
@@ -79,6 +87,7 @@ protected:
 	void flower_x_spiral();
 	void spiral();
 	void phone1(); void phone2(); void phone3(); void phone4();
+//	void phone2_noMirror();
 	void phone1_x__(); void phone2_x__(); void phone3_x__();
 	void phone__x_2(); void phone__x_3(); void phone__x_4();
 

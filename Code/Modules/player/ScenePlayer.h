@@ -64,6 +64,7 @@ struct RenderableScene
 		MatricesT						matrices;
 
 		unsigned						activeCameraIndex;
+		CTransform::t_matrix			projMatrix;
 		CTransform::t_matrix			cameraMatrix;
 
 		std::vector<size_t>				light2XformIndex;
@@ -132,6 +133,10 @@ struct RenderableScene
 				this->transforms.begin(), this->transforms.end());
 		}
 
+		/*CTransform::t_matrix calcProjectionMatrix(float fov, float aspect)
+		{
+		}*/
+
 		void processActiveCamera(mutalisk::data::scene const& blueprint)
 		{
 			static bool animatedActors = true;//gSettings.forceAnimatedActors;
@@ -161,6 +166,12 @@ struct RenderableScene
 
 			if(this->activeCameraIndex != ~0U)
 			{
+				/*ASSERT(this->activeCameraIndex >= 0 && this->activeCameraIndex < this->camera2XformIndex.size());
+				this->projMatrix = 
+					calcProjectionMatrix(
+						blueprint.cameras[this->activeCameraIndex].fov,
+						blueprint.cameras[this->activeCameraIndex].aspect);*/
+
 				if(animatedCamera)
 				{
 					ASSERT(this->activeCameraIndex >= 0 && this->activeCameraIndex < this->camera2XformIndex.size());

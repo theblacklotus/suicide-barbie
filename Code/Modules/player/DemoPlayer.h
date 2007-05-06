@@ -78,7 +78,6 @@ namespace mutalisk
 
 	protected:
 		RenderContextT	renderContext;
-	private:
 		float			mCurrTime;
 		unsigned		mCurrFrame;
 		std::string		mPathPrefix;

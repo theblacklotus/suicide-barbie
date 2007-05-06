@@ -16,7 +16,8 @@ struct BaseEffect
 		ProjMatrix,
 		ViewProjMatrix,
 		WorldViewProjMatrix,
-		InvWorldMatrix,
+//		InvWorldMatrix,
+		TextureProjMatrix,
 		MaxCount_nMatrix
 	};
 
@@ -69,8 +70,8 @@ public:
 			ColorT			specular;
 			ColorT			emissive;
 
-			TextureT*		diffuseTexture;
-			TextureT*		envmapTexture;
+			TextureT const*	diffuseTexture;
+			TextureT const*	envmapTexture;
 
 			float			uOffset;
 			float			vOffset;

@@ -5,5 +5,6 @@
 #include "library/Unlit.h"
 #include "library/Lambert.h"
 #include "library/Shiny.h"
+#include "library/Mirror.h"
 
 #endif // MUTALISK_EFFECTS__ALL_H_

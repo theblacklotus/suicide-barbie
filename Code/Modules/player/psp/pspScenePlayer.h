@@ -81,6 +81,9 @@ AP<RenderableTexture> prepare(RenderContext& rc, mutalisk::data::texture const& 
 void render(RenderContext& rc, RenderableScene const& scene, int maxActors = -1);
 //	bool animatedActors = true, bool animatedLights = true, int maxActors = -1, int maxLights = -1);
 
+// @HACK: mirror
+data::psp_texture& getMirrorTexture();
+
 #ifdef AP_DEFINED_LOCALY
 #undef AP
 #endif

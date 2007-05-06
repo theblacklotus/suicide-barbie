@@ -227,13 +227,13 @@ void CommonEffectImpl::setupBuffers(BaseEffect::Input const& input)
 //		sceGuPixelMask((bufferControl.colorWriteEnable)? ~0U: 0U);
 	}
 
-	if(gBufferControl.zWriteEnable != bufferControl.zWriteEnable || !gBufferControlInitialized)
+//	if(gBufferControl.zWriteEnable != bufferControl.zWriteEnable || !gBufferControlInitialized)
 	//	device().SetRenderState(D3DRS_ZWRITEENABLE, bufferControl.zWriteEnable);
 	{
 		sceGuDepthMask((bufferControl.zWriteEnable)? GU_FALSE: GU_TRUE);//GU_TRUE);
 	}
 
-	if(gBufferControl.zReadEnable != bufferControl.zReadEnable || !gBufferControlInitialized)
+//	if(gBufferControl.zReadEnable != bufferControl.zReadEnable || !gBufferControlInitialized)
 	{
 		if(bufferControl.zReadEnable)
 			sceGuEnable(GU_DEPTH_TEST);
@@ -241,7 +241,7 @@ void CommonEffectImpl::setupBuffers(BaseEffect::Input const& input)
 			sceGuDisable(GU_DEPTH_TEST);
 	}
 
-	if(gBufferControl.zEqual != bufferControl.zEqual || !gBufferControlInitialized)
+//	if(gBufferControl.zEqual != bufferControl.zEqual || !gBufferControlInitialized)
 		sceGuDepthFunc((bufferControl.zEqual)? GU_EQUAL: GU_LEQUAL);
 
 	gBufferControlInitialized = true;

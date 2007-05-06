@@ -288,15 +288,16 @@ int main(int argc, char* argv[])
 	sceCtrlSetSamplingCycle(0);
 	sceCtrlSetSamplingMode(0); 
 
-
 	mutalisk::initTickFrequency(); getDeltaTime();
 ;;printf("tickResolution: %f, tickFrequency: %f\n", mutalisk::tickResolution(), mutalisk::tickFrequency());
 
 	gStartMusic = true;
 
 //;;mutalisk::TimeBlock updateTime, /*processTime, */ loopTime, renderTime, finishAndSyncTime;
+;;mutalisk::TimeBlock finishAndSyncTime;
 
-	bool doPrintInfo = !false;
+	bool doPrintInfo = !true;
+	bool doLock30fps = true;
 	gTimeControl.restart(true);
 	while(running())
 	{
@@ -356,9 +357,9 @@ int main(int argc, char* argv[])
 			gDemo->updateFrame(gTimeControl.update(getDeltaTime()));
 //;;updateTime.peek();
 
-//;;finishAndSyncTime.peek();
+;;finishAndSyncTime.peek();
 			sceGuSync(0,0);
-//;;finishAndSyncTime.peek();
+;;finishAndSyncTime.peek();
 
 ;;static mutalisk::TimeBlock frameTime; frameTime.peek();
 
@@ -366,7 +367,7 @@ int main(int argc, char* argv[])
 			{
 				pspDebugScreenSetOffset((int)mainRenderTarget.vramAddr);
 				pspDebugScreenSetXY(0,0);
-				pspDebugScreenPrintf("mspf(%3.3f)", frameTime.ms());
+				pspDebugScreenPrintf("mspf(%f) fin(%f)", frameTime.ms(), finishAndSyncTime.ms());
 				pspDebugScreenPrintf("\tmem footprint = %i\t in use = %i", dlmalloc_footprint(), dlmalloc_inuse());
 				//pspDebugScreenPrintf("timers: frame(%f) loop(%f) guFinish(%f)", frameTime.ms(), loopTime.ms(), finishAndSyncTime.ms());
 				//pspDebugScreenPrintf("\n");
@@ -375,7 +376,7 @@ int main(int argc, char* argv[])
 				//pspDebugScreenPrintf("allocated memory = %i", allocated_memory);
 			}
 
-			if (false)
+			if(doLock30fps)
 			{	// lock to 30Hz
 				static unsigned prevVBL = 0;
 				unsigned currVBL;
@@ -405,7 +406,13 @@ int main(int argc, char* argv[])
 
 			sceGuClearColor(0xff000000);
 			sceGuClearDepth(0xffff);
-			sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
+			if(true)//gDemo->hasMirror())
+			{
+				sceGuClearStencil(0);
+				sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT|GU_STENCIL_BUFFER_BIT);
+			}
+			else
+				sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
 
 			sceGuAmbient(0x00101010);
 			sceGuColor(0xffffff);

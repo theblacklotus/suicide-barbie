@@ -4,6 +4,8 @@
 #include "CharRenderer.h"
 #include "BlinkyBlinky.h"
 
+#include <effects/library/Mirror.h>
+
 /////////////////////////////////////////////////////////////////////////////
 
 #define S_FUNC(f) (&SelfT::f)
@@ -83,10 +85,23 @@ void flashScreen(float intensity, unsigned color )
 	sceGuEnable(GU_DEPTH_TEST);
 #endif
 }
+
+unsigned findActor(TestDemo::Scene const& scene, std::string const& actorName)
+{
+	unsigned actorId = ~0U;
+	for(size_t q = 0; q < scene.blueprint->actors.size(); ++q)
+		if(scene.blueprint->actors[q].nodeName.find(actorName) != std::string::npos)
+			actorId = q;
+	return actorId;
+}
+
 } // namespace 
 
 void TestDemo::renderFrame()
 {
+	// HACK: mirror
+	frameContainsMirror = false;
+
 	setPhase(RenderPhase);
 	timeline.run(*this);
 
@@ -107,6 +122,110 @@ void TestDemo::renderFrame()
 	}
 }
 
+void TestDemo::drawMirrorFrame(Scene const& scene, unsigned mirrorActorId, unsigned reflectedActorId)
+{
+	if(mPhase == UpdatePhase)
+	{
+	}
+	else if(mPhase == RenderPhase)
+	{
+		frameContainsMirror = true;
+
+#if defined(MUTALISK_DX9)
+// -- disabled
+#elif defined(MUTALISK_PSP)
+		sceGuEnable(GU_STENCIL_TEST);
+		sceGuStencilFunc(GU_EQUAL, 1, 1);
+		sceGuStencilOp(GU_KEEP, GU_KEEP, GU_KEEP);
+		sceGuFrontFace(GU_CW);
+
+		sceGuClearDepth(0xffff);
+		sceGuClear(GU_DEPTH_BUFFER_BIT|GU_FAST_CLEAR_BIT);
+
+		sceGuAmbient(0x00101010);
+		sceGuColor(0xffffff);
+		sceGuDisable(GU_BLEND);
+#endif
+
+		CTransform::t_matrix cameraMatrix = scene.renderable->mState.cameraMatrix;
+		CTransform::t_matrix prevCameraMatrix = cameraMatrix;
+
+		for(size_t q = 0; q < scene.blueprint->actors.size(); ++q)
+			if(q != reflectedActorId)
+				scene.blueprint->actors[q].active = false;
+
+		CTransform::t_matrix const& mirrorMatrix = 
+			scene.renderable->mState.matrices[
+				scene.renderable->mState.actor2XformIndex[mirrorActorId]];
+
+		Vec3 point = mirrorMatrix.Move;
+		point.y -= 1.35f;
+
+		Vec3 normal = mirrorMatrix.Rot.Row[0];
+		normal.x = mirrorMatrix.Rot.Row[1].x;
+		normal.y = mirrorMatrix.Rot.Row[1].y;
+		normal.z = mirrorMatrix.Rot.Row[1].z;
+		normal.x = -0.97789f;
+		normal.y = 0.159117f;
+		normal.z = 0.0f;	
+		Vec3_normalize(&normal, &normal);
+
+		struct Plane { float a, b, c, d; };
+		Plane P;
+		P.a = normal.x;
+		P.b = normal.y;
+		P.c = normal.z;
+		P.d = -(point.x * normal.x + point.y * normal.y + point.z * normal.z);
+		float invPLen = 1.0f / sqrtf(P.a*P.a + P.b*P.b + P.c*P.c + P.d*P.d);
+		P.a *= invPLen;
+		P.b *= invPLen;
+		P.c *= invPLen;
+		P.d *= invPLen;
+
+		Mat34 reflMatrix;
+
+
+		reflMatrix.Rot.Row[0].x = -2 * P.a * P.a + 1;
+		reflMatrix.Rot.Row[0].y = -2 * P.b * P.a;
+		reflMatrix.Rot.Row[0].z = -2 * P.c * P.a;
+
+		reflMatrix.Rot.Row[1].x = -2 * P.a * P.b;
+		reflMatrix.Rot.Row[1].y = -2 * P.b * P.b + 1;
+		reflMatrix.Rot.Row[1].z = -2 * P.c * P.b;
+
+		reflMatrix.Rot.Row[2].x = -2 * P.a * P.c;
+		reflMatrix.Rot.Row[2].y = -2 * P.b * P.c;
+		reflMatrix.Rot.Row[2].z = -2 * P.c * P.c + 1;
+
+		reflMatrix.Move.x = -2 * P.a * P.d;
+		reflMatrix.Move.y = -2 * P.b * P.d;
+		reflMatrix.Move.z = -2 * P.c * P.d;
+
+		CTransform::t_matrix m = cameraMatrix;
+		Mat34_mul(&m, &reflMatrix, &cameraMatrix);
+		scene.renderable->mState.cameraMatrix = m;
+
+		renderContext.znear = scene.znear;
+		renderContext.zfar = scene.zfar;
+		mutalisk::render(renderContext, *scene.renderable);
+
+		scene.renderable->mState.cameraMatrix = prevCameraMatrix;
+		for(size_t q = 0; q < scene.blueprint->actors.size(); ++q)
+			scene.blueprint->actors[q].active = true;
+
+#if defined(MUTALISK_DX9)
+// -- disabled
+#elif defined(MUTALISK_PSP)
+		sceGuEnable(GU_DEPTH_TEST);
+		sceGuDisable(GU_STENCIL_TEST);
+		sceGuDepthFunc(GU_LEQUAL);
+		sceGuFrontFace(GU_CCW);
+		sceGuEnable(GU_CULL_FACE);
+		sceGuDepthRange(0, 0xffff);
+#endif
+
+	}
+}
 
 namespace
 {
@@ -121,7 +240,7 @@ void TestDemo::onStart()
 	timeOffset = 0;
 
 //	mutalisk::gDelayedTextureLoading = false;
-//	timeOffset = 91;
+//	timeOffset = 208;
 
 
 	{Item items[] = {
@@ -142,6 +261,7 @@ void TestDemo::onStart()
 
 		Item(69,	ms(14),		S_FUNC(phone__x_2)),
 		Item(69,	ms(64),		S_FUNC(phone2)),			// 14 + (114 - 64)
+//		Item(75,	ms(64),		S_FUNC(phone2_noMirror)),
 		Item(76,	ms(32),		S_FUNC(phone2_x__)),
 
 		Item(76,	ms(82),		S_FUNC(phone__x_3)),
@@ -152,7 +272,7 @@ void TestDemo::onStart()
 		Item(85,	ms(00),		S_FUNC(phone4)),			// (32 + 82)/2
 
 		Item(92,	ms(18),		S_FUNC(text0)),
-		Item(93,	ms(18),		S_FUNC(text)),
+		Item(93,	ms(0),		S_FUNC(text)),
 		Item(115,	ms(22),		S_FUNC(jealousy)),
 
 		Item(122,	ms(90),		S_FUNC(beer1)),
@@ -180,14 +300,42 @@ void TestDemo::onStart()
 	};
 	timeline.addScript(items);}
 
-	if(timeOffset >= 93)
-		goto __skipUntilText;
-	if(timeOffset >= 184)
-		goto __skipUntilGun;
-	if(timeOffset >= 208)
-		goto __skipUntilExpode;
+	bool doShowText = true;
+	bool doShowGun = true;
+	bool doShowExplode = true;
+	bool doShowWindow = true;
+
+
 	if(timeOffset >= 242)
+	{
 		goto __skipUntilWindow;
+	}
+	if(timeOffset >= 208)
+	{
+		doShowWindow = false;
+		goto __skipUntilExpode;
+	}
+	if(timeOffset >= 184)
+	{
+		doShowExplode = false;
+		doShowWindow = false;
+		goto __skipUntilGun;
+	}
+	if(timeOffset >= 93)
+	{
+		doShowGun = false;
+		doShowExplode = false;
+		doShowWindow = false;
+		goto __skipUntilText;
+	}
+	if(timeOffset >= 63)
+	{
+		doShowText = false;
+		doShowGun = false;
+		doShowExplode = false;
+		doShowWindow = false;
+		goto __skipUntilPhone;
+	}
 
 	load(scn.walk,		"walk\\psp\\walk.msk");
 	load(scn.walkBG,	"walk\\psp\\back.msk");
@@ -199,6 +347,7 @@ void TestDemo::onStart()
 
 	load(scn.spiral,	"snake\\psp\\snake.msk");
 	
+__skipUntilPhone:
 	load(scn.phone1,	"telephone_s1\\psp\\telephone_s1.msk");
 	load(scn.phone2,	"telephone_s2\\psp\\telephone_s2.msk");
 	load(scn.phone3,	"telephone_s3\\psp\\telephone_s3.msk");
@@ -208,57 +357,72 @@ void TestDemo::onStart()
 	prepareSprites(*scn.phone2.renderable);
 	prepareSprites(*scn.phone3.renderable);
 
+	phone2MirrorActorId = findActor(scn.phone2, "mirror");
+	phone2ReflectorActorId = findActor(scn.phone2, "dfs");
+
 __skipUntilText:
-	if (!mutalisk::gDelayedTextureLoading)
+	if(doShowText)
 	{
-		load(scn.textWalk,	"text\\psp\\text.msk");
-		prepareChars(*scn.textWalk.renderable);
+		if (!mutalisk::gDelayedTextureLoading)
+		{
+			load(scn.textWalk,	"text\\psp\\text.msk");
+			prepareChars(*scn.textWalk.renderable);
+		}
+		load(scn.textBG,	"text\\psp\\back.msk");
+		load(scn.text,		"text\\psp\\undertext.msk");
+		load(scn.jealousy,	"jealousy\\psp\\jealousy.msk");
+
+		load(scn.beer1,		"beer\\beer1\\psp\\beer1.msk");
+		load(scn.beer2,		"beer\\beer2\\psp\\beer2.msk");
+		
+		load(scn.garlic1,	"garlic\\garlic1\\psp\\garlic1.msk");
+		load(scn.garlic2,	"garlic\\garlic2\\psp\\garlic2.msk");
+
+		load(scn.mix1,		"mix\\mix1\\psp\\mix1.msk");
+		load(scn.mix2,		"mix\\mix2\\psp\\mix2.msk");
+		load(scn.mix3,		"mix\\mix3\\psp\\mix3.msk");
 	}
-	load(scn.textBG,	"text\\psp\\back.msk");
-	load(scn.text,		"text\\psp\\undertext.msk");
-	load(scn.jealousy,	"jealousy\\psp\\jealousy.msk");
-
-	load(scn.beer1,		"beer\\beer1\\psp\\beer1.msk");
-	load(scn.beer2,		"beer\\beer2\\psp\\beer2.msk");
-	
-	load(scn.garlic1,	"garlic\\garlic1\\psp\\garlic1.msk");
-	load(scn.garlic2,	"garlic\\garlic2\\psp\\garlic2.msk");
-
-	load(scn.mix1,		"mix\\mix1\\psp\\mix1.msk");
-	load(scn.mix2,		"mix\\mix2\\psp\\mix2.msk");
-	load(scn.mix3,		"mix\\mix3\\psp\\mix3.msk");
 
 __skipUntilGun:
-	if (!mutalisk::gDelayedTextureLoading)
+	if(doShowGun)
 	{
-		load(scn.reload,	"reload\\psp\\reload.msk");
-		load(scn.m16,		"weapon3\\psp\\weapon3.msk");
-		load(scn.gun,		"weapon2\\psp\\gun.msk");
+		if (!mutalisk::gDelayedTextureLoading)
+		{
+			load(scn.reload,	"reload\\psp\\reload.msk");
+			load(scn.m16,		"weapon3\\psp\\weapon3.msk");
+			load(scn.gun,		"weapon2\\psp\\gun.msk");
+		}
 	}
 
 __skipUntilExpode:
-	if (!mutalisk::gDelayedTextureLoading)
+	if(doShowExplode)
 	{
-		load(scn.bullet1,	"bull1\\psp\\bull1.msk");
-		load(scn.bullet2,	"bull2\\psp\\bull2.msk");
-		load(scn.expGirl1BG,"back_01\\psp\\back_01.msk");
-		load(scn.expGirl2BG,"back_02\\psp\\back_02.msk");
-		load(scn.expGirl1,	"exgirl1\\psp\\exgirl1.msk");
-		load(scn.expGirl2,	"exgirl2\\psp\\exgirl2.msk");
+		if (!mutalisk::gDelayedTextureLoading)
+		{
+			load(scn.bullet1,	"bull1\\psp\\bull1.msk");
+			load(scn.bullet2,	"bull2\\psp\\bull2.msk");
+			load(scn.expGirl1BG,"back_01\\psp\\back_01.msk");
+			load(scn.expGirl2BG,"back_02\\psp\\back_02.msk");
+			load(scn.expGirl1,	"exgirl1\\psp\\exgirl1.msk");
+			load(scn.expGirl2,	"exgirl2\\psp\\exgirl2.msk");
+		}
 	}
 
 __skipUntilWindow:
-	if (!mutalisk::gDelayedTextureLoading)
+	if(doShowWindow)
 	{
-		load(scn.windowBarbie,	
-							"suicidebarbie1\\psp\\suicidebarbie1.msk");
-		load(scn.window,	"window\\psp\\window.msk");
-	}
+		if (!mutalisk::gDelayedTextureLoading)
+		{
+			load(scn.windowBarbie,	
+								"suicidebarbie1\\psp\\suicidebarbie1.msk");
+			load(scn.window,	"window\\psp\\window.msk");
+		}
 
-	if (!mutalisk::gDelayedTextureLoading)
-	{
-		load(scn.endBack,	"suicidebarbie2\\psp\\suicidebarbie_back2.msk");
-		load(scn.end,		"suicidebarbie2\\psp\\suicidebarbie2.msk");
+		if (!mutalisk::gDelayedTextureLoading)
+		{
+			load(scn.endBack,	"suicidebarbie2\\psp\\suicidebarbie_back2.msk");
+			load(scn.end,		"suicidebarbie2\\psp\\suicidebarbie2.msk");
+		}
 	}
 
 	if (mutalisk::gDelayedTextureLoading)
@@ -385,7 +549,7 @@ void updateAnimatedProperties3(mutalisk::RenderableScene const& scene)
 	// update properties
 	for(size_t q = 0; q < actors.size(); ++q)
 	{
-		float f = std::min(time * 0.2f, 1.0f);
+		float f = std::min(time * 0.4f, 1.0f);
 
 		mutalisk::data::scene::Actor& actor = const_cast<mutalisk::data::scene::Actor&>(actors[q]);
 		for(size_t w = 0; w < actor.materials.size(); ++w)
@@ -419,7 +583,7 @@ void updateAnimatedProperties4(mutalisk::RenderableScene const& scene)
 
 void updateAnimatedProperties4_short(mutalisk::RenderableScene const& scene)
 {
-	const mutalisk::array<mutalisk::data::scene::Actor>& actors = scene.mBlueprint.actors;
+/*	const mutalisk::array<mutalisk::data::scene::Actor>& actors = scene.mBlueprint.actors;
 	float time = scene.mState.time;
 
 	// update properties
@@ -438,6 +602,33 @@ void updateAnimatedProperties4_short(mutalisk::RenderableScene const& scene)
 			actor.materials[w].shaderInput.ambient.b = f;
 		}
 	}
+	*/
+}
+
+void updateAnimatedProperties5(mutalisk::RenderableScene const& scene)
+{
+	float vScale = gVScale;
+
+	const mutalisk::array<mutalisk::data::scene::Actor>& actors = scene.mBlueprint.actors;
+	float time = scene.mState.time;
+
+	// update properties
+	for(size_t q = 0; q < actors.size(); ++q)
+	{
+		mutalisk::data::scene::Actor& actor = const_cast<mutalisk::data::scene::Actor&>(actors[q]);
+
+		float fadeIn = scene.mState.sampleAnimation(actor.nodeName, "fadein", time, 1.0f);
+		for(size_t w = 0; w < actor.materials.size(); ++w)
+		{
+			actor.materials[w].shaderInput.transparency = 1.0f - fadeIn;
+		}
+	}
+}
+
+void updateAnimatedProperties_sprites(mutalisk::RenderableScene const& scene)
+{
+	updateAnimatedProperties5(scene);
+	mutalisk::renderSprites(scene);
 }
 
 }
@@ -520,18 +711,20 @@ void TestDemo::spiral()
 
 void TestDemo::phone1()
 {
-	draw(scn.phone1, &mutalisk::renderSprites);
+	draw(scn.phone1, updateAnimatedProperties_sprites);//&mutalisk::renderSprites);
 	ppBloom(0.2f, 114, 200, 160);
 }
 void TestDemo::phone2()
 {
-	draw(scn.phone2, &mutalisk::renderSprites);
+	draw(scn.phone2, updateAnimatedProperties_sprites);//&mutalisk::renderSprites);
+	drawMirrorFrame(scn.phone2, phone2MirrorActorId, phone2ReflectorActorId);
 	ppBloom(0.2f, 114, 200, 160);
 	restart(scn.phoneTrans);
 }
+
 void TestDemo::phone3()
 {
-	draw(scn.phone3, &mutalisk::renderSprites);
+	draw(scn.phone3, updateAnimatedProperties_sprites);//&mutalisk::renderSprites);
 	ppBloom(0.2f, 114, 200, 160);
 	restart(scn.phoneTrans);
 }
@@ -544,32 +737,32 @@ void TestDemo::phone4()
 
 void TestDemo::phone1_x__()
 {
-	draw(scn.phone1);
+	draw(scn.phone1, updateAnimatedProperties_sprites);
 	clearZ();
 	draw(scn.phoneTrans);
 }
 void TestDemo::phone2_x__()
 {
-	draw(scn.phone2);
+	draw(scn.phone2, updateAnimatedProperties_sprites);
 	clearZ();
 	draw(scn.phoneTrans);
 }
 void TestDemo::phone3_x__()
 {
-	draw(scn.phone3);
+	draw(scn.phone3, updateAnimatedProperties_sprites);
 	clearZ();
 	draw(scn.phoneTrans);
 }
 
 void TestDemo::phone__x_2()
 {
-	draw(scn.phone2);
+	draw(scn.phone2, updateAnimatedProperties_sprites);
 	clearZ();
 	draw(scn.phoneTrans);
 }
 void TestDemo::phone__x_3()
 {
-	draw(scn.phone3);
+	draw(scn.phone3, updateAnimatedProperties_sprites);
 	clearZ();
 	draw(scn.phoneTrans);
 }
@@ -655,13 +848,13 @@ void TestDemo::reload()
 }
 void TestDemo::m16()
 {
-	gVScale = 1.0f;
+	gVScale = 20.0f;
 	draw(scn.m16, updateAnimatedProperties2);
 	ppBloom(0);
 }
 void TestDemo::gun()
 {
-	gVScale = 1.0f;
+	gVScale = 20.0f;
 	scn.gun.zfar = 75;
 	draw(scn.gun, updateAnimatedProperties2);
 	ppBloom(0);
@@ -669,7 +862,7 @@ void TestDemo::gun()
 void TestDemo::bullet1()
 {
 	gVScale = 3.0f;//3.0f;
-	draw(scn.bullet1, updateAnimatedProperties2);
+	draw(scn.bullet1, updateAnimatedProperties);
 	ppBloom(0);
 }
 void TestDemo::bullet2()
@@ -706,10 +899,10 @@ void TestDemo::windowBarbie1()
 }
 void TestDemo::windowBarbie2()
 {
-//	draw(scn.windowBarbie);
-	draw(scn.windowBarbie, updateAnimatedProperties4);
+	draw(scn.windowBarbie);
+//	draw(scn.windowBarbie, updateAnimatedProperties4);
 	clearZ();
-	draw(scn.window, updateAnimatedProperties4_short, 2.3f);//2.5f);
+	draw(scn.window, updateAnimatedProperties4_short, 2.1f);//2.5f);
 	ppBloom(0.2f, 114, 200, 160);
 }
 
