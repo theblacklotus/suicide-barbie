@@ -18,6 +18,34 @@ bullet.ambient = {1,1,1}
 bullet.emissive = {1,1,1}
 bullet.envMap = 'env1_2.tga'
 
+
+scene.bulli = bullet
+scene.bulli1 = bullet
+scene.bulli2 = bullet
+scene.bulli3 = bullet
+scene.bulli4 = bullet
+scene.bulli5 = bullet
+scene.bulli6 = bullet
+scene.bulli31 = bullet
+scene.bulli32 = bullet
+scene.bulli33 = bullet
+scene.polySurface1 = bullet
+scene.polySurface2 = bullet
+scene.polySurface3 = bullet
+scene.polySurface4 = bullet
+scene.polySurface5 = bullet
+scene.polySurface6 = bullet
+scene.polySurface7 = bullet
+scene.polySurface8 = bullet
+scene.polySurface9 = bullet
+scene.polySurface10 = bullet
+scene.polySurface11 = bullet
+scene.polySurface12 = bullet
+scene.polySurface13 = bullet
+scene.bulli34 = bullet
+scene.bulli35 = bullet
+
+--[[
 scene.shiny1 = bullet
 scene.shiny2 = bullet
 scene.shiny3 = bullet
@@ -25,28 +53,6 @@ scene.shiny4 = bullet
 scene.shiny5 = bullet
 scene.shiny6 = bullet
 scene.shiny7 = bullet
-
---[[
-scene.bull = bullet
-scene.bull1 = bullet
-scene.bull2 = bullet
-scene.bull3 = bullet
-scene.bull4 = bullet
-scene.bull5 = bullet
-scene.bull6 = bullet
-scene.bull7 = bullet
-scene.bull8 = bullet
-scene.bull9 = bullet
-scene.bull10 = bullet
-scene.bull11 = bullet
-scene.bull12 = bullet
-scene.bull13 = bullet
-scene.bull14 = bullet
-scene.bull15 = bullet
-scene.bull16 = bullet
-scene.bull17 = bullet
-scene.bull18 = bullet
-scene.bull19 = bullet
 ]]--
 
 uvscroll = {}
