@@ -20,9 +20,6 @@ scene.addmoln = additive
 
 scene.alphacred1 = credits
 scene.alphacred2 = credits
-scene.aplhacred = credits
-scene.aplhacred2 = credits
-scene.aplhacred3 = credits
-scene.aplhacred4 = credits
+scene.alphacred3 = credits
 
 return scene
