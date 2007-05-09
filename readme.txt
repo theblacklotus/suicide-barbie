@@ -1,5 +1,5 @@
 o	Suicide Barbie by The Black Lotus
-	PlayStation Portable(tm) demo
+	PlayStation(r) Portable(tm) demo
 
 o	almost a party version released at Breakpoint 2007
 
@@ -10,15 +10,17 @@ o	credits
 	 graphics:		Jintz
 	 code:			ReJ / Nesnausk!
 	 code:			eriQue / soniK cliQue
-	 music:			Elusive
+	 music:			Elusive 'Pete loves Veronica mix'
+					(Veronica Maggio 'Dumpa Mig')
 	 animations:		Micke
 	 animations:		Johra
 	 animations:		Duffe
 	 additional graphics:	Eracore / Rebels
 	 platform consultant:	Chip
 
-o	additional credits
-	 TBD
+o	additional credits & inspiration
+	 Roberto Roseano (Barbie Suicide)
+	 Psyop
 	
 o	special thanks
 	 pspdev community for homebrew
@@ -34,6 +36,15 @@ o	random blah
 	 stay tuned then :)
 
 
+o	how to run production
+
+	 copy the contents of the archive to the ms0:/PSP/GAME/ folder.
+	run production from xmb. if you're using 3xx OE firmware copy
+	files to ms0:/PSP/GAME150/ instead.
+
+	 this production has been tested and confirmed working under
+	firmware 1.00, 1.50 and 3.03 OE-C.
+
 o	tech stuff
 
 	 no official sdk's or devkits were harmed during the production
@@ -42,9 +53,10 @@ o	tech stuff
 	usb cables, were our true friends.
 
 	 and if you ask, why memorystick led flashes all the time?
-	yeah, we do stream our content all the time.
+	yeah, we do stream our content; both data and music. so, make
+	sure you have a fast enough stick; on-demand loading over
+	usbhostfs is not really recommended..
 
 
-
-great success,
-ReJ/TBL?/Nesnausk!
+ great success,
+ReJ/TBL?^Nesnausk & eriQue/soniK cliQue! 
