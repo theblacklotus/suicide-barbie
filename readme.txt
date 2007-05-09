@@ -1,27 +1,35 @@
 o	Suicide Barbie by The Black Lotus
 	PlayStation(r) Portable(tm) demo
 
-o	almost a party version released at Breakpoint 2007
+o	'polished' party version released May XXth, 2007.
+	original production released at Breakpoint 2007.
 
 
 o	credits
 
 	 direction, graphics:	Louie / TBL^CNCD
 	 graphics:		Jintz
+
 	 code:			ReJ / Nesnausk!
 	 code:			eriQue / soniK cliQue
+
 	 music:			Elusive 'Pete loves Veronica mix'
 					(Veronica Maggio 'Dumpa Mig')
+
 	 animations:		Micke
 	 animations:		Johra
 	 animations:		Duffe
+
 	 additional graphics:	Eracore / Rebels
+
 	 platform consultant:	Chip
+
 
 o	additional credits & inspiration
 	 Roberto Roseano (Barbie Suicide)
 	 Psyop
 	
+
 o	special thanks
 	 pspdev community for homebrew
 	 TyRaNiD for psplink
@@ -35,6 +43,8 @@ o	random blah
 	release will be delayed for 'couple' days.
 	 stay tuned then :)
 
+	blah	rant about credits, blahbal
+
 
 o	how to run production
 
@@ -44,6 +54,7 @@ o	how to run production
 
 	 this production has been tested and confirmed working under
 	firmware 1.00, 1.50 and 3.03 OE-C.
+
 
 o	tech stuff
 
