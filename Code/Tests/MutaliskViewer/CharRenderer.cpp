@@ -266,7 +266,8 @@ namespace
 				float td = t - 0.5f * (displace/(float)primCount);
 				td = std::max(td, 0.f);
 				td = std::min(td, 1.f);
-				td = sinf(((td-0.5f) * 3.1415926535f)) * 0.5f + 0.5f;
+				if (td != 0.f && td != 1.0f)
+					td = sinf(((td-0.5f) * 3.1415926535f)) * 0.5f + 0.5f;
 				Vec3_sub(&pos3, &pos1, &pos0);
 				Vec3_scale(&pos3, &pos3, td);
 				Vec3_add(&pos3, &pos3, &pos0);
