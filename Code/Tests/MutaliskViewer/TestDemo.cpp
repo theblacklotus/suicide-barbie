@@ -6,7 +6,10 @@
 
 #include <effects/library/Mirror.h>
 
-extern volatile int exitRequest;
+extern "C"
+{
+	extern volatile int exitRequest;
+}
 
 /////////////////////////////////////////////////////////////////////////////
 
