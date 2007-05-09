@@ -15,7 +15,7 @@
 #include <string.h>
 #include <time.h>
 
-static int exitRequest = 0;
+volatile int exitRequest = 0;
 
 int running()
 {

@@ -6,6 +6,8 @@
 
 #include <effects/library/Mirror.h>
 
+extern volatile int exitRequest;
+
 /////////////////////////////////////////////////////////////////////////////
 
 #define S_FUNC(f) (&SelfT::f)
@@ -449,8 +451,10 @@ __skipUntilWindow:
 			Item(226,	ms(00),		S_FUNC(loadWindow),	Item::Once),
 
  			Item(234,	ms(20),		S_FUNC(loadEndScenes),	Item::Once),
- 			Item(246,	ms(20),		S_FUNC(loadEnd),	Item::Once),
+ 			Item(238,	ms(20),		S_FUNC(loadEnd),	Item::Once),
 // 			Item(250,	ms(20),		S_FUNC(loadEndScenes),	Item::Once),
+
+			Item(560,	ms(0),		S_FUNC(quitDemo),	Item::Once),
 
 			Item()
 		};
@@ -1285,15 +1289,23 @@ void TestDemo::loadEndScenes()
 void TestDemo::loadEnd()
 {
 //	printf("%s %s %i\n", __FILE__, __FUNCTION__, __LINE__);
-	scn.expGirl2BG.renderable->mResources.animCharSet.reset();
-	scn.expGirl2.renderable->mResources.animCharSet.reset();	
+//	scn.expGirl2BG.renderable->mResources.animCharSet.reset();
+//	scn.expGirl2.renderable->mResources.animCharSet.reset();	
 
-	scn.expGirl2BG.renderable->mResources.meshes.resize(0);
-	scn.expGirl2.renderable->mResources.meshes.resize(0);	
+//	printf("%s %s %i\n", __FILE__, __FUNCTION__, __LINE__);
+//	scn.expGirl2BG.renderable->mResources.meshes.resize(0);
+//	scn.expGirl2.renderable->mResources.meshes.resize(0);	
 
-	unloadTextures(scn.expGirl2BG);
-	unloadTextures(scn.expGirl2);
+//	printf("%s %s %i\n", __FILE__, __FUNCTION__, __LINE__);
+//	unloadTextures(scn.expGirl2BG);
+//	unloadTextures(scn.expGirl2);
 
+//	printf("%s %s %i\n", __FILE__, __FUNCTION__, __LINE__);
 	loadTextures(scn.endBack);
 	loadTextures(scn.end);
+}
+
+void TestDemo::quitDemo()
+{
+	exitRequest = 1;
 }

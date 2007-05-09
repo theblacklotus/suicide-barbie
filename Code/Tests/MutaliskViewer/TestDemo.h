@@ -143,6 +143,8 @@ protected:
 
 	void loadEndScenes();
 	void loadEnd();
+
+	void quitDemo();
 };
 
 #endif // TEST_DEMO_H_
