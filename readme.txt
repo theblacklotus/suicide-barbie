@@ -32,7 +32,7 @@ o	random blah
 
 	 whilst typing this text, i got a word from Louie. as it turns out
 	we will we have to change the tune. great stuff! it means binary
-	release will be delayed for one more day.
+	release will be delayed for 'couple' days.
 	 stay tuned then :)
 
 
@@ -59,4 +59,4 @@ o	tech stuff
 
 
  great success,
-ReJ/TBL?^Nesnausk & eriQue/soniK cliQue! 
+ReJ/TBL?Nesnausk! & eriQue/soniK cliQue! 
