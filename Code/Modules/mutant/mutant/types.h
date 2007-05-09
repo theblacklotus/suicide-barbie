@@ -28,9 +28,13 @@ namespace mutant
 		mutant_error( std::string const& what ) : std::runtime_error( what ) {}
 	};
 
+#if defined(PSP_FINAL)
+	#define mutant_throw(arg) {}
+#else
 	inline void mutant_throw( std::string const& msg ) {
 		/*_ __no_exceptions throw mutant_error( msg );*/
 	}
+#endif
 
 	// meta
 
