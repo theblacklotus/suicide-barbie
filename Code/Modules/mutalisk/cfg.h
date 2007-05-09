@@ -15,7 +15,7 @@
 	#include <cassert>
 	#include <stdio.h>
 #ifdef PSP_FINAL
-	#define ASSERT
+#define ASSERT(exp)	{}
 #elif defined(__psp__)
 	#define ASSERT(exp) {if (!(exp)) { printf("ASSERT : %s\n", #exp); int* p = (int*)1; int i = *p; }}
 #else
