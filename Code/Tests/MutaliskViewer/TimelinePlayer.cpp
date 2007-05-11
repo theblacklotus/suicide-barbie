@@ -61,7 +61,11 @@ extern unsigned char logo_start[];
 #define SCR_WIDTH (480)
 #define SCR_HEIGHT (272)
 
-std::string gPathPrefix = "host1:DemoTest/"; // this is the default data directory, DO NOT CHANGE. search for 'ms0:' to override..
+#ifndef PSP_FINAL
+	std::string gPathPrefix = "host1:DemoTest/"; // this is the default data directory, DO NOT CHANGE. search for 'ms0:' to override..
+#else
+	std::string gPathPrefix;		// keep path empty for final release version
+#endif
 
 #include "TestDemo.h"
 #include "TimeBlock.h"
@@ -188,7 +192,9 @@ int main(int argc, char* argv[])
 	for (char* next = strstr(separator+1, "/"); next; next = strstr(separator+1, "/")) separator = next;
 	strncpy(path, arg0, separator - arg0 + 1);
 
+#ifndef PSP_FINAL
 	if (strncmp(gPathPrefix.c_str(), path, sizeof("host")-1) != 0)		// if not launched from hostX: use argv[0] data path
+#endif
 	{
 		gPathPrefix = path; gPathPrefix += "BarbieData/";
 	}
@@ -482,7 +488,7 @@ int init_thread(SceSize args, void *argp)
 	}
 	else
 	{
-		std::string at3name = gPathPrefix + "music/suicidebarbie_bpv.at3";
+		std::string at3name = gPathPrefix + "music/suicidebarbie.at3";
 
 		SceKernelLMOption option;
 		{
