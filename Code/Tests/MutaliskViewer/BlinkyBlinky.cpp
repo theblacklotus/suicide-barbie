@@ -66,5 +66,7 @@ float getBlinkyValue(float time, unsigned& color)
 	BLINKY(122.90f, 122.90f, 122.90f+ 0.928f, 1.0f);
 	BLINKY(245.94f, 245.94f, 245.94f+ 0.928f, 1.0f);
 	BLINKY(276.64f, 276.64f, 276.64f+ 0.928f, 1.0f);
+
+	BLINKY(554.00f, 557.00f, 10000, -1.0f);
 	return 0.f;
 }

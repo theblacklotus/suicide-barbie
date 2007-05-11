@@ -91,6 +91,60 @@ void flashScreen(float intensity, unsigned color )
 #endif
 }
 
+void fadeScreen(float intensity)
+{
+#if defined(MUTALISK_DX9)
+// -- disabled
+#elif defined(MUTALISK_PSP)
+	unsigned c = (unsigned)(intensity * 0xff);
+	unsigned d = 255-c;
+	uint32_t color = 0xff000000;
+	sceGuEnable(GU_BLEND);
+	unsigned int srcFix = GU_ARGB(0, c, c, c);
+	unsigned int dstFix = GU_ARGB(0, d, d, d);
+	sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, srcFix, dstFix);
+
+	sceGuAmbientColor(~0U);
+	sceGuTexFunc(GU_TFX_MODULATE,GU_TCC_RGBA);
+	sceGuDisable(GU_TEXTURE_2D);
+	sceGuColor(color);
+	sceGuDisable(GU_LIGHTING);
+	sceGuDisable(GU_DEPTH_TEST);
+	sceGuDepthMask(1);
+
+	struct QuadVertex
+	{
+		short x,y,z;
+	};
+
+	const int ViewportWidth = 480;
+	const int ViewportHeight = 272;
+	QuadVertex* vertices = reinterpret_cast<QuadVertex*>(sceGuGetMemory(2 * 32 * sizeof(QuadVertex)));
+	short sx = 0;
+	short sliceW = 32;
+	int vertexCount = 0;
+	for(; sx < ViewportWidth; sx += sliceW)
+	{
+		if(sx + sliceW > ViewportWidth)
+			sliceW = ViewportWidth - sx;
+
+		vertices[vertexCount].x = sx;
+		vertices[vertexCount].y = 0;
+		vertices[vertexCount].z = 0;
+		++vertexCount;
+		vertices[vertexCount].x = sx + sliceW;
+		vertices[vertexCount].y = ViewportHeight;
+		vertices[vertexCount].z = 0;
+		++vertexCount;
+	}
+	sceGuDrawArray(GU_SPRITES,GU_VERTEX_16BIT|GU_TRANSFORM_2D,vertexCount,0,vertices);
+
+	sceGuDepthMask(0);
+	sceGuDisable(GU_BLEND);
+	sceGuEnable(GU_DEPTH_TEST);
+#endif
+}
+
 unsigned findActor(TestDemo::Scene const& scene, std::string const& actorName)
 {
 	unsigned actorId = ~0U;
@@ -115,7 +169,10 @@ void TestDemo::renderFrame()
 		float val = getBlinkyValue(time(), color);
 		if (val != 0.f)
 		{
-			flashScreen(val, color);
+			if (val > 0.f)
+				flashScreen(val, color);
+			else
+				fadeScreen(-val);
 
 			/*FlashScreenJob* job = new FlashScreenJob;
 			job->renderContext = &renderContext;
@@ -457,7 +514,7 @@ __skipUntilWindow:
  			Item(238,	ms(20),		S_FUNC(loadEnd),	Item::Once),
 // 			Item(250,	ms(20),		S_FUNC(loadEndScenes),	Item::Once),
 
-			Item(560,	ms(0),		S_FUNC(quitDemo),	Item::Once),
+			Item(557,	ms(0),		S_FUNC(quitDemo),	Item::Once),
 
 			Item()
 		};
