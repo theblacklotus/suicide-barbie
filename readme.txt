@@ -39,7 +39,7 @@ o	special thanks
 o	random blah
 
 	 whilst typing this text, i got a word from Louie. as it turns out
-	we will we have to change the tune. great stuff! it means binary
+	we will have to change the tune. great stuff! it means that binary
 	release will be delayed for 'couple' days.
 	 stay tuned then :)
 
