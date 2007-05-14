@@ -82,7 +82,7 @@ o	how to run production
 	files to ms0:/PSP/GAME150/ instead.
 
 	 this production has been tested and confirmed working under
-	firmware 1.00, 1.50 and 3.03 OE-C.
+	firmware 1.00, 1.50 and 3.40 OE-A.
 
 
 o	tech stuff
