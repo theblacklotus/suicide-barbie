@@ -38,6 +38,31 @@ o	special thanks
 
 o	random blah
 
+	stuff we "need" to cover:
+
+	*) this is the first official release of binaries / data -> 
+		no offical binaries have ever been released -> 
+		the ones found linked from pouet.net are leaked binaries (thanks ReJ :)
+		just a dump of what went onto the memory stick before we set off to the party place on sunday
+		ie no real final version and hence no release notes
+		
+	*) no time -> no .nfo / no release note -> no credits   (as original end-scroller points out)
+
+	*) breakpoint version of music ->
+		the video for bp features music without samples from maggio
+		if you want to hear it on your psp it's included in this archive (suicidebarbie_bpv.at3)
+
+
+	unfinished text starts here :)
+
+	 sometimes you just run out of time; this was one of those moments.
+	and as the original end-scroller points out; we were not 
+	that, together with last minute 
+	infact there was no 
+
+	 and the binaries released ('leaked') a few days after the party were
+	never intended for public distribution
+
 	 whilst typing this text, i got a word from Louie. as it turns out
 	we will have to change the tune. great stuff! it means that binary
 	release will be delayed for 'couple' days.
@@ -70,4 +95,4 @@ o	tech stuff
 
 
  great success,
-ReJ/TBL?Nesnausk! & eriQue/soniK cliQue! 
+ReJ/TBL?Nesnausk! & eriQue/soniK cliQue
