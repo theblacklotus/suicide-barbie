@@ -52,7 +52,9 @@ o	random blah
 		the video for bp features music without samples from maggio
 		if you want to hear it on your psp it's included in this archive (suicidebarbie_bpv.at3)
 
-	*) oh, and you think demoscene is about being original? you should watch this... link to pollinate.mov
+	*) oh, and you think demoscene is about being original? you should watch this... 
+		tp://mirror.support.nl/pub/tbl/movies/pollinate.mov
+			inspiration vs. rip-off
 
 
 	unfinished text starts here :)
