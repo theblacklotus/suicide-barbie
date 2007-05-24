@@ -6,11 +6,7 @@ scene.RootNode.shader = 'baked'
 scene.disableScalingPivots = 1
 
 scene.backADDenv = {}
---scene.backADDenv.blendOp = 'Add'
---scene.backADDenv.zOp = 'ReadOnly'
 scene.backADDenv.shader = 'baked'
-
---scene.addflash.slice = 1
 
 bullet = {}
 bullet.shader = 'shiny'
@@ -19,55 +15,31 @@ bullet.emissive = {1,1,1}
 bullet.envMap = 'env1_2.tga'
 
 
-scene.bulli = bullet
+--scene.bulli = bullet
 scene.bulli1 = bullet
---scene.bulli2 = bullet
---scene.bulli3 = bullet
-scene.bulli4 = bullet
---scene.bulli5 = bullet
-scene.bulli6 = bullet
+--scene.bulli4 = bullet
+--scene.bulli6 = bullet
 scene.bulli31 = bullet
---scene.bulli32 = bullet
---scene.bulli33 = bullet
 scene.polySurface1 = bullet
-scene.polySurface2 = bullet
-scene.polySurface3 = bullet
+--scene.polySurface2 = bullet
+--scene.polySurface3 = bullet
 scene.polySurface4 = bullet
-scene.polySurface5 = bullet
+--scene.polySurface5 = bullet
 scene.polySurface6 = bullet
 scene.polySurface7 = bullet
-scene.polySurface8 = bullet
---scene.polySurface9 = bullet
---scene.polySurface10 = bullet
+--scene.polySurface8 = bullet
 scene.polySurface11 = bullet
 scene.polySurface12 = bullet
+
+--scene.bulli2 = bullet
+--scene.bulli3 = bullet
+--scene.bulli5 = bullet
+--scene.bulli32 = bullet
+--scene.bulli33 = bullet
+--scene.polySurface9 = bullet
+--scene.polySurface10 = bullet
 --scene.polySurface13 = bullet
 --scene.bulli34 = bullet
 --scene.bulli35 = bullet
-
---[[
-scene.shiny1 = bullet
-scene.shiny2 = bullet
-scene.shiny3 = bullet
-scene.shiny4 = bullet
-scene.shiny5 = bullet
-scene.shiny6 = bullet
-scene.shiny7 = bullet
-]]--
-
-uvscroll = {}
-uvscroll.blendOp = 'MAdd'
-uvscroll.zOp = 'ReadOnly'
-
-scene.strip = uvscroll
-scene.strip1 = uvscroll
-scene.strip2 = uvscroll
-scene.strip3 = uvscroll
-scene.strip4 = uvscroll
-scene.strip5 = uvscroll
-scene.strip6 = uvscroll
-scene.strip7 = uvscroll
-scene.strip8 = uvscroll
-
 
 return scene
