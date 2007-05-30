@@ -7,74 +7,61 @@ o	'polished' party version released May XXth, 2007.
 
 o	credits
 
-	 direction, graphics:	Louie / TBL^CNCD
-	 graphics:		Jintz
+	 direction, graphics:   Louie / TBL^CNCD
+	 graphics:              Jintz
 
-	 code:			ReJ / Nesnausk!
-	 code:			eriQue / soniK cliQue
+	 code:                  ReJ / Nesnausk!
+	 code:                  eriQue / soniK cliQue
 
-	 music:			Elusive 'Pete loves Veronica mix'
-					(Veronica Maggio 'Dumpa Mig')
+	 music:                 Elusive 'Pete loves Veronica mix'
+	                                (Veronica Maggio 'Dumpa Mig')
 
-	 animations:		Micke
-	 animations:		Johra
-	 animations:		Duffe
+	 animations:            Micke
+	 animations:            Johra
+	 animations:            Duffe
 
-	 additional graphics:	Eracore / Rebels
+	 additional graphics:   Eracore / Rebels
 
-	 platform consultant:	Chip
+	 platform consultant:   Chip
 
 
 o	additional credits & inspiration
+
 	 Roberto Roseano (Barbie Suicide)
 	 Psyop
 	
 
 o	special thanks
+
 	 pspdev community for homebrew
-	 TyRaNiD for psplink
+	 TyRaNiD for psplink (this demo would not be possible without it)
 	 Cathy/Nesnausk! for support and photojournalism in bingen
 
 
 o	random blah
 
-	stuff we "need" to cover:
-
-	*) this is the first official release of binaries / data -> 
-		no offical binaries have ever been released -> 
-		the ones found linked from pouet.net are leaked binaries (thanks ReJ :)
-		just a dump of what went onto the memory stick before we set off to the party place on sunday
-		ie no real final version and hence no release notes
-		
-	*) no time -> no .nfo / no release note -> no credits   (as original end-scroller points out)
-
-	*) breakpoint version of music ->
-		the video for bp features music without samples from maggio
-		if you want to hear it on your psp it's included in this archive (suicidebarbie_bpv.at3)
-
-	*) oh, and you think demoscene is about being original? you should watch this... 
-		tp://mirror.support.nl/pub/tbl/movies/pollinate.mov
-			inspiration vs. rip-off
-
-
-	unfinished text starts here :)
-
-	 sometimes you just run out of time; this was one of those moments.
-	and as the original end-scroller points out; we were not 
-	that, together with last minute 
-	infact there was no 
-
-	 and the binaries released ('leaked') a few days after the party were
-	never intended for public distribution
-
 	 whilst typing this text, i got a word from Louie. as it turns out
 	we will have to change the tune. great stuff! it means that binary
-	release will be delayed for 'couple' days.
+	release will be delayed for a 'couple' days.
 	 stay tuned then :)
 
-	blah	rant about credits, blahbal
+         ...
+	
+	 so, a 'couple' days had passed indeed. but not in vain - as we
+	are now ready for the first official release of the binaries. thus
+	you will be free to abandon those filthy leaked binaries you have 
+	enjoyed so much.
+	 instead we offer you _real_ credits, packed music, more visuals,
+	steady framerate and of course support for various firmwares.
 
 
+	 oh, and you think demoscene is about being original?
+	you should watch this then...
+
+	                 inspiration vs. rip-off
+	http://mirror.support.nl/pub/tbl/movies/pollinate.mov
+			
+	
 o	how to run production
 
 	 copy the contents of the archive to the ms0:/PSP/GAME/ folder.
