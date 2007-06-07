@@ -9,11 +9,11 @@
 		#include <pspdebug.h>
 		#include <pspkdebug.h>
 		#define __STDIO_H__ 
-		#define printf(...) do {} while(false)
-		#define pspDebugScreenPrintf(...) do {} while(false)
-		#define pspDebugScreenInit() do {} while(false)
-		#define pspDebugScreenSetOffset(i) do {} while(false)
-		#define pspDebugScreenSetXY(x, y) do {} while(false)
+		#define printf(...) do {} while(0)
+		#define pspDebugScreenPrintf(...) do {} while(0)
+		#define pspDebugScreenInit() do {} while(0)
+		#define pspDebugScreenSetOffset(i) do {} while(0)
+		#define pspDebugScreenSetXY(x, y) do {} while(0)
 	#endif
 
 #endif
