@@ -53,7 +53,7 @@ PSP_MODULE_INFO("Suicide Barbie", PSP_MODULE_KERNEL, 1, 1);
 PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
 PSP_HEAP_SIZE_KB(1);
 
-static unsigned int __attribute__((aligned(16))) list[2][262144];
+static unsigned int __attribute__((aligned(16))) list[2][262144/2];
 extern unsigned char logo_start[];
 
 
@@ -62,7 +62,7 @@ extern unsigned char logo_start[];
 #define SCR_HEIGHT (272)
 
 #ifndef PSP_FINAL
-	std::string gPathPrefix = "host1:DemoTest/"; // this is the default data directory, DO NOT CHANGE. search for 'ms0:' to override..
+	std::string gPathPrefix = "host1:/"; // this is the default data directory, DO NOT CHANGE. search for 'ms0:' to override..
 #else
 	std::string gPathPrefix;		// keep path empty for final release version
 #endif
