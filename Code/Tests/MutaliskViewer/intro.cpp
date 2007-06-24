@@ -118,6 +118,7 @@ void uncompressFrame(uint32_t* in, uint32_t* out, int size);
 mutalisk::data::psp_texture* loadTexture(const std::string& name);
 int loadAnim(const std::string name, std::vector<mutalisk::data::psp_texture*>& textures);
 void drawDots(float time, int evenFrame, float fade);
+void clearRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 
 static mutalisk::data::psp_texture* centerDot = 0;
 static mutalisk::data::psp_texture* whiteDot = 0;
@@ -350,10 +351,11 @@ void renderIntro(float time)
 		t *= out;
 		drawQuad(*centerDot, 168+49, 88, 0xff * t, 0x00);
 	}
+	clearRect(100, 172, 280, 70);
 	{
 		static int evenFrame = 0;
 		evenFrame++;
-		drawDots(time+3.f, (evenFrame >> 2)&1, out);
+		drawDots(time+3.f, (evenFrame >> 1)&1, out);
 	}
 
 	if (time > 3.5f)
@@ -465,6 +467,52 @@ uint32_t color = 0x20ffffff;
 	vertices[1].x = vertices[0].x + texture.width; vertices[1].y = vertices[0].y + texture.height; vertices[1].z = 0;
 
 	sceGuDrawArray(GU_SPRITES,GU_TEXTURE_32BITF|GU_VERTEX_16BIT|GU_TRANSFORM_2D,2,0,vertices);
+
+	sceGuDepthMask(0);
+}
+
+void clearRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h)
+{
+//	int blurSrcModifier = 200;
+//	int blurDstModifier = 160;
+uint32_t color = 0x20ffffff;
+					sceGuDisable(GU_BLEND);
+/*					unsigned int srcFix = GU_ARGB(0, blurSrcModifier, blurSrcModifier, blurSrcModifier);
+					unsigned int dstFix = GU_ARGB(0, blurDstModifier, blurDstModifier, blurDstModifier);
+			if (blurDstModifier != 0x00)
+					sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, srcFix, dstFix);
+			else
+			{
+					sceGuBlendFunc(GU_ADD, GU_SRC_ALPHA, GU_ONE_MINUS_SRC_ALPHA, 0, 0);
+					color = GU_ARGB(blurSrcModifier, blurSrcModifier, blurSrcModifier, blurSrcModifier);
+			}
+*/
+//	sceGuAlphaFunc(GU_ALWAYS, 0,0);
+	sceGuAmbientColor(~0U);
+//	sceGuTexMode(texture.format,0,0,texture.swizzled);
+//	sceGuTexImage(texture.mipmap,texture.width,texture.height,texture.stride,texture.data);
+	sceGuTexFilter(GU_LINEAR,GU_LINEAR);
+	sceGuTexWrap(GU_CLAMP, GU_CLAMP);
+//	sceGuTexFunc(GU_TFX_MODULATE,GU_TCC_RGB);
+	sceGuTexFunc(GU_TFX_MODULATE,GU_TCC_RGBA);
+//	sceGuTexScale(1.0f,1.0f);
+	sceGuDisable(GU_TEXTURE_2D);
+	sceGuColor(0/*0xffff00ff*/);
+	sceGuDisable(GU_LIGHTING);
+	sceGuDisable(GU_DEPTH_TEST);
+	sceGuDepthMask(1);
+//	sceGuClutMode(texture.clutFormat,0,0xff,0);
+//	sceGuClutLoad(texture.clutEntries,texture.clut);
+	
+	struct QuadVertexTex
+	{
+		short x,y,z;
+	};
+	QuadVertexTex* vertices = reinterpret_cast<QuadVertexTex*>(sceGuGetMemory(2 * sizeof(QuadVertexTex)));
+	vertices[0].x = x; vertices[0].y = y; vertices[0].z = 0;
+	vertices[1].x = vertices[0].x + w; vertices[1].y = vertices[0].y + h; vertices[1].z = 0;
+
+	sceGuDrawArray(GU_SPRITES,GU_VERTEX_16BIT|GU_TRANSFORM_2D,2,0,vertices);
 
 	sceGuDepthMask(0);
 }
