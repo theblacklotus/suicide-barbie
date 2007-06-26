@@ -478,7 +478,7 @@ int init_thread(SceSize args, void *argp)
 	}
 	else
 	{
-		std::string at3name = gPathPrefix + "music/suicidebarbie.at3";
+		std::string at3name = gPathPrefix + "music/suicidebarbie_bpv.at3";
 
 		SceKernelLMOption option;
 		{
