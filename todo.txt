@@ -1,5 +1,5 @@
 _Scenes_
-.	'tele2' mirror missing
++	'tele2' mirror missing
 +	setup envmaps in 'mix' scenes
 +	setup envmaps in 'gun' scenes
 +	make beer less opaque
@@ -14,7 +14,7 @@ _Scenes_
 _Demo_
 .	fix deltatime calc
 .	shadows
-.	mirror
++	mirror
 ?	clear color from camera
 ?	'visibility' tracks
 +	TGA exporter
@@ -50,9 +50,9 @@ _RunTime_
 ~	 cpu vertexshader framework
 ~	blur
  ~	 CPU blur (optimize)
- ~	 GPU
+ +	 GPU
 +	transparent objects support
-~	directional 3-color lighting (2 polar colors and 1 equator color)
++	directional 3-color lighting (2 polar colors and 1 equator color)
 .	textcoordgen
  +	 scroll
  .	 envmap
@@ -62,14 +62,14 @@ _RunTime_
  .	 projected
 .	render-to-texture
 .	cut-geometry|pseudo-decal|drop-shadow
-.	skybox
-.	sprites
++	skybox
++	sprites
 .	SH support
  .	 render-to-cube									[dx9: only]
  .	 cube-to-SH									[dx9: only]
  .	 per-vertex SH lighting
 +	fix psp skinning
-~       timeline
++       timeline
 ~   	timeline helper functions (show_scene, clear_framebuffer, clear_zbuffer, apply_postprocess, blink, ...) 
 .	alpha-ref
 
@@ -79,9 +79,9 @@ _Mutalisk_
  +	 texture uv
   .	  more than 1 layer uv support
  +	 texture image
- ~	 vertex color
+ +	 vertex color
  .	 aux vertex element stream support
- .	 visibility flag animation
+ +	 visibility flag animation
  ~	 camera params
   .       camera target
   +       fov
@@ -89,7 +89,7 @@ _Mutalisk_
  ~	 materials/shaders
   +	  shader names
   .	  instance specific mesh subsets
- ~	 custom properties
+ ++	 custom properties
   +	 extract properties (string/vector types)
   +	 store properties in scene file
   +	 script (lua?) based properties
