@@ -1,7 +1,7 @@
 o	Suicide Barbie by The Black Lotus
 	PlayStation(r) Portable(tm) demo
 
-o	'polished' party version released May XXth, 2007.
+o	'polished' party version released June 27th, 2007.
 	original production released at Breakpoint 2007.
 
 
