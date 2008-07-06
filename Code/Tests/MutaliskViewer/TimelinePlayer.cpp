@@ -51,7 +51,7 @@ void streamAT3File(const char *file);
 
 PSP_MODULE_INFO("Suicide Barbie", PSP_MODULE_KERNEL, 1, 1);
 PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
-PSP_HEAP_SIZE_KB(1);
+PSP_HEAP_SIZE_KB(5);
 
 static unsigned int __attribute__((aligned(16))) list[2][262144/2];
 extern unsigned char logo_start[];
