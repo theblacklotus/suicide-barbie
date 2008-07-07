@@ -56,6 +56,26 @@ SRCS=\
 	TimelinePlayer.cpp\
 	vram.c\
 
+ifeq ($(BUILD_OE),1)
+CC_FLAGS+=-DPSP_OE
+LD_FLAGS=\
+	-specs=$(PSPDEV)/psp/sdk/lib/prxspecs\
+	-Wl,-q,-T$(PSPDEV)/psp/sdk/lib/linkfile.prx\
+	$(PSPDEV)/psp/sdk/lib/prxexports.o\
+	-fno-exceptions\
+	-Wl,-Map="$(OUTDIR)/$(PROJECT).prx.txt"\
+	-L$(PSPDEV)/psp/sdk/lib\
+	-lpspuser\
+	-lpspkernel\
+	-Wl,-S\
+	-Wl,-x\
+	-Wl,--gc-sections\
+	-Wl,--wrap=malloc\
+	-Wl,--wrap=free\
+	-Wl,--wrap=calloc\
+	-Wl,--defsym,sceNetInetGetsockopt=0,--defsym,sceNetInetGetErrno=0,--defsym,sceNetInetSetsockopt=0\
+
+else
 LD_FLAGS=\
 	-T $(LCFILE)\
 	-fno-exceptions\
@@ -70,5 +90,7 @@ LD_FLAGS=\
 	-Wl,--wrap=free\
 	-Wl,--wrap=calloc\
 	-Wl,--defsym,sceNetInetGetsockopt=0,--defsym,sceNetInetGetErrno=0,--defsym,sceNetInetSetsockopt=0\
+
+endif
 
 include ../../build.mak

@@ -37,20 +37,26 @@ extern "C" {
 
 #include <pspsdk.h>
 
-volatile bool gStartMusic = false;
-
 void streamWaveFile(const char *file);
 void streamWavePause(int pause);
 void streamWaveNudge(int offset);
 void streamAT3File(const char *file);
+SceUID load_prxs();
+bool start_atrac(SceUID mod);
 
 #define streamWavePause(x) 
 #define streamWaveNudge(x) 
 
 #include "intro.h"
-
-PSP_MODULE_INFO("Suicide Barbie", PSP_MODULE_KERNEL, 1, 1);
-PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
+#ifdef PSP_OE
+	PSP_MODULE_INFO("Suicide Barbie", PSP_MODULE_USER/*prx needs to be in userland*/, 1, 1);
+	PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
+#else
+	PSP_MODULE_INFO("Suicide Barbie", PSP_MODULE_KERNEL, 1, 1);
+	 /*this is not entirely correct; we want USER+VFPU but we can't be in userland if we want to load kernel modules.
+	   on the other hand this disables quitting but we can live with this for now (150 binaries are already released so.. :) */
+	PSP_MAIN_THREAD_ATTR(0/*PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU*/);
+#endif
 PSP_HEAP_SIZE_KB(5);
 
 static unsigned int __attribute__((aligned(16))) list[2][262144/2];
@@ -252,6 +258,13 @@ int main(int argc, char* argv[])
 	sceDisplayWaitVblankStart();
 	sceGuDisplay(GU_TRUE);
 
+	SceUID atrac_module = load_prxs();
+	if (atrac_module < 0)
+	{
+		printf("error loading prx\n");
+		return 0;
+	}
+
 	// run sample
 	if (!loadIntro(gPathPrefix + "intro/psp/"))
 		printf("error loading intro\n");
@@ -287,7 +300,11 @@ int main(int argc, char* argv[])
 	mutalisk::initTickFrequency(); getDeltaTime();
 ;;printf("tickResolution: %f, tickFrequency: %f\n", mutalisk::tickResolution(), mutalisk::tickFrequency());
 
-	gStartMusic = true;
+	if (!start_atrac(atrac_module))
+	{
+		printf("error starting music\n");
+		return 0;
+	}
 
 //;;mutalisk::TimeBlock updateTime, /*processTime, */ loopTime, renderTime, finishAndSyncTime;
 ;;mutalisk::TimeBlock finishAndSyncTime;
@@ -460,16 +477,18 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-extern "C" 
+SceUID load_prxs()
 {
-int init_thread(SceSize args, void *argp)
-{
-	SceUID thid1 = pspSdkLoadStartModule("flash0:/kd/audiocodec.prx", PSP_MEMORY_PARTITION_KERNEL);
-	SceUID thid2 = pspSdkLoadStartModule("flash0:/kd/libatrac3plus.prx", PSP_MEMORY_PARTITION_USER);
-	while(!gStartMusic)
+	int firmware = sceKernelDevkitVersion();
+
+	SceUID thid1;
+	if (firmware < 0x02060000)
 	{
-		sceKernelDelayThread(8000);
+		thid1 = pspSdkLoadStartModule("flash0:/kd/audiocodec.prx", PSP_MEMORY_PARTITION_KERNEL);
 	}
+	else
+		thid1 = pspSdkLoadStartModule("flash0:/kd/audiocodec_260.prx", PSP_MEMORY_PARTITION_KERNEL);
+	SceUID thid2 = pspSdkLoadStartModule("flash0:/kd/libatrac3plus.prx", PSP_MEMORY_PARTITION_USER);
 	if (thid1 < 0 || thid2 < 0)
 	{
 		pspDebugScreenPrintf("unable to load kernel modules\n");
@@ -478,8 +497,6 @@ int init_thread(SceSize args, void *argp)
 	}
 	else
 	{
-		std::string at3name = gPathPrefix + "music/suicidebarbie_bpv.at3";
-
 		SceKernelLMOption option;
 		{
 			memset(&option, 0, sizeof(option));
@@ -493,27 +510,35 @@ int init_thread(SceSize args, void *argp)
 		SceUID mod = sceKernelLoadModule((gPathPrefix + "music/atrac3streamer.prx").c_str(), 0, &option);
 		if (mod >= 0)
 		{
+			return mod;
+		}
+		else
+		{
+			pspDebugScreenPrintf("Error opening module. (%08x)\n", mod);
+		}
+	}
+	return ~0ul;
+}
+
+bool start_atrac(SceUID mod)
+{
+	{
+		std::string at3name = gPathPrefix + "music/suicidebarbie_bpv.at3";
+
+		if (mod >= 0)
+		{
 			int res;
 			if (sceKernelStartModule(mod, at3name.size()+1, (void*)at3name.c_str(), &res, 0) < 0)
 			{
 				pspDebugScreenPrintf("Error starting module. \n");
 			}
+			else
+				return true;
 		}
 		else
 		{
 			pspDebugScreenPrintf("Error opening module. \n");
 		}
 	}
-	sceKernelExitDeleteThread(0);
-	return 0;
-}
-
-__attribute__ ((constructor))
-void loadKernelModules()
-{
-	SceUID initth = sceKernelCreateThread("init_thread", init_thread, 0x20, 0x10000, 0, NULL);
-
-	if (initth >= 0)
-		sceKernelStartThread(initth, 0, 0);	
-}
+	return false;
 }

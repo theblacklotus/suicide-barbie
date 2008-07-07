@@ -159,6 +159,13 @@ ifndef PSP_EBOOT_TITLE
 PSP_EBOOT_TITLE = $(PROJECT)
 endif
 
+ifeq ($(BUILD_OE),1)
+EBOOT_TARGET = $(OUTDIR)/$(PROJECT)/EBOOT.PBP
+$(EBOOT_TARGET):: $(PROJECT_PATH).prx $(INTDIR)/PARAM.SFO
+	@echo Creating '$(EBOOT_TARGET)' PBP
+	mkdir -p "$(OUTDIR)/$(PROJECT)"
+	pack-pbp "$(EBOOT_TARGET)" "$(INTDIR)/PARAM.SFO" "ICON0.PNG" NULL NULL "PIC1.PNG" NULL "$(PROJECT_PATH).prx" NULL
+else
 EBOOT_TARGET = $(OUTDIR)/%__SCE__$(PROJECT)/EBOOT.PBP
 $(EBOOT_TARGET): $(PROJECT_PATH).elf $(INTDIR)/PARAM.SFO
 	@echo Creating '$(EBOOT_TARGET)' PBP
@@ -166,6 +173,7 @@ $(EBOOT_TARGET): $(PROJECT_PATH).elf $(INTDIR)/PARAM.SFO
 	psp-strip --remove-section=.comment --remove-section=.eh_frame --remove-section=.gcc_except_table --remove-section=.mdebug.eabi32 --remove-section=.gcc_compiled_long32 --remove-section=.lib.ent.top --remove-section=.lib.ent.btm --remove-section=.lib.stub.top --remove-section=.lib.stub.btm --remove-section=.sceStub.text "$(PROJECT_PATH).elf" -o "$(OUTDIR)/__SCE__$(PROJECT)/EBOOT.PBP"
 	mkdir -p "$(OUTDIR)/%__SCE__$(PROJECT)"
 	pack-pbp "$(EBOOT_TARGET)" "$(INTDIR)/PARAM.SFO" "ICON0.PNG" NULL NULL "PIC1.PNG" NULL "$(OUTDIR)/__SCE__$(PROJECT)/EBOOT.PBP" NULL
+endif
 
 PBP: $(EBOOT_TARGET)
 
