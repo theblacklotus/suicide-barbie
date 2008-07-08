@@ -5125,7 +5125,7 @@ void* pspMoreCore(int size)
 
 	if (heap_bottom == 0)
 	{
-		size_t heap_size = sceKernelMaxFreeMemSize() - 0x110000/*libatrac3plus + atrac3streamer*/;
+		size_t heap_size = sceKernelMaxFreeMemSize() - 0x8f000/*libatrac3plus + atrac3streamer*/;
 		SceUID blockid = sceKernelAllocPartitionMemory(2, "malloc_partition", PSP_SMEM_Low, heap_size, 0);
 		if (blockid > 0)
 		{
