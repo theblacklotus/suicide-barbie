@@ -1,7 +1,8 @@
 o	Suicide Barbie by The Black Lotus
 	PlayStation(r) Portable(tm) demo
 
-o	'polished' party version released June 27th, 2007.
+o	OE/M33 'slim' version released July 8th, 2008.
+	'polished' party version released June 27th, 2007.
 	original production released at Breakpoint 2007.
 
 
@@ -65,11 +66,11 @@ o	random blah
 o	how to run production
 
 	 copy the contents of the archive to the ms0:/PSP/GAME/ folder.
-	run production from xmb. if you're using 3xx OE firmware copy
-	files to ms0:/PSP/GAME150/ instead.
+	run production from xmb. you need an OE/M33 firmware to watch
+	this version (no need for 150 kernel).
 
 	 this production has been tested and confirmed working under
-	firmware 1.00, 1.50 and 3.40 OE-A.
+	firmware 3.90 M33-3 and 4.01 M33-2 (both slim)
 
 
 o	tech stuff

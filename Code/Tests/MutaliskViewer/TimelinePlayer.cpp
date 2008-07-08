@@ -50,13 +50,10 @@ bool start_atrac(SceUID mod);
 #include "intro.h"
 #ifdef PSP_OE
 	PSP_MODULE_INFO("Suicide Barbie", PSP_MODULE_USER/*prx needs to be in userland*/, 1, 1);
-	PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
 #else
-	PSP_MODULE_INFO("Suicide Barbie", PSP_MODULE_KERNEL, 1, 1);
-	 /*this is not entirely correct; we want USER+VFPU but we can't be in userland if we want to load kernel modules.
-	   on the other hand this disables quitting but we can live with this for now (150 binaries are already released so.. :) */
-	PSP_MAIN_THREAD_ATTR(0/*PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU*/);
+	PSP_MODULE_INFO("Suicide Barbie", PSP_MODULE_KERNEL/*150 needs kernel to load prxs*/, 1, 1);
 #endif
+PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
 PSP_HEAP_SIZE_KB(5);
 
 static unsigned int __attribute__((aligned(16))) list[2][262144/2];
@@ -477,7 +474,52 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
+SceUID load_atrac();
+#ifndef PSP_OE
+	/*
+		This is a somewhat ugly but very effective way to enable loading of kernel flash modules under SDK 150.
+		First load_prxs_early() is called, before anything else is called. It creates load_prxs_thread() that
+		goes to sleep, waiting for start_load to turn true. When load_prxs() is called (from main()) it will
+		signal to the thread to start loading the PRXs (by setting start_load to true) and then go to sleep,
+		waiting for atrac_mod to become valid. 
+	*/
+	volatile SceUID atrac_mod = ~0ul;
+	volatile bool start_load = false;
+
+	extern "C"
+	{
+		int load_prxs_thread(SceSize args, void *argp)
+		{
+			while(!start_load)
+				sceKernelDelayThread(8000);
+			atrac_mod = load_atrac();
+			sceKernelExitDeleteThread(0);
+			return 0;/*we'll never reach here..*/
+		}
+	}
+
+	__attribute__ ((constructor))
+	void load_prxs_early()
+	{
+		SceUID loadth = sceKernelCreateThread("load_prxs", load_prxs_thread, 0x20, 0x10000, 0, NULL);
+		if (loadth >= 0)
+			sceKernelStartThread(loadth, 0, 0);
+	}
+#endif
+
 SceUID load_prxs()
+{
+#ifdef PSP_OE
+	return load_atrac();
+#else
+	start_load = true;
+ 	while(atrac_mod < 0)
+		sceKernelDelayThread(8000);
+	return atrac_mod;
+#endif
+}
+
+SceUID load_atrac()
 {
 	int firmware = sceKernelDevkitVersion();
 
@@ -523,7 +565,7 @@ SceUID load_prxs()
 bool start_atrac(SceUID mod)
 {
 	{
-		std::string at3name = gPathPrefix + "music/suicidebarbie_bpv.at3";
+		std::string at3name = gPathPrefix + "music/suicidebarbie.at3";
 
 		if (mod >= 0)
 		{
