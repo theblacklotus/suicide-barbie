@@ -1,0 +1,8 @@
+[submodule "psptoolchain"]
+	path = psptoolchain
+	url = https://github.com/erique/psptoolchain.git
+	branch = master
+[submodule "psplinkusb"]
+	path = psplinkusb
+	url = https://github.com/pspdev/psplinkusb.git
+	branch = master

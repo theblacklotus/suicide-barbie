@@ -1,0 +1,54 @@
+name: Suicide_Barbie
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  Linux:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install deps
+      run: sudo apt install autoconf automake bison flex gcc-9 libncurses-dev make subversion texinfo wget libusb-dev
+      
+    - name: Bootstrap
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./bootstrap.sh
+
+    - name: Clean
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./clean.sh
+
+    - name: Build
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./build.sh
+
+  macOS:
+    runs-on: macos-10.15
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install deps
+      run: |
+        brew install autoconf automake flex gcc@9 ncurses make subversion texinfo wget libusb libusb-compat sdl
+      
+    - name: Bootstrap
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./bootstrap.sh
+
+    - name: Clean
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./clean.sh
+
+    - name: Build
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./build.sh
