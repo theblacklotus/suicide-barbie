@@ -20,20 +20,35 @@
 
 ###	How Suicide Barbie Came To Be
 
-After the success of the Starstruck demo, TBL needed a new challenge. It had to be a demo on a new platform. On a well defined and fixed platform, but with hardware powerful enough. Platform unhindered by layers of software abstractions one finds in PC. Limited, yet modern. Inspired by Playstation® 2 demo [4 Edges](https://www.pouet.net/prod.php?which=24552) and hacker spirit of the Homebrew community we soon had a winner - a miniaturized beast of Playstation® with a vibrant screen. A harbinger of the new future where great visuals fit in your pocket - PlayStation® Portable™!
+After the success of the [Starstruck](https://www.pouet.net/prod.php?which=25778) demo, the team needed a new challenge. It had to be a demo on a new platform. On a well defined and fixed platform, but with hardware powerful enough for the Creative Vision™. Limited, yet modern. Platform unhindered by layers of software abstractions one finds in PC.  
+So, inspired by the PlayStation® 2 demo [4 Edges](https://www.pouet.net/prod.php?which=24552) and hacker spirit of the [Homebrew](https://github.com/pspdev/pspsdk) community we soon had a winner - a miniaturized beast of PlayStation® with a vibrant screen. A harbinger of the new future where great visuals fit in your pocket - PlayStation® Portable™!
 
 The goal was simple: make the most Entertaining Visual Experience, the Best Demo for the platform! And although the author is clearly biased here, but it looks like Suicide Barbie holds its ground even today and still is the best demo on the PlayStation® Portable™.
 
 #### PlayStation® Portable™ Specs
-Original PlayStation® Portable™ SoC is built on a 90nm CMOS process and is powered by 1.2V.
+Original PlayStation® Portable™ SoC was built on a 90nm CMOS process and was powered by 1.2V. The very first devices shipped in Japan in December 2004 and hit Europe by the end of 2005.
 
     ~ 32-bit [MIPS R4000](https://en.wikipedia.org/wiki/R4000) CPU clocked @ 222 MHz.  
     ~ VFPU compute co-processor pushing 2.6 GigaFlops.  
     ~ [Graphics Core](https://www.techpowerup.com/gpu-specs/sony-psp-1000-gpu.b8184) triangle rasterizer with fixed T&L pipeline that can spit up to 33M triangles and cover 665M pixels per second.  
-    ~ 32 MiB main RAM.  
-    ~ 2 MiB Graphics eDRAM.  
+    ~ 32 MiB main RAM with 2.6Gb/s of bandwidth.  
+    ~ 2 MiB Graphics eDRAM with 5.3Gb/s of bandwidth.  
 
 ![psp]
+
+#### The Process
+
+As Suicide Barbie follows a story and sports massive amounts of content (relatively speaking), we would adopt the new process of production. Pick the music, make a storyboard, plan the art, setup the data pipeline, get the demo running from the day one, add the scenes as they come from the artist, continuously iterate on the quality. Ship it.
+
+Back in 2006/2007 we didn't have the luxury of functional emulators for the PlayStation Portable. At least nothing on the level we aimed for. So the obvious thing to do - write cross-platform code and make the demo run on PC identical to PSP. All the effects would be duplicated. A little bit of extra work of course, but huge upside with the fast iteration time and easy workflow for the artists.
+
+One innovation we had was the ability to scrub the playback time at any point. Basically the demo could run forward and back in time. Perfect for polish.  We kept this mechanism alive all the way until the end, and only disabled it when we switched to compressed (ATRAC3) streamed audio (as that made "per sample" scrubbing hard).
+
+Data pipeline was setup in a rather simple, but effective way - a bunch of batch files. In goes the source data, out goes the compiled data ready for blob loading into the memory. With this data pipeline we could build a separate scene or the whole demo. Run [goPsp.bat](Data/DemoTest/goPsp.bat) and you get the PSP version. Run [goDx9.bat](Data/DemoTest/goDx9.bat) and you can run it on PC.
+
+Finally, if you push the boundaries of the consoles, you have to have streaming. Suicide Barbie does not fit into 32 MiB of main RAM and constantly stream the content ahead of the player.
+
+_NOTE: While (most of) the code is present in this repository we haven't bothered upgrading the vs2005 projects, so DX9 playback is lost (except for the most adventurous)._
 
 ---
 
@@ -70,15 +85,15 @@ Original PlayStation® Portable™ SoC is built on a 90nm CMOS process and is po
 
 ---
 
-###	How To Run The Production on PlayStation® Portable™ device
+###	How To Run The Production on PlayStation® Portable™
 
 This production has been tested and confirmed working under firmware 1.00, 1.50 and 3.40 OE-A (150 binary) and 3.90 M33-3 and 4.01 M33-2 (OE/M33/Slim binary). Use a fast memory stick like SanDisk 2GB to guarantee a smooth viewing experience.
 
-    ~ Unpack the contents of the archive from the [releases](../../releases) to the `ms0:/PSP/GAME/` folder on your [Memory Stick](https://en.wikipedia.org/wiki/Memory_Stick).  
+    ~ Unpack the contents of the archive from the [releases](../../releases) page to the `ms0:/PSP/GAME/` folder on your [Memory Stick](https://en.wikipedia.org/wiki/Memory_Stick).  
     ~ If you're using Open Edition [OE/M33](https://playstationdev.wiki/pspdevwiki/index.php?title=M33_Firmware) firmware, and the original 150 binaries, copy the files to `ms0:/PSP/GAME150/` instead.  
-    ~ Run the production from the XMB (Playstation Portable menu screen) as you would do with a regular game.  
+    ~ Run the production from the XMB (PlayStation Portable menu screen) as you would do with a regular game.  
 
-####	How To Run The Production in Emulator
+####	How To Run The Production in an Emulator
 
 If you do not own a PlayStation® Portable™ device, we recommend installing the [`ppsspp`](https://www.ppsspp.org/) emulator.  
 PPSSPP even lists **Suicide Barbie** within its *PPSSPP Homebrew Store*, making it easy to enjoy the production.
@@ -121,13 +136,6 @@ Maybe it will inspire someone else out there to create something interesting for
 The source code itself is pretty much in a frozen state at this point - we don't expect PRs or further development of the production.
 But it might serve useful for anyone interested in porting the code, writing emulators or perhaps working on an FPGA reimplementation of the PSP.
 
-
----
-####	License
-
-The source code found in this repository is licensed under the [MIT license](LICENSE) (*except where other licenses apply*).  
-The source assets (*textures, meshes, etc, found under [Data](Data)*) are Copyright © 2020 and licensed under a [CC BY-SA 4.0 license](https://creativecommons.org/licenses/by-sa/4.0/).
-
 ---
 
 ### Core Crew
@@ -135,8 +143,16 @@ The source assets (*textures, meshes, etc, found under [Data](Data)*) are Copyri
 
 ### Bingen, Germany, a few hours before the deadline
 ![coding]
+Photos are courtesy of [Daywish](https://www.instagram.com/eglezioma/).
+
+---
+####	License
+
+The source code found in this repository is licensed under the [MIT license](LICENSE) (*except where other licenses apply*).  
+The source assets (*textures, meshes, etc, found under [Data](Data)*) are Copyright © 2020 and licensed under a [CC BY-SA 4.0 license](https://creativecommons.org/licenses/by-sa/4.0/).
 
 [barbielogo]: www/barbielogo.png  "Suicide Barbie"
 [psp]: www/OnDevice.jpg "Suicide Barbie on PSP1000"
 [corecrew]: www/CoreCrew.jpg  "eriQue | Louie500 | ReJ"
 [coding]: www/Coding.jpg "Coding in Bingen 2007"
+
