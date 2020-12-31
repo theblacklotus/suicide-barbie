@@ -1,0 +1,34 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'baked'
+scene.RootNode.emissive = {1,1,1}
+scene.RootNode.enableScalingPivots = 0
+
+
+additive = {}
+additive.blendOp = 'MAdd'
+additive.zOp = 'ReadOnly'
+
+scene.s1_sprite = additive
+scene.s1_sprite1 = additive
+scene.s1_sprite2 = additive
+scene.s1_sprite3 = additive
+scene.s1_sprite4 = additive
+scene.s1_sprite5 = additive
+scene.s1_sprite6 = additive
+scene.s1_sprite7 = additive
+scene.s1_sprite8 = additive
+scene.s1_sprite9 = additive
+scene.s1_sprite10 = additive
+scene.s1_sprite11 = additive
+scene.s1_sprite12 = additive
+scene.s1_sprite13 = additive
+scene.s1_sprite14 = additive
+scene.s1_sprite15 = additive
+scene.s1_sprite16 = additive
+scene.s1_sprite17 = additive
+scene.s1_sprite18 = additive
+
+return scene

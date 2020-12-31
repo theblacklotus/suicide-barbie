@@ -1,0 +1,53 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'unlit'
+scene.RootNode.emissive = {1, 1, 1}
+
+scene.back1 = {}
+scene.back1.blendOp = 'Lerp'
+scene.back1.zOp = 'ReadOnly'
+scene.back1.slice = 1
+
+scene.wing1 = {}
+scene.wing1.blendOp = 'Lerp'
+scene.wing1.zOp = 'ReadOnly'
+scene.wing1.slice = 2
+
+scene.gun1 = {}
+scene.gun1.blendOp = 'Lerp'
+scene.gun1.zOp = 'ReadOnly'
+scene.gun1.slice = 3
+
+jealousy = {}
+jealousy.zOp = 'ReadOnly'
+jealousy.blendOp = 'Mul'
+jealousy.slice = 4
+
+scene.j = jealousy
+scene.e = jealousy
+scene.a = jealousy
+scene.l = jealousy
+scene.o = jealousy
+scene.u = jealousy
+scene.s = jealousy
+scene.y = jealousy
+
+scene.pPlane1 = {}
+scene.pPlane1.blendOp = 'Lerp'
+scene.pPlane1.zOp = 'ReadOnly'
+scene.pPlane1.slice = 9
+
+scene.pPlane2 = {}
+scene.pPlane2.blendOp = 'Lerp'
+scene.pPlane2.zOp = 'ReadOnly'
+scene.pPlane2.slice = 9
+
+scene.snurrig = {}
+scene.snurrig.blendOp = 'Mul'
+scene.snurrig.zOp = 'ReadOnly'
+scene.snurrig.slice = 7
+
+
+return scene

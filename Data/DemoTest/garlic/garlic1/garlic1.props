@@ -1,0 +1,28 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'baked'
+
+--scene.pPlane1 = {}
+--scene.pPlane1.blendOp = 'Lerp'
+--scene.pPlane1.zOp = 'ReadOnly'
+--scene.pPlane1.slice = 2
+
+scene.back = {}
+scene.back.blendOp = 'Lerp'
+scene.back.zOp = 'ReadOnly'
+scene.back.slice = 1
+
+scene.mark = {}
+scene.mark.blendOp = 'Lerp'
+scene.mark.zOp = 'ReadOnly'
+scene.mark.slice = 2
+
+--scene.BrunetteNaked = {}
+--scene.BrunetteNaked.shader = 'shiny'
+--scene.BrunetteNaked.envMap = 'env1_3.tga'
+--scene.BrunetteNaked.emissive = {1,1,1}
+--scene.BrunetteNaked.ambient = {0.2,0.2,0.2}
+
+return scene

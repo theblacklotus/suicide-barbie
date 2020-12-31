@@ -1,0 +1,21 @@
+
+global proc copyWorldXform(string $src, string $dst)
+{
+	select $src;
+	float $wm[] = `xform -q -ws -m`;
+	select $dst;
+	xform -ws -m $wm[0] $wm[1] $wm[2] $wm[3]  $wm[4] $wm[5] $wm[6] $wm[7]  $wm[8] $wm[9] $wm[10] $wm[11]  $wm[12] $wm[13] $wm[14] $wm[15];
+}
+
+
+global proc copyWorldXformAnim(string $src, string $dst, int $from, int $to)
+{
+
+	int $q = 0;
+	for(; $q < 68; $q++)
+	{
+		currentTime $q;
+		copyWorldXform($src, $dst);
+		setKeyframe -breakdown 0 -hierarchy none -controlPoints 0 -shape 0 {$dst};	
+	}
+}

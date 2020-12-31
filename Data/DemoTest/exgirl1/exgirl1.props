@@ -1,0 +1,44 @@
+
+scene = {}
+
+scene.RootNode = {}
+--scene.RootNode.shader = 'shiny'
+scene.RootNode.shader = 'lambert'
+--scene.RootNode.emissive = {1,1,1}
+scene.RootNode.diffuse = {1,1,1}
+--scene.RootNode.ambient = {1,1,1}
+scene.RootNode.enableVisibilityFlag = 1
+
+
+scene.tranSmoke = {}
+scene.tranSmoke.blendOp = 'Lerp'
+scene.tranSmoke.shader = 'baked'
+scene.tranSmoke.emissive = {1,1,1}
+scene.tranSmoke.zOp = 'ReadOnly'
+
+scene.addflash = {}
+scene.addflash.blendOp = 'Add'
+scene.addflash.shader = 'baked'
+scene.addflash.emissive = {1,1,1}
+scene.addflash.zOp = 'ReadOnly'
+
+scene.parts1 = {}
+scene.parts1.blendOp = 'Lerp'
+scene.parts1.shader = 'baked'
+scene.parts1.emissive = {1,1,1}
+scene.parts1.zOp = 'ReadOnly'
+
+scene.parts2 = {}
+scene.parts2.blendOp = 'Lerp'
+scene.parts2.shader = 'baked'
+scene.parts2.emissive = {1,1,1}
+scene.parts2.zOp = 'ReadOnly'
+
+scene.directionalLight1 = {}
+scene.directionalLight1.typeExt = 'DirectionalExt'
+scene.directionalLight1.diffuseColor = {1.0, 1.0, 1.0}
+scene.directionalLight1.equatorColor = {0.4, 0.4, 0.5}
+scene.directionalLight1.backColor =    {0.5, 0.3, 0.1}
+
+
+return scene

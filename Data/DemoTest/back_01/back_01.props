@@ -1,0 +1,32 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'unlit'
+scene.RootNode.emissive = {1,1,1}
+scene.RootNode.globalScale = 0.1
+
+lerpText = {}
+lerpText.blendOp = 'Lerp'
+lerpText.zOp = 'ReadOnly'
+lerpText.slice = 1
+
+scene.pPlane1 = lerpText
+scene.pPlane2 = lerpText
+scene.back2 = lerpText
+
+scene.pPlane2 = {}
+scene.pPlane2.blendOp = 'Lerp'
+scene.pPlane2.zOp = 'ReadOnly'
+scene.pPlane2.slice = 2
+
+scene.back1 = {}
+scene.back1.texWrap = 'Repeat'
+
+scene.add_light = {}
+scene.add_light.blendOp = 'Add'
+scene.add_light.zOp = 'ReadOnly'
+scene.add_light.slice = 3
+
+
+return scene

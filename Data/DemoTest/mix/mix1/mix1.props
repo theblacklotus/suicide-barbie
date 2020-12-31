@@ -1,0 +1,49 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'baked'
+
+scene.addENV = {}
+scene.addENV.shader = 'shiny'
+--scene.addENV.blendOp = 'Add'
+scene.addENV.blendOp = 'Lerp'
+scene.addENV.zOp = 'ReadOnly'
+scene.addENV.emissive = {0.1,0.2,0.1}
+scene.addENV.ambient = {1,1,1}
+scene.addENV.envMap = 'env1_3.tga'
+scene.addENV.slice = 4
+
+scene.reedENV1 = {}
+scene.reedENV1.shader = 'shiny'
+--scene.reedENV1.blendOp = 'Lerp'
+--scene.reedENV1.zOp = 'ReadOnly'
+scene.reedENV1.emissive = {0,0,0}
+scene.reedENV1.ambient = {1,1,1}
+scene.reedENV1.envMap = 'env1_2.tga'
+
+scene.silverENV = {}
+scene.silverENV.shader = 'shiny'
+--scene.silverENV.blendOp = 'Lerp'
+--scene.silverENV.zOp = 'ReadOnly'
+scene.silverENV.emissive = {0,0,0}
+scene.silverENV.ambient = {1,1,1}
+scene.silverENV.envMap = 'env1_1.tga'
+
+scene.alphaG = {}
+scene.alphaG.blendOp = 'Lerp'
+scene.alphaG.zOp = 'ReadOnly'
+scene.alphaG.slice = 2
+
+scene.back = {}
+scene.back.blendOp = 'Lerp'
+scene.back.zOp = 'ReadOnly'
+scene.back.slice = 1
+
+scene.RedheadNaked_Mesh = {}
+scene.RedheadNaked_Mesh.shader = 'shiny'
+scene.RedheadNaked_Mesh.envMap = 'env1_3.tga'
+scene.RedheadNaked_Mesh.emissive = {1,1,1}
+scene.RedheadNaked_Mesh.ambient = {0.2,0.2,0.2}
+
+return scene

@@ -1,0 +1,27 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'baked'
+
+additive = {}
+additive.blendOp = 'MAdd'
+additive.zOp = 'ReadOnly'
+
+scene.s3_sprite1 = additive
+scene.s3_sprite2 = additive
+scene.s3_sprite3 = additive
+scene.s3_sprite4 = additive
+scene.s3_sprite5 = additive
+scene.s3_sprite6 = additive
+scene.s3_sprite7 = additive
+scene.s3_sprite8 = additive
+scene.s3_sprite9 = additive
+scene.s3_sprite10 = additive
+scene.s3_sprite11 = additive
+scene.s3_sprite12 = additive
+scene.s3_sprite13 = additive
+scene.s3_sprite14 = additive
+scene.s3_sprite15 = additive
+
+return scene

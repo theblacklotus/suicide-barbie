@@ -1,0 +1,35 @@
+select -all;
+currentTime 1;
+abakeResults -simulation true -t "1:48" -sampleBy 1 -disableImplicitControl true -preserveOutsideKeys false -sparseAnimCurveBake false -controlPoints false -shape false;
+pv_performAction "D:/Dev/TBL-psp/ReJ/Data/ExportTest2/test_baked.fbx" "Fbx";
+file -op "" -typ "Fbx" -pr -f -ea "D:/Dev/TBL-psp/ReJ/Data/ExportTest2/test_baked.fbx";
+undo;
+
+
+DeleteAllHistory;
+select -all;
+currentTime 1;
+bakeResults -simulation true -t "1:48" -sampleBy 1 -disableImplicitControl true -preserveOutsideKeys false -sparseAnimCurveBake false -controlPoints false -shape false;
+file -op "" -typ "Fbx" -pr -f -ea "D:/Dev/TBL-psp/ReJ/Data/ExportTest2/test_baked.fbx";
+
+
+
+
+
+DeleteAllHistory;
+select -all;
+currentTime 1;
+bakeResults -simulation true -t "1:48" -sampleBy 1 -disableImplicitControl true -preserveOutsideKeys false -sparseAnimCurveBake false -controlPoints false -shape false;
+file -op "" -typ "Fbx" -pr -f -ea "D:/Dev/TBL-psp/ReJ/Data/ExportTest2/test_baked.fbx";
+
+
+int $boo = 0;
+int $moo = 0;
+while($moo < 1 && $boo < 10) {
+	$moo = `filetest -s "D:/Dev/TBL-psp/ReJ/Data/ExportTest2/test_baked.fbx"`;
+	print $moo;
+	pause -sec 1;
+	$boo = $boo + 1;
+}
+
+undo;

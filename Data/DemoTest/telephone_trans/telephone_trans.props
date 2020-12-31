@@ -1,0 +1,11 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'unlit'
+scene.RootNode.emissive = {1,1,1}
+scene.RootNode.blendOp = 'Lerp'
+scene.RootNode.zOp = 'ReadOnly'
+scene.RootNode.globalScale = 0.1
+
+return scene

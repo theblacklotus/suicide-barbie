@@ -1,0 +1,34 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'unlit'
+scene.RootNode.emissive = {1,1,1}
+scene.RootNode.ambient = {1,1,1}
+--scene.RootNode.envMap = 'env1_2.tga'
+
+uvscroll = {}
+uvscroll.blendOp = 'MAdd'
+uvscroll.zOp = 'ReadOnly'
+
+scene.pCube1 = uvscroll
+scene.pCube2 = uvscroll
+scene.pCube3 = uvscroll
+scene.pCube4 = uvscroll
+scene.pCube5 = uvscroll
+scene.pCube6 = uvscroll
+scene.pCube7 = uvscroll
+scene.pCube8 = uvscroll
+scene.pCube9 = uvscroll
+
+scene.gun = {}
+scene.hand = {}
+scene.gold = {}
+scene.gun.shader = 'shiny'
+scene.hand.shader = 'shiny'
+scene.gold.shader = 'shiny'
+scene.gun.envMap = 'env1_1.tga'
+scene.hand.envMap = 'env1_2.tga'
+scene.gold.envMap = 'env1_3.tga'
+
+return scene

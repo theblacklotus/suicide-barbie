@@ -1,0 +1,116 @@
+_Scenes_
++	'tele2' mirror missing
++	setup envmaps in 'mix' scenes
++	setup envmaps in 'gun' scenes
++	make beer less opaque
++	'logo' scale uv scroller
++	fix letters-on-char in 'text' scene
++	'jealousy' text wrong animation
++	fix 'mix' scenes
++	'reload' gun/hands are not visible
++	'reload' gun/clip translations are wrong (bake?)
+
+
+_Demo_
+.	fix deltatime calc
+.	shadows
++	mirror
+?	clear color from camera
+?	'visibility' tracks
++	TGA exporter
++	rendering glitch
++	blur in timeline
++	scene-specific blur
++	flashing
++	add audio to TimelineViewerPSP
++	add time control to TimelineViewerPSP/ScenePlayerPSP
++	blockReads for sequential containers
++	fix UV export
++	fix per-vertex normals
++	3-point lighting on PSP
++	release on PSP
++	envmap on PSP
++	face
++	blur/bloom (configurable) on PSP only
++	simple time profiling for PSP
++	memory profiling for PSP
++	memory consumption by player/availability on PSP
+
+
+
+_RunTime_
+.	frustum culling
+~	material support
+ ~	 dx9 uber-shader simulating psp ffp
+  +	  diffuse path
+  .	  specular path
+ +	 effect framework
+  +	  dx9 effect framework support
+  +	  psp effect framework support
+~	 cpu vertexshader framework
+~	blur
+ ~	 CPU blur (optimize)
+ +	 GPU
++	transparent objects support
++	directional 3-color lighting (2 polar colors and 1 equator color)
+.	textcoordgen
+ +	 scroll
+ .	 envmap
+  . 	  diffuse envmap (normal)							[psp: 2 envmaps required for full surrounding]
+  . 	  specular envmap (reflected eye)						[psp: cpu only]
+  !	  hemisphere envmap with modifiable horizon 'height'				[texture projection matrix trick]
+ .	 projected
+.	render-to-texture
+.	cut-geometry|pseudo-decal|drop-shadow
++	skybox
++	sprites
+.	SH support
+ .	 render-to-cube									[dx9: only]
+ .	 cube-to-SH									[dx9: only]
+ .	 per-vertex SH lighting
++	fix psp skinning
++       timeline
+~   	timeline helper functions (show_scene, clear_framebuffer, clear_zbuffer, apply_postprocess, blink, ...) 
+.	alpha-ref
+
+
+_Mutalisk_
+.	Exporter
+ +	 texture uv
+  .	  more than 1 layer uv support
+ +	 texture image
+ +	 vertex color
+ .	 aux vertex element stream support
+ +	 visibility flag animation
+ ~	 camera params
+  .       camera target
+  +       fov
+  .       aspect animation
+ ~	 materials/shaders
+  +	  shader names
+  .	  instance specific mesh subsets
+ ++	 custom properties
+  +	 extract properties (string/vector types)
+  +	 store properties in scene file
+  +	 script (lua?) based properties
+ +	 port exporter to fbx2006_11
+
+.	Resource loader
+ +	 d3d mesh loader
+  +	  d3d mesh subset support
+ +	 d3d texture loader
+ +	 psp mesh loader
+  .	  psp mesh subset support
+ +	 psp texture loader
+
+.	record frustum cull events
+.	record irradiance with dt step
+
+
+		
+_System_
+.	errors
+.	log
+.	profiler
+.	move new containers
+.	move new containers

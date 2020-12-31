@@ -1,0 +1,33 @@
+
+scene = {}
+
+scene.RootNode = {}
+scene.RootNode.shader = 'baked'
+--scene.RootNode.globalScale = 100
+
+additive = {}
+additive.blendOp = 'MAdd'
+additive.zOp = 'ReadOnly'
+
+scene.s2_sprite1 = additive
+scene.s2_sprite2 = additive
+scene.s2_sprite3 = additive
+scene.s2_sprite4 = additive
+scene.s2_sprite5 = additive
+scene.s2_sprite6 = additive
+scene.s2_sprite7 = additive
+scene.s2_sprite8 = additive
+scene.s2_sprite9 = additive
+scene.s2_sprite10 = additive
+scene.s2_sprite11 = additive
+scene.s2_sprite12 = additive
+scene.s2_sprite13 = additive
+scene.s2_sprite14 = additive
+scene.s2_sprite15 = additive
+scene.s2_sprite16 = additive
+scene.cncd2 = additive
+
+scene.mirror = {}
+scene.mirror.shader = 'mirror'
+
+return scene
