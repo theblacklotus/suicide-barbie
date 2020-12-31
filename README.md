@@ -71,16 +71,16 @@ _NOTE: While (most of) the code is present in this repository we haven't bothere
 
         Platform Consultant: Chip
  
-####	Additional Credits & Inspiration
+####	Additional Credits for "The Things We ~~Stole~~ Borrowed"
 
         Roberto Roseano (Barbie Suicide)  
-        Psyop
+        Psyop  
+        orl^simple / Nesnausk! (mutant lib) 
  
 ####	Special Thanks
 
         [pspdev](https://github.com/pspdev) community for homebrew  
         TyRaNiD for [psplink](https://github.com/pspdev/psplinkusb) (this demo would not've been possible without it)  
-        orlok^simple / Nesnausk! for mutant lib  
         daywish^cathy / Nesnausk! for support and photojournalism in Bingen  
 
 ---
