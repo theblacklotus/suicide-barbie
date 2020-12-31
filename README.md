@@ -107,6 +107,20 @@ or, run it emulated (assuming [`ppsspp`](https://www.ppsspp.org/) is installed) 
 
 	`./emulate.sh`
 
+---
+###	Why Open-Source This?
+
+Good question - and while there is not a single reason to do this there are two worth highlighting:  
+Firstly we were repeatedly asked, both publicly and in private conversations, to release the source code.  
+And as the code was sitting in a backup of an old Perforce repository not even we had direct access to it for a long time.
+It was a good enough reason to resurrect the code and migrate it to Git.
+
+Secondly it seems the PSP Homebrew Community is still active and, as already noted, this is as far as we can tell the best demoscene production for the PSP - almost 15 years later.  
+Maybe it will inspire someone else out there to create something interesting for the PSP (or any other platform).
+
+The source code itself is pretty much in a frozen state at this point - we don't expect PRs or further development of the production.
+But it might serve useful for anyone interested in porting the code, writing emulators or perhaps working on an FPGA reimplementation of the PSP.
+
 
 ---
 ####	License
