@@ -20,7 +20,8 @@
 
 ###	How Suicide Barbie Came To Be
 
-After the success of the [Starstruck](https://www.pouet.net/prod.php?which=25778) demo, the team needed a new challenge. It had to be a demo on a new platform. On a well defined and fixed platform, but with hardware powerful enough for the Creative Vision™. Limited, yet modern. Platform unhindered by layers of software abstractions one finds in PC.  
+After the success of the [Starstruck](https://www.pouet.net/prod.php?which=25778) demo, the team needed a new challenge. It had to be a demo on a new platform. On a well defined and fixed platform, but with hardware powerful enough for the Creative Vision™. Limited, yet modern. Platform unhindered by layers of software abstractions one finds in PC.
+
 So, inspired by the PlayStation® 2 demo [4 Edges](https://www.pouet.net/prod.php?which=24552) and hacker spirit of the [Homebrew](https://github.com/pspdev/pspsdk) community we soon had a winner - a miniaturized beast of PlayStation® with a vibrant screen. A harbinger of the new future where great visuals fit in your pocket - PlayStation® Portable™!
 
 The goal was simple: make the most Entertaining Visual Experience, the Best Demo for the platform! And although the author is clearly biased here, but it looks like Suicide Barbie holds its ground even today and still is the best demo on the PlayStation® Portable™.
@@ -103,8 +104,9 @@ PPSSPP even lists **Suicide Barbie** within its *PPSSPP Homebrew Store*, making 
 
 _This has only been tested with macOS 10.14+ (using [brew](https://brew.sh/)) and Ubuntu 20.04 LTS (Focal Fossa)_
 
-macOS  : `brew install autoconf automake flex gcc@9 ncurses make subversion texinfo wget ppsspp`\
-Ubuntu : `apt install autoconf automake bison flex gcc-9 libncurses-dev make subversion texinfo wget`
+macOS  : `brew install autoconf automake flex gcc@9 ncurses make subversion texinfo wget libusb libusb-compat sdl`\
+Ubuntu : `apt install autoconf automake bison flex gcc-9 libncurses-dev make subversion texinfo wget libusb-dev libsdl2-dev`
+
 
 1. Bootstrap the environment using a 2006'ish snapshot of the homebrew PSP toolchain and SDK via  
 
