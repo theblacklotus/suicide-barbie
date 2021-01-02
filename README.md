@@ -104,8 +104,8 @@ PPSSPP even lists **Suicide Barbie** within its *PPSSPP Homebrew Store*, making 
 
 _This has only been tested with macOS 10.14+ (using [brew](https://brew.sh/)) and Ubuntu 20.04 LTS (Focal Fossa)_
 
-macOS  : `brew install autoconf automake flex gcc@9 ncurses make subversion texinfo wget libusb libusb-compat sdl`\
-Ubuntu : `apt install autoconf automake bison flex gcc-9 libncurses-dev make subversion texinfo wget libusb-dev libsdl2-dev`
+macOS  : `brew install autoconf automake flex gcc@9 ncurses make subversion texinfo wget ppsspp libusb libusb-compat sdl`\
+Ubuntu : `apt install autoconf automake bison flex gcc-9 libncurses-dev make subversion texinfo wget libusb-dev build-essential libreadline-dev`
 
 
 1. Bootstrap the environment using a 2006'ish snapshot of the homebrew PSP toolchain and SDK via  
