@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# apt install autoconf automake bison flex libncurses-dev make subversion texinfo wget libusb-dev
+# apt install autoconf automake bison flex gcc-9 libncurses-dev make subversion texinfo wget libusb-dev build-essential libreadline-dev
 # or 
 # brew install autoconf automake flex gcc@9 ncurses make subversion texinfo wget libusb libusb-compat sdl
 
