@@ -91,6 +91,7 @@ void drawFullscreenQuad(unsigned int color, unsigned int vertexElements)
 
 	sceGumMatrixMode(GU_PROJECTION);
 	sceGumLoadIdentity();
+	/* Causing crash currently with regular sceGUM, can comment but demo WILL suffer :(  */
 	sceGumOrtho(-1.0f,1.0f,-1.0f,1.0f, 0.5f,1000.0f);
 
 	sceGumMatrixMode(GU_VIEW);
