@@ -31,8 +31,9 @@ INCLUDE:=\
 
 AS=psp-gcc
 CC=psp-gcc
+CXX=psp-g++
 AR=psp-ar
-LD=psp-gcc
+LD=psp-g++
 
 AS_FLAGS=\
 	-DNDEBUG\
@@ -42,20 +43,27 @@ AS_FLAGS=\
 
 CC_FLAGS_COMMON=\
 	-D__GCC__\
+	-DAP_DEFINED_LOCALLY\
+	-D__CORRECT_ISO_CPP_STRING_H_PROTO\
+	-D_PSP_FW_VERSION=500\
 	$(INCLUDE)\
 	-I. -c\
 	-include "ForcedInclude.h"\
 	-MMD    \
 	-Wall\
 	-fno-exceptions\
+	-Wno-deprecated-declarations\
 
 CC_FLAGS_DEBUG=\
 	-O0\
 	-g\
 	-D_DEBUG\
+	-fshort-wchar\
+	-ffast-math\
+	-fomit-frame-pointer\
 
 CC_FLAGS_RELEASE=\
-	-O3\
+	-Os\
 	-DNDEBUG\
 	-fshort-wchar\
 	-ffast-math\
@@ -66,7 +74,9 @@ CC_FLAGS:=\
 	$(CC_FLAGS_COMMON)\
 	$(CC_FLAGS)\
 
-CXX_FLAGS=$(CC_FLAGS)
+CXX_FLAGS:=$(CC_FLAGS)\
+	-std=c++11\
+	-fexceptions\
 
 ifndef LIBS
 LIBS=\
@@ -79,7 +89,7 @@ LIBS=\
 	$(PSPDEV)/psp/sdk/lib/libpspsdk.a\
 	$(PSPDEV)/psp/sdk/lib/libpsppower.a\
 	$(PSPDEV)/psp/sdk/lib/libpsprtc.a\
-	$(PSPDEV)/psp/sdk/lib/libpspgum.a\
+	$(PSPDEV)/psp/sdk/lib/libpspgum_vfpu.a\
 	$(PSPDEV)/psp/sdk/lib/libpspgu.a\
 	$(PSPDEV)/psp/sdk/lib/libpspge.a\
 	$(PSPDEV)/psp/sdk/lib/libpspdisplay.a\
@@ -117,7 +127,7 @@ $(INTDIR)/%.obj: %.c
 
 $(INTDIR)/%.obj: %.cpp
 	@echo Compiling "$<"
-	$(CC) $(CC_FLAGS) "$<" -o $@
+	$(CXX) $(CXX_FLAGS) "$<" -o $@
 
 ########################################################
 
@@ -137,7 +147,7 @@ ELF: $(PROJECT_PATH).elf
 
 $(PROJECT_PATH).elf : $(OBJS) $(LCFILE) $(LIBS)
 	@echo Linking $@
-	$(LD) -Wl,--start-group $(OBJS) $(LIBS) -Wl,--end-group $(LD_FLAGS) -o $@
+	$(LD) -Wl,--start-group $(OBJS) $(LIBS) -Wl,--end-group $(LD_FLAGS) $(CXX_FLAGS)  -o $@
 	@echo Fixup imports $@
 	psp-fixup-imports $@
 
@@ -165,6 +175,7 @@ $(EBOOT_TARGET):: $(PROJECT_PATH).prx $(INTDIR)/PARAM.SFO
 	@echo Creating '$(EBOOT_TARGET)' PBP
 	mkdir -p "$(OUTDIR)/$(PROJECT)"
 	pack-pbp "$(EBOOT_TARGET)" "$(INTDIR)/PARAM.SFO" "ICON0.PNG" NULL NULL "PIC1.PNG" NULL "$(PROJECT_PATH).prx" NULL
+	cp "$(PROJECT_PATH).prx"  $(OUTDIR)/$(PROJECT)/
 else
 EBOOT_TARGET = $(OUTDIR)/%__SCE__$(PROJECT)/EBOOT.PBP
 $(EBOOT_TARGET): $(PROJECT_PATH).elf $(INTDIR)/PARAM.SFO

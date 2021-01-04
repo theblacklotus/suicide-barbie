@@ -15,7 +15,7 @@ LIBS=\
 	$(PSPDEV)/psp/sdk/lib/libpspsdk.a\
 	$(PSPDEV)/psp/sdk/lib/libpsppower.a\
 	$(PSPDEV)/psp/sdk/lib/libpsprtc.a\
-	$(PSPDEV)/psp/sdk/lib/libpspgum.a\
+	$(PSPDEV)/psp/sdk/lib/libpspgum_vfpu.a\
 	$(PSPDEV)/psp/sdk/lib/libpspgu.a\
 	$(PSPDEV)/psp/sdk/lib/libpspge.a\
 	$(PSPDEV)/psp/sdk/lib/libpspdisplay.a\

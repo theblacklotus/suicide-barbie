@@ -10,6 +10,9 @@ debug: elf_debug
 release: elf
 release_oe: BUILD_OE = 1
 release_oe: prx
+debug_oe: BUILD_OE = 1
+debug_oe: CONFIG = DEBUG
+debug_oe: prx_debug
 
 libs_debug:
 	@$(MAKE) $(MAKEFLAGS) -C zlib LIB
@@ -43,6 +46,9 @@ elf: libs
 	@$(MAKE) $(MAKEFLAGS) -C Tests/MutaliskViewer PBP
 
 prx: libs
+	@$(MAKE) $(MAKEFLAGS) -C Tests/MutaliskViewer PBP
+
+prx_debug: libs_debug
 	@$(MAKE) $(MAKEFLAGS) -C Tests/MutaliskViewer PBP
 
 clean:

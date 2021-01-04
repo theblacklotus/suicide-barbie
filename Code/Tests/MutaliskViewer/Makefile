@@ -17,7 +17,7 @@ LIBS=\
 	$(PSPDEV)/psp/sdk/lib/libpspsdk.a\
 	$(PSPDEV)/psp/sdk/lib/libpsppower.a\
 	$(PSPDEV)/psp/sdk/lib/libpsprtc.a\
-	$(PSPDEV)/psp/sdk/lib/libpspgum.a\
+	$(PSPDEV)/psp/sdk/lib/libpspgum_vfpu.a\
 	$(PSPDEV)/psp/sdk/lib/libpspgu.a\
 	$(PSPDEV)/psp/sdk/lib/libpspge.a\
 	$(PSPDEV)/psp/sdk/lib/libpspdisplay.a\
@@ -56,20 +56,21 @@ SRCS=\
 	TimelinePlayer.cpp\
 	vram.c\
 
+CXX_FLAGS:=$(CC_FLAGS)\
+	-std=c++11\
+	-fexceptions\
+
 ifeq ($(BUILD_OE),1)
 CC_FLAGS+=-DPSP_OE
 LD_FLAGS=\
 	-specs=$(PSPDEV)/psp/sdk/lib/prxspecs\
 	-Wl,-q,-T$(PSPDEV)/psp/sdk/lib/linkfile.prx\
 	$(PSPDEV)/psp/sdk/lib/prxexports.o\
-	-fno-exceptions\
 	-Wl,-Map="$(OUTDIR)/$(PROJECT).prx.txt"\
 	-L$(PSPDEV)/psp/sdk/lib\
 	-lpspuser\
 	-lpspkernel\
-	-Wl,-S\
 	-Wl,-x\
-	-Wl,--gc-sections\
 	-Wl,--wrap=malloc\
 	-Wl,--wrap=free\
 	-Wl,--wrap=calloc\
@@ -83,9 +84,8 @@ LD_FLAGS=\
 	-L$(PSPDEV)/psp/sdk/lib\
 	-lpspuser\
 	-lpspkernel\
-	-Wl,-s\
+	-Wl,-S\
 	-Wl,-x\
-	-Wl,--gc-sections\
 	-Wl,--wrap=malloc\
 	-Wl,--wrap=free\
 	-Wl,--wrap=calloc\
