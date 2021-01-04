@@ -4,6 +4,7 @@
 #include "hierarchy.h"
 
 #include <set>
+#include <memory>
 
 namespace mutant
 {

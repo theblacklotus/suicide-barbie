@@ -2,6 +2,7 @@
 #include "../ScenePlayer.h"
 
 #include <memory>
+#include <cstring>
 #include <effects/all.h>
 #include <effects/Library.h>
 #include <effects/BaseEffect.h>
@@ -66,7 +67,7 @@ std::auto_ptr<RenderableScene> prepare(RenderContext& rc, mutalisk::data::scene 
 		}
 		for(size_t q = 0; q < data.textureIds.size(); ++q)
 		{
-			printf("¤¤ texture = %x\n", (unsigned)scene->mResources.textures[q].blueprint.get());
+			printf("ï¿½ï¿½ texture = %x\n", (unsigned)scene->mResources.textures[q].blueprint.get());
 		}
 	}
 	scene->mResources.animCharSet = loadResource<mutant::anim_character_set>(pathPrefix + data.animCharId);
@@ -222,7 +223,7 @@ namespace {
 
 //;;printf(" blastSurfaceInputs -- toNativeColors\n");
 
-//		printf("¤¤ src.diffuseTexture = %x\n", src.diffuseTexture);
+//		printf("ï¿½ï¿½ src.diffuseTexture = %x\n", src.diffuseTexture);
 
 		dst.diffuseTexture = 0;
 		dst.envmapTexture = 0;
@@ -230,7 +231,7 @@ namespace {
 			dst.diffuseTexture = &scene.mResources.textures[src.diffuseTexture].renderable->mBlueprint;
 		if(src.envmapTexture != ~0U)
 			dst.envmapTexture = &scene.mResources.textures[src.envmapTexture].renderable->mBlueprint;
-//		printf("¤¤ dst.diffuseTexture = %x\n", dst.diffuseTexture);
+//		printf("ï¿½ï¿½ dst.diffuseTexture = %x\n", dst.diffuseTexture);
 
 //		dst.diffuseTexture = (src.diffuseTexture != ~0U)? scene.mResources.textures[src.diffuseTexture] : 0;
 //		dst.envmapTexture = 0(src.envmapTexture != ~0U)? scene.mNativeResources.textures[src.envmapTexture] : 0;

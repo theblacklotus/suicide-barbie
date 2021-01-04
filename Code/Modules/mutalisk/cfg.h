@@ -13,7 +13,7 @@
 	#define ASSERT(exp) (void)( (exp) || (_assert(#exp, __FILE__, -1), 0) )
 #else
 	#include <cassert>
-	#include <stdio.h>
+	#include <cstdio>
 #ifdef PSP_FINAL
 #define ASSERT(exp)	{}
 #elif defined(__psp__)

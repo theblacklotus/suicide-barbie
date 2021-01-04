@@ -1,7 +1,7 @@
 #include "dx9Helpers.h"
 
 #include <string>
-#include <stdlib.h>
+#include <cstdlib>
 #include "../errors.h"
 
 using namespace dx;

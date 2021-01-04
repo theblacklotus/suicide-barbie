@@ -1,7 +1,7 @@
 #include <pspsdk.h>
 #include <pspkernel.h>
 #include <pspctrl.h>
-#include <stdio.h>
+#include <cstdio>
 
 PSP_MODULE_INFO("WavTest", 0, 1, 1);
 

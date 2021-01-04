@@ -1,6 +1,6 @@
 #include <pspkernel.h>
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 #include "vram.h"
 #include <pspgu.h>
 #include "AnimCreator.h"

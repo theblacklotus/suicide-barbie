@@ -1,7 +1,7 @@
-#include <stdio.h>
+#include <cstdio>
 #include <pspkernel.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <pspgu.h>
 
 #include <platform.h>

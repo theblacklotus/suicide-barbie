@@ -1,5 +1,5 @@
 #include "BaseEffect.h"
-#include <stdlib.h>
+#include <cstdlib>
 #include <algorithm>
 
 using namespace mutalisk;

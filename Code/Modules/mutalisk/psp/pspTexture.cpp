@@ -1,4 +1,5 @@
 #include "psp.h"
+#include <cstring>
 
 namespace mutalisk { namespace data
 {
@@ -21,12 +22,12 @@ void clear(psp_texture& data)
 {
 	if (data.memContainer)
 	{
-//		printf("い free = %x\n", (unsigned int)data.memContainer);
+//		printf("造造 free = %x\n", (unsigned int)data.memContainer);
 		free(data.memContainer);
 	}
 	else if (data.data)
 	{
-//		printf("い free = %x\n", (unsigned int)data.data);
+//		printf("造造 free = %x\n", (unsigned int)data.data);
 		free(data.data);
 	}
 	memset(&data, 0x00, sizeof(data));
@@ -51,18 +52,18 @@ void psp_texture::patchupTextureFromMemory(MtxHeader* header)
 	clut = (void*)(header->paletteOffset + (int)data);
 
 	swizzled = header->swizzle;
-//	printf("い alloc = %x\n", (unsigned int)data);
+//	printf("造造 alloc = %x\n", (unsigned int)data);
 /*
-	printf("い width = %i\n", width);
-	printf("い height = %i\n", height);
-	printf("い format = %i\n", format);
-	printf("い stride = %i\n", stride);
-	printf("い alloc = %x\n", (unsigned int)data);
-	printf("い size = %i\n", header->vramAllocationSize);
-	printf("い clut? = %i\n", clutFormat);
-	printf("い clut# = %i\n", clutEntries);
-	printf("い clut@ = %x\n", (unsigned int)clut);
-	printf("い swizzled = %s\n", swizzled ? "yes" : "no");
+	printf("造造 width = %i\n", width);
+	printf("造造 height = %i\n", height);
+	printf("造造 format = %i\n", format);
+	printf("造造 stride = %i\n", stride);
+	printf("造造 alloc = %x\n", (unsigned int)data);
+	printf("造造 size = %i\n", header->vramAllocationSize);
+	printf("造造 clut? = %i\n", clutFormat);
+	printf("造造 clut# = %i\n", clutEntries);
+	printf("造造 clut@ = %x\n", (unsigned int)clut);
+	printf("造造 swizzled = %s\n", swizzled ? "yes" : "no");
 */
 }
 
