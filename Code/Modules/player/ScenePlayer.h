@@ -2,6 +2,7 @@
 #define NEWAGE_SCENEPLAYER_H_
 
 #include "cfg.h"
+#include <cstring>
 #include <memory>
 #include <mutant/mutant.h>
 #include <mutant/io_factory.h>
@@ -296,7 +297,7 @@ static AP<ResourceType> loadResource(std::string fileName)
 }
 
 template <>
-static AP<mutant::anim_character_set> loadResource(std::string fileName)
+inline AP<mutant::anim_character_set> loadResource(std::string fileName)
 {
 	;;printf("loadResource<anim_character_set>: $ %s\n", fileName.c_str());
 	AP<mutant::mutant_reader> reader = createFileReader(fileName);
@@ -307,7 +308,7 @@ static AP<mutant::anim_character_set> loadResource(std::string fileName)
 }
 
 template <>
-static AP<mutalisk::data::texture> loadResource(std::string fileName)
+inline AP<mutalisk::data::texture> loadResource<mutalisk::data::texture>(std::string fileName)
 {
 	;;printf("loadResource<mutalisk::data::texture>: $ %s\n", fileName.c_str());
 	AP<mutant::binary_input> input = AP<mutant::binary_input>(new file_input(getResourcePath() + fileName));
