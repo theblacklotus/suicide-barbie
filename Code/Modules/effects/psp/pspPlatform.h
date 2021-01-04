@@ -5,6 +5,7 @@
 #include <psptypes.h>
 #include <pspgu.h>
 #include <pspgum.h>
+#include <mutant/io_factory.h>
 #include <mutalisk/psp/pspPlatform.h>
 #include <mutalisk/scene.h>
 
