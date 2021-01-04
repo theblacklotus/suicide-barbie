@@ -64,7 +64,7 @@ extern unsigned char logo_start[];
 #define SCR_WIDTH (480)
 #define SCR_HEIGHT (272)
 
-std::string gPathPrefix = "host1:/"; // this is the default data directory, DO NOT CHANGE. search for 'ms0:' to override..
+std::string gPathPrefix = "host0:/BarbieData/"; // this is the default data directory, DO NOT CHANGE. search for 'ms0:' to override..
 
 #include "TestDemo.h"
 #include "TimeBlock.h"
@@ -196,7 +196,7 @@ int main(int argc, char* argv[])
 		gPathPrefix = path; gPathPrefix += "BarbieData/";
 	}
 	
-	printf("\n¤¤ data path = %s\n", gPathPrefix.c_str());
+	printf("\nï¿½ï¿½ data path = %s\n", gPathPrefix.c_str());
 
 /*
 	SceUID fd = sceIoOpen("ms0:/path.txt", PSP_O_CREAT|PSP_O_WRONLY, 0777);
@@ -529,7 +529,9 @@ SceUID load_atrac()
 		thid1 = pspSdkLoadStartModule("flash0:/kd/audiocodec.prx", PSP_MEMORY_PARTITION_KERNEL);
 	}
 	else
+	{
 		thid1 = pspSdkLoadStartModule("flash0:/kd/audiocodec_260.prx", PSP_MEMORY_PARTITION_KERNEL);
+	}
 	SceUID thid2 = pspSdkLoadStartModule("flash0:/kd/libatrac3plus.prx", PSP_MEMORY_PARTITION_USER);
 	if (thid1 < 0 || thid2 < 0)
 	{
@@ -566,11 +568,13 @@ bool start_atrac(SceUID mod)
 {
 	{
 		std::string at3name = gPathPrefix + "music/suicidebarbie.at3";
+		int retVal;
 
 		if (mod >= 0)
 		{
 			int res;
-			if (sceKernelStartModule(mod, at3name.size()+1, (void*)at3name.c_str(), &res, 0) < 0)
+			retVal = sceKernelStartModule(mod, at3name.size()+1, (void*)at3name.c_str(), &res, 0);
+			if (retVal < 0)
 			{
 				pspDebugScreenPrintf("Error starting module. \n");
 			}
