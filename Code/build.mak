@@ -54,6 +54,7 @@ CC_FLAGS_COMMON=\
 	-Wall\
 	-Wno-deprecated-declarations\
 	-D__CORRECT_ISO_CPP_MATH_H_PROTO\
+	-ffunction-sections -fdata-sections\
 	-fno-exceptions\
 
 CC_FLAGS_DEBUG=\

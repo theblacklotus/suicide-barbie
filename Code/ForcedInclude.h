@@ -7,9 +7,6 @@
 	#if defined(PSP_FINAL) && defined(NDEBUG)
 
 		#include <stdio.h>
-		#ifdef __cplusplus
-			#include <stdexcept>
-		#endif
 		#include <pspdebug.h>
 		#include <pspkdebug.h>
 		#define __STDIO_H__ 

@@ -1,12 +1,18 @@
 #include "binary_compressed_input.h"
+#if !defined(__psp__)
 #include <iostream>
+#endif
 
 using namespace mutant;
 
 template<typename _A>
 void CHECK_ERR( int e, _A const& a )  {
 	if( e!=Z_OK )
+#if defined(__psp__)
+		printf("ZLIB ERROR: (%i) %s\n", e, a);
+#else
 		std::cerr << "ZLIB ERROR: (" << e << ") " << (a) << std::endl;
+#endif
 }
 
 mutant_compressed_input::mutant_compressed_input( std::auto_ptr<binary_input>& input )

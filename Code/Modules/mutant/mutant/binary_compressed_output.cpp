@@ -1,13 +1,17 @@
 #include "binary_compressed_output.h"
+#if !defined(__psp__)
 #include <iostream>
+#endif
 
 using namespace mutant;
 
 template<typename _A>
 void CHECK_ERR( int e, _A const& a )
 {
+#if !defined(__psp__)
 	if(e!=Z_OK)
 		std::cerr << "ZLIB ERROR: (" << e << ") " << (a) << std::endl;
+#endif
 }
 
 mutant_compressed_output::mutant_compressed_output( std::auto_ptr<binary_output>& output )
@@ -62,6 +66,7 @@ void mutant_compressed_output::initDeflate()
 	zstream.opaque = (voidpf)0;
 
 	err = deflateInit(&zstream, Z_DEFAULT_COMPRESSION);
+	CHECK_ERR( err, "initDeflate" );
 
 	zstream.next_out = mBuffer;
 	zstream.avail_out = BUF_LEN;
