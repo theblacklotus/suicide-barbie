@@ -6,7 +6,7 @@ cd "`dirname $0`" || { echo "ERROR: Could not enter the repo root directory."; e
 
 if [ -z "$1" ]
 then
-	TARGET="release"
+	TARGET="all"
 else
 	TARGET="$1"
 fi	
@@ -38,8 +38,8 @@ if test -f "Code/Makefile"; then
 fi
 
 if test -d "ReleaseCandidate"; then
-	cp -r Output/RELEASE/%__SCE__SuicideBarbie ReleaseCandidate/
-	cp -r Output/RELEASE/__SCE__SuicideBarbie ReleaseCandidate/
+	[ -d Output/RELEASE/%__SCE__SuicideBarbie ] && cp -r Output/RELEASE/%__SCE__SuicideBarbie ReleaseCandidate/
+	[ -d Output/RELEASE/__SCE__SuicideBarbie  ] && cp -r Output/RELEASE/__SCE__SuicideBarbie ReleaseCandidate/
 
-	psp-size ReleaseCandidate/__SCE__SuicideBarbie/EBOOT.PBP
+	psp-size Output/*/SuicideBarbie*.elf ReleaseCandidate/__SCE__SuicideBarbie/EBOOT.PBP
 fi

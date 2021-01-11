@@ -1,6 +1,6 @@
 #if defined(__psp__)		// PSP specific global define overides...
 	#define PSP_FINAL		// define to remove printf flooding etc
-	#if defined(PSP_FINAL)
+	#if defined(PSP_FINAL) && defined(NDEBUG)
 
 		#include <stdio.h>
 		#ifdef __cplusplus

@@ -1,15 +1,18 @@
 .SUFFIXES:
 
-.PHONY: debug release release_oe clean libs libs_debug elf elf_debug prx
+.PHONY: debug release debug_oe release_oe clean libs libs_debug elf elf_debug prx prx_debug
 .EXPORT_ALL_VARIABLES:
 
-all: debug release release_oe
+all: debug release debug_oe release_oe
 
 debug: CONFIG = DEBUG
 debug: elf_debug
 release: elf
 release_oe: BUILD_OE = 1
 release_oe: prx
+debug_oe: CONFIG = DEBUG
+debug_oe: BUILD_OE = 1
+debug_oe: prx_debug
 
 libs_debug:
 	@$(MAKE) $(MAKEFLAGS) -C zlib LIB
@@ -43,6 +46,9 @@ elf: libs
 	@$(MAKE) $(MAKEFLAGS) -C Tests/MutaliskViewer PBP
 
 prx: libs
+	@$(MAKE) $(MAKEFLAGS) -C Tests/MutaliskViewer PBP
+
+prx_debug: libs_debug
 	@$(MAKE) $(MAKEFLAGS) -C Tests/MutaliskViewer PBP
 
 clean:

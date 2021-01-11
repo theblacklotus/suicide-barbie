@@ -16,7 +16,7 @@ then
 fi
 
 killall usbhostfs_pc || echo "no usbhostfs_pc found"
-usbhostfs_pc -mcd Output/RELEASE ReleaseCandidate/__SCE__SuicideBarbie/BarbieData &
+usbhostfs_pc -mcd Output/RELEASE ReleaseCandidate/__SCE__SuicideBarbie/BarbieData Output/DEBUG &
 
 while ! nc -z localhost 10000; do
   sleep 0.1

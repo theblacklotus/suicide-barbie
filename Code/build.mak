@@ -16,9 +16,14 @@ PROJECT ?= $(notdir $(PROJECT_DIRNAME))
 ########################################################
 
 CONFIG?=RELEASE
+VARIANT=$(CONFIG)
+
+ifeq ($(BUILD_OE),1)
+VARIANT:=$(CONFIG)_OE
+endif
 
 OUTDIR = $(ROOT)/Output/$(CONFIG)
-INTDIR = $(ROOT)/Build/$(CONFIG)/$(PROJECT)
+INTDIR = $(ROOT)/Build/$(VARIANT)/$(PROJECT)
 
 $(info ~~~~~~~~~~~~~ PROJECT = $(PROJECT) ; CONFIG = $(CONFIG))
 
