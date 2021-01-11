@@ -23,7 +23,6 @@ LIBS=\
 	$(PSPDEV)/psp/sdk/lib/libpspdisplay.a\
 	$(PSPDEV)/psp/sdk/lib/libpspctrl.a\
 	$(PSPDEV)/psp/sdk/lib/libpspnet.a\
-	$(PSPDEV)/psp/sdk/lib/libpspnet_inet.a\
 	$(PSPDEV)/psp/sdk/lib/libpspdebug.a\
 	$(OUTDIR)/effects.lib\
 	$(OUTDIR)/player.lib\
@@ -58,9 +57,11 @@ SRCS=\
 
 ifeq ($(BUILD_OE),1)
 CC_FLAGS+=-DPSP_OE
+# This is the standard linkscript, but KEEP()'ing sceModuleInfo from being collected by --gc-sections
+LCFILE = linkfile.prx
 LD_FLAGS=\
 	-specs=$(PSPDEV)/psp/sdk/lib/prxspecs\
-	-Wl,-q,-T$(PSPDEV)/psp/sdk/lib/linkfile.prx\
+	-Wl,-q,-T$(LCFILE)\
 	$(PSPDEV)/psp/sdk/lib/prxexports.o\
 	-fno-exceptions\
 	-Wl,-Map="$(OUTDIR)/$(PROJECT).prx.txt"\

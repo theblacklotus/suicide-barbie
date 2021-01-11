@@ -52,6 +52,8 @@ CC_FLAGS_COMMON=\
 	-include "ForcedInclude.h"\
 	-MMD    \
 	-Wall\
+	-Wno-deprecated-declarations\
+	-D__CORRECT_ISO_CPP_MATH_H_PROTO\
 	-fno-exceptions\
 
 CC_FLAGS_DEBUG=\

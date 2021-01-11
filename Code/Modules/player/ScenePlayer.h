@@ -295,8 +295,16 @@ static AP<ResourceType> loadResource(std::string fileName)
 	return resource;
 }
 
+// When using a newer toolchain than the original 4.1.0 (like 9.3.0)
+// the template specialization requires different handling
+#if __GNUC__ > 4
+#define INLINE inline
+#else
+#define INLINE static
+#endif
+
 template <>
-static AP<mutant::anim_character_set> loadResource(std::string fileName)
+INLINE AP<mutant::anim_character_set> loadResource(std::string fileName)
 {
 	;;printf("loadResource<anim_character_set>: $ %s\n", fileName.c_str());
 	AP<mutant::mutant_reader> reader = createFileReader(fileName);
@@ -307,7 +315,7 @@ static AP<mutant::anim_character_set> loadResource(std::string fileName)
 }
 
 template <>
-static AP<mutalisk::data::texture> loadResource(std::string fileName)
+INLINE AP<mutalisk::data::texture> loadResource(std::string fileName)
 {
 	;;printf("loadResource<mutalisk::data::texture>: $ %s\n", fileName.c_str());
 	AP<mutant::binary_input> input = AP<mutant::binary_input>(new file_input(getResourcePath() + fileName));
@@ -319,6 +327,8 @@ static AP<mutalisk::data::texture> loadResource(std::string fileName)
 	;;printf("loadResource<mutalisk::data::texture>: ! %s\n", fileName.c_str());
 	return resource;
 }
+
+#undef INLINE
 
 #ifdef AP_DEFINED_LOCALY
 #undef AP

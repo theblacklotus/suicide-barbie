@@ -32,7 +32,8 @@ public:
 extern "C"
 {
 
-void* __wrap_malloc(size_t size)
+// Use 'noinline' here as we don't want it to unroll into __wrap_calloc below
+void* __attribute__ ((noinline)) __wrap_malloc(size_t size)
 {
 	ScopedMutex scoped(mutex);
 	return dlmalloc(size);
@@ -72,7 +73,7 @@ void __wrap_free(void* size)
 
 void* __wrap_calloc(size_t numelems, size_t sizeofeach)
 {
-	void* p = malloc(numelems * sizeofeach);
+	void* p = __wrap_malloc(numelems * sizeofeach);
 	if (!p)
 		return 0;
 	memset(p, 0x00, numelems * sizeofeach);
