@@ -10,45 +10,104 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Retrieve commit hash
+      id: psptoolchain
+      run: echo "::set-output name=sha::$(git -C psptoolchain rev-parse HEAD)"
+        
+    - name: Cache PSP toolchain
+      uses: actions/cache@v2
+      id: cache-psptoolchain
+      with:
+        path: pspdev
+        key: ${{ runner.os }}-psptoolchain-${{ steps.psptoolchain.outputs.sha }}
 
     - name: Install deps
+      if: steps.cache-psptoolchain.outputs.cache-hit != 'true'
       run: sudo apt install autoconf automake bison flex gcc-9 libncurses-dev make subversion texinfo wget libusb-dev
       
     - name: Bootstrap
-      run: |
-        cd $GITHUB_WORKSPACE
-        ./bootstrap.sh
+      if: steps.cache-psptoolchain.outputs.cache-hit != 'true'
+      run: ./bootstrap.sh
 
     - name: Clean
-      run: |
-        cd $GITHUB_WORKSPACE
-        ./clean.sh
+      run: ./clean.sh
 
     - name: Build
-      run: |
-        cd $GITHUB_WORKSPACE
-        ./build.sh
+      run: ./build.sh
 
   macOS:
     runs-on: macos-10.15
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Retrieve commit hash
+      id: psptoolchain
+      run: echo "::set-output name=sha::$(git -C psptoolchain rev-parse HEAD)"
+        
+    - name: Cache PSP toolchain
+      uses: actions/cache@v2
+      id: cache-psptoolchain
+      with:
+        path: pspdev
+        key: ${{ runner.os }}-psptoolchain-${{ steps.psptoolchain.outputs.sha }}
 
     - name: Install deps
-      run: |
-        brew install autoconf automake flex gcc@9 ncurses make subversion texinfo wget libusb libusb-compat sdl
+      if: steps.cache-psptoolchain.outputs.cache-hit != 'true'
+      run: brew install autoconf automake flex gcc@9 ncurses make subversion texinfo wget libusb libusb-compat sdl
       
     - name: Bootstrap
-      run: |
-        cd $GITHUB_WORKSPACE
-        ./bootstrap.sh
+      if: steps.cache-psptoolchain.outputs.cache-hit != 'true'
+      run: ./bootstrap.sh
 
     - name: Clean
-      run: |
-        cd $GITHUB_WORKSPACE
-        ./clean.sh
+      run: ./clean.sh
 
     - name: Build
+      run: ./build.sh
+        
+
+  Linux-latest-pspdev:
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout the main repo
+      uses: actions/checkout@v2
+
+    - name: Checkout the latest PSP toolchain script
+      uses: actions/checkout@v2
+      with:
+        repository: pspdev/psptoolchain
+        path: psptoolchain
+
+    - name: Retrieve commit hash
+      id: psptoolchain
+      run: echo "::set-output name=sha::$(git -C psptoolchain rev-parse HEAD)"
+        
+    - name: Cache PSP toolchain
+      uses: actions/cache@v2
+      id: cache-psptoolchain
+      with:
+        path: pspdev
+        key: ${{ runner.os }}-psptoolchain-${{ steps.psptoolchain.outputs.sha }}
+
+    - name: Install deps
+      if: steps.cache-psptoolchain.outputs.cache-hit != 'true'
+      run: ./prepare-debian-ubuntu.sh
+
+    - name: Bootstrap
+      if: steps.cache-psptoolchain.outputs.cache-hit != 'true'
       run: |
-        cd $GITHUB_WORKSPACE
-        ./build.sh
+        export PSPDEV=$(pwd)/pspdev
+        export PATH=$PATH:$PSPDEV/bin
+        cd psptoolchain
+        ./toolchain.sh
+
+    - name: Clean
+      run: ./clean.sh
+
+    - name: Build
+      run: ./build.sh
