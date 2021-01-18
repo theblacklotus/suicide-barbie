@@ -16,9 +16,14 @@ PROJECT ?= $(notdir $(PROJECT_DIRNAME))
 ########################################################
 
 CONFIG?=RELEASE
+VARIANT=$(CONFIG)
+
+ifeq ($(BUILD_OE),1)
+VARIANT:=$(CONFIG)_OE
+endif
 
 OUTDIR = $(ROOT)/Output/$(CONFIG)
-INTDIR = $(ROOT)/Build/$(CONFIG)/$(PROJECT)
+INTDIR = $(ROOT)/Build/$(VARIANT)/$(PROJECT)
 
 $(info ~~~~~~~~~~~~~ PROJECT = $(PROJECT) ; CONFIG = $(CONFIG))
 
@@ -47,6 +52,9 @@ CC_FLAGS_COMMON=\
 	-include "ForcedInclude.h"\
 	-MMD    \
 	-Wall\
+	-Wno-deprecated-declarations\
+	-D__CORRECT_ISO_CPP_MATH_H_PROTO\
+	-ffunction-sections -fdata-sections\
 	-fno-exceptions\
 
 CC_FLAGS_DEBUG=\
